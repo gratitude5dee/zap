@@ -5,10 +5,12 @@ export const drainProviderQueue = internalAction({
   args: {},
   returns: v.null(),
   handler: async () => {
-    // Provider polling is implemented in the app/Eve runtime because it shares
-    // provider adapters and Upstash credentials. Convex owns the schedule entry
-    // and durable logs; the HTTP drain endpoint can be added without changing
-    // the schema.
+    const url = process.env.ZAP_POLL_DRAIN_URL;
+    if (!url) return null;
+    await fetch(url, {
+      headers: process.env.ZAP_POLL_DRAIN_SECRET ? { "x-zap-cron-secret": process.env.ZAP_POLL_DRAIN_SECRET } : {},
+      method: "POST",
+    });
     return null;
   },
 });

@@ -1,19 +1,25 @@
 {
-  "name": "zap",
+  "name": "zap-platform",
   "version": "0.0.0",
   "private": true,
   "description": "Zap: one-click generative content recipes on Eve, Next.js, Convex, Upstash, GMI Cloud, and fal.",
   "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
   "imports": {
     "#*": "./agent/*",
     "#evals/*": "./evals/*"
   },
   "scripts": {
     "build": "next build",
+    "cli": "node packages/cli/bin/zap.js",
     "dev": "next dev",
+    "doctor": "node packages/cli/bin/zap.js doctor",
     "start": "next start",
     "typecheck": "tsgo --noEmit -p tsconfig.json",
     "test": "vitest run --config vitest.config.ts",
+    "test:cli": "node packages/cli/bin/zap.js validate agent/skills/zap-world-cup-entrance/Zap.md && node packages/cli/bin/zap.js run agent/skills/zap-world-cup-entrance/Zap.md --json",
     "eve:info": "eve info",
     "eve:build": "eve build",
     "convex:codegen": "convex codegen"

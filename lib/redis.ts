@@ -27,5 +27,35 @@ export async function setIdempotencyKey(key: string, value: string) {
 export async function enqueueProviderPoll(provider: string, requestId: string, payload: unknown) {
   const client = getRedis();
   if (!client) return;
-  await client.lpush(`zap:poll:${provider}`, JSON.stringify({ payload, requestId, ts: Date.now() }));
+  await client.lpush(`zap:poll:${provider}`, { attempts: 0, payload, provider, requestId, ts: Date.now() });
+}
+
+export async function dequeueProviderPoll(provider: string) {
+  const client = getRedis();
+  if (!client) return null;
+  return client.rpop<{
+    attempts?: number;
+    payload?: {
+      capability?: string;
+      runId?: string;
+      stepId?: string;
+    };
+    provider: string;
+    requestId: string;
+    ts: number;
+  }>(`zap:poll:${provider}`);
+}
+
+export async function requeueProviderPoll(provider: string, job: unknown) {
+  const client = getRedis();
+  if (!client) return;
+  const payload = typeof job === "object" && job !== null ? job : { job };
+  const attempts = "attempts" in payload && typeof payload.attempts === "number" ? payload.attempts + 1 : 1;
+  await client.rpush(`zap:poll:${provider}`, { ...payload, attempts, ts: Date.now() });
+}
+
+export async function deadLetterProviderPoll(job: unknown, error?: string) {
+  const client = getRedis();
+  if (!client) return;
+  await client.lpush("zap:poll:dead", { error, failedAt: Date.now(), job });
 }

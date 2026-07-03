@@ -5,6 +5,8 @@ import { runZapRecipe } from "@/lib/zap-runner-server";
 const requestSchema = z.object({
   extendCount: z.number().int().min(0).max(64).default(0),
   inputs: z.record(z.string(), z.unknown()).default({}),
+  live: z.boolean().default(false),
+  provider: z.string().optional(),
   slug: z.string(),
 });
 

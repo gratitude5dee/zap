@@ -1,0 +1,21 @@
+{
+  "name": "@zap-md/cli",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Agent-first CLI for creating, validating, and running Zap recipes.",
+  "type": "module",
+  "bin": {
+    "zap": "./bin/zap.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md"
+  ],
+  "dependencies": {
+    "yaml": "^2.8.1"
+  },
+  "engines": {
+    "node": "24.x"
+  }
+}

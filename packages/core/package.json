@@ -1,0 +1,20 @@
+{
+  "name": "@zap-md/core",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Core Zap recipe schema, planning, and registry utilities.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./manifest": "./src/manifest.ts",
+    "./planner": "./src/planner.ts",
+    "./schema": "./src/schema.ts"
+  },
+  "dependencies": {
+    "yaml": "^2.8.1",
+    "zod": "4.4.3"
+  },
+  "engines": {
+    "node": "24.x"
+  }
+}

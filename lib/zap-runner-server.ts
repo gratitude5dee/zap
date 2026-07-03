@@ -8,6 +8,8 @@ import type { ZapSpec, ZapStep } from "./zap-schema";
 export type RunZapInput = {
   extendCount: number;
   inputs: Record<string, unknown>;
+  live?: boolean;
+  provider?: string;
   slug: string;
 };
 
@@ -25,7 +27,7 @@ export type RunZapSubmittedStep = {
   stepId: string;
 };
 
-export async function runZapRecipe({ extendCount, inputs, slug }: RunZapInput) {
+export async function runZapRecipe({ extendCount, inputs, live = false, provider, slug }: RunZapInput) {
   const zap = await loadZapSpec(slug);
   if (!zap) throw new Error(`Unknown Zap ${slug}.`);
   validateInputs(zap, inputs);
@@ -58,7 +60,9 @@ export async function runZapRecipe({ extendCount, inputs, slug }: RunZapInput) {
       continue;
     }
 
-    const request = await buildGenerationRequest(zap, runId, step, normalizedInputs, assetUrls);
+    const request = await buildGenerationRequest(zap, runId, step, normalizedInputs, assetUrls, {
+      provider: live ? provider : "mock",
+    });
     const submitted = await submitGeneration(request);
     const submittedStep: RunZapSubmittedStep = {
       idemKey: submitted.idemKey,
@@ -76,7 +80,7 @@ export async function runZapRecipe({ extendCount, inputs, slug }: RunZapInput) {
     if (!result.outputUrl) {
       throw new Error(`Provider ${submitted.provider} completed ${step.id} without an output URL.`);
     }
-    const stored = await persistStepOutput(runId, step, result.outputUrl);
+    const stored = submitted.provider === "mock" ? { url: result.outputUrl } : await persistStepOutput(runId, step, result.outputUrl);
     submittedStep.actualUsd = result.actualUsd;
     submittedStep.assetUrl = stored?.url ?? result.outputUrl;
     submittedStep.status = "done";
@@ -100,6 +104,7 @@ export async function buildGenerationRequest(
   step: ZapStep,
   inputs: Record<string, unknown>,
   assetUrls = new Map<string, string>(),
+  options: { provider?: string } = {},
 ): Promise<GenRequest> {
   const prompt = interpolate(await readPrompt(zap.zap, step.prompt), inputs);
   const imageUrls = resolveImageUrls(step, inputs, assetUrls);
@@ -114,7 +119,7 @@ export async function buildGenerationRequest(
     },
     model: step.model ?? "local",
     prompt,
-    provider: step.provider ?? zap.defaults.provider,
+    provider: options.provider ?? step.provider ?? zap.defaults.provider,
     runId,
     stepId: step.id,
   };

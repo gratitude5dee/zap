@@ -29,7 +29,7 @@ export type ProviderPollResult = {
 };
 
 export interface ProviderAdapter {
-  id: "gmi" | "fal";
+  id: "gmi" | "fal" | "mock";
   poll(requestId: string): Promise<ProviderPollResult>;
   price(req: GenRequest): number;
   submit(req: GenRequest, idemKey: string): Promise<ProviderSubmitResult>;

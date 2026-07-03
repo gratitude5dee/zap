@@ -43,4 +43,18 @@ describe("provider router", () => {
 
     expect(buildIdempotencyKey(req)).toBe(buildIdempotencyKey({ ...req }));
   });
+
+  it("quotes mock provider at zero cost", () => {
+    const quote = quoteGeneration({
+      capability: "video.gen",
+      durationS: 15,
+      inputs: {},
+      model: "anything",
+      prompt: "test",
+      provider: "mock",
+      runId: "run_test",
+      stepId: "initial_gen",
+    });
+    expect(quote).toBe(0);
+  });
 });

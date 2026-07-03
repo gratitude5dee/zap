@@ -21,6 +21,7 @@ export function ZapRunner({ zap }: { readonly zap: PublicZapSpec }) {
   const [values, setValues] = useState<Record<string, string>>({});
   const [imageDataUrl, setImageDataUrl] = useState("");
   const [extendCount, setExtendCount] = useState(0);
+  const [live, setLive] = useState(false);
   const [run, setRun] = useState<RunResponse | null>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,6 +31,7 @@ export function ZapRunner({ zap }: { readonly zap: PublicZapSpec }) {
     [zap.inputs],
   );
   const hasImage = Object.values(zap.inputs).some((input) => input.type === "image");
+  const isMockOutput = run?.zapUrl?.startsWith("mock://");
 
   async function handleSubmit() {
     setIsRunning(true);
@@ -39,6 +41,7 @@ export function ZapRunner({ zap }: { readonly zap: PublicZapSpec }) {
         body: JSON.stringify({
           extendCount,
           inputs: { ...values, image: imageDataUrl || undefined },
+          live,
           slug: zap.zap,
         }),
         headers: { "content-type": "application/json" },
@@ -120,9 +123,22 @@ export function ZapRunner({ zap }: { readonly zap: PublicZapSpec }) {
               <Input max={64} min={0} onChange={(event) => setExtendCount(Number(event.target.value))} type="number" value={extendCount} />
             </label>
 
+            <label className="flex items-center justify-between gap-3 rounded-md border bg-zinc-50 px-3 py-2">
+              <span>
+                <span className="block font-medium text-sm">Live providers</span>
+                <span className="text-zinc-500 text-xs">{live ? "Provider keys and budgets required" : "Mock outputs, zero spend"}</span>
+              </span>
+              <input
+                checked={live}
+                className="size-4 accent-zinc-950"
+                onChange={(event) => setLive(event.target.checked)}
+                type="checkbox"
+              />
+            </label>
+
             <Button className="h-11 w-full gap-2" disabled={isRunning} onClick={handleSubmit}>
               <Play className="size-4" />
-              {isRunning ? "Running Zap..." : "Run Zap"}
+              {isRunning ? "Running Zap..." : live ? "Run Live Zap" : "Run Mock Zap"}
             </Button>
             {error ? <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-red-700 text-sm">{error}</p> : null}
           </div>
@@ -138,8 +154,14 @@ export function ZapRunner({ zap }: { readonly zap: PublicZapSpec }) {
                 </div>
                 <ImageIcon className="size-5 text-zinc-400" />
               </div>
-              {run?.zapUrl ? (
+              {run?.zapUrl && !isMockOutput ? (
                 <video className="mt-5 aspect-video w-full rounded-md bg-black" controls src={run.zapUrl} />
+              ) : isMockOutput ? (
+                <div className="mt-5 flex aspect-video flex-col items-center justify-center rounded-md border border-emerald-300/20 bg-emerald-400/10 px-5 text-center">
+                  <CheckCircle2 className="mb-3 size-8 text-emerald-300" />
+                  <p className="font-medium text-white">Mock Zap completed</p>
+                  <p className="mt-2 max-w-md text-sm text-emerald-100/80">The pipeline, budget guard, and run state completed without provider spend.</p>
+                </div>
               ) : (
                 <div className="mt-5 flex aspect-video items-center justify-center rounded-md border border-white/10 bg-white/5 text-zinc-400">
                   Waiting for Zap.mp4

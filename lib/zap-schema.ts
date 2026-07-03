@@ -45,6 +45,12 @@ export const zapStepSchema = z.object({
   }).optional(),
   rlhf: z.union([z.literal("optional"), z.boolean()]).optional(),
   shared: z.boolean().optional(),
+  stitch: z.object({
+    engine: z.enum(["auto", "local", "hyperframes"]).default("auto"),
+    fps: z.number().int().min(1).max(120).optional(),
+    format: z.enum(["mp4", "webm"]).default("mp4"),
+    quality: z.enum(["draft", "standard", "high"]).default("standard"),
+  }).optional(),
   tier: z.enum(["draft", "final"]).optional(),
 });
 
@@ -75,6 +81,7 @@ export function parseZapMarkdown(markdown: string): ZapSpec {
   const parsed = parseDocument(frontmatter).toJS();
   const spec = zapSpecSchema.parse(parsed);
   validateVariables(spec);
+  validateDuplicateStepIds(spec);
   return spec;
 }
 
@@ -99,6 +106,14 @@ function validateVariables(spec: ZapSpec) {
         throw new Error(`Step ${step.id} references undeclared input {${variable[1]}}.`);
       }
     }
+  }
+}
+
+function validateDuplicateStepIds(spec: ZapSpec) {
+  const seen = new Set<string>();
+  for (const step of spec.steps) {
+    if (seen.has(step.id)) throw new Error(`Duplicate step id ${step.id}.`);
+    seen.add(step.id);
   }
 }
 

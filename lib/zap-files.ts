@@ -19,6 +19,16 @@ export async function loadZapSpec(slug: string): Promise<ZapSpec | null> {
   }
 }
 
+export async function listZapSpecs(): Promise<PublicZapSpec[]> {
+  const entries = await fs.readdir(skillsDir, { withFileTypes: true }).catch(() => []);
+  const zaps = await Promise.all(entries
+    .filter((entry) => entry.isDirectory() && entry.name.startsWith("zap-"))
+    .map((entry) => loadZapFromSkill(entry.name.slice("zap-".length))));
+  return zaps
+    .filter((zap): zap is PublicZapSpec => Boolean(zap))
+    .sort((left, right) => left.title.localeCompare(right.title));
+}
+
 export async function readPrompt(slug: string, promptPath?: string) {
   if (!promptPath) return "";
   const file = path.join(skillsDir, `zap-${slug}`, promptPath);

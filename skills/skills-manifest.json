@@ -1,0 +1,36 @@
+{
+  "generatedAt": "2026-07-03T10:06:29.230Z",
+  "skills": [
+    {
+      "fileCount": 1,
+      "hash": "3846dfcbe4b58071eb085168b11b134858e8fb97ae7cd370f5d1ef6847e0a427",
+      "path": "skills/zap",
+      "skill": "zap"
+    },
+    {
+      "fileCount": 1,
+      "hash": "153995fb1e98e91daf662c752f513212253c574e1790a5e68ae5b4389807c79a",
+      "path": "skills/zap-authoring",
+      "skill": "zap-authoring"
+    },
+    {
+      "fileCount": 1,
+      "hash": "26c9fc315ec5368bfd6c82f302960a35e31e85c5b6ab027a0fdee6a7ca42ec77",
+      "path": "skills/zap-cli",
+      "skill": "zap-cli"
+    },
+    {
+      "fileCount": 1,
+      "hash": "dc1599d2a24d2910367e3d3710077b2e54571b32409446cd4dcc9bafb68e707f",
+      "path": "skills/zap-providers",
+      "skill": "zap-providers"
+    },
+    {
+      "fileCount": 1,
+      "hash": "03b9fbd60634e61ead3b082cc5d65a40ff8b8dd5e5e45cfff53f8f88a5b88619",
+      "path": "skills/zap-webapp",
+      "skill": "zap-webapp"
+    }
+  ],
+  "version": 1
+}

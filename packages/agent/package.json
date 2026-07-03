@@ -1,0 +1,17 @@
+{
+  "name": "@zap-md/agent",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Agent prompts and helper utilities for authoring and running Zap recipes.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./instructions": "./src/instructions.ts"
+  },
+  "dependencies": {
+    "@zap-md/core": "0.1.0"
+  },
+  "engines": {
+    "node": "24.x"
+  }
+}

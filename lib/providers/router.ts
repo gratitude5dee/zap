@@ -3,8 +3,9 @@ import { enqueueProviderPoll, getIdempotencyKey, setIdempotencyKey } from "../re
 import type { GenRequest, ProviderAdapter, ProviderPollResult } from "../provider-types";
 import { falAdapter } from "./fal";
 import { gmiAdapter } from "./gmi";
+import { mockAdapter } from "./mock";
 
-const adapters: ProviderAdapter[] = [gmiAdapter, falAdapter];
+const adapters: ProviderAdapter[] = [mockAdapter, gmiAdapter, falAdapter];
 
 export async function submitGeneration(req: GenRequest) {
   const adapter = selectAdapter(req);
@@ -31,7 +32,8 @@ export function quoteGeneration(req: GenRequest) {
 }
 
 function selectAdapter(req: GenRequest) {
-  const preferred = req.provider ? adapters.find((adapter) => adapter.id === req.provider) : undefined;
+  const provider = req.provider ?? process.env.ZAP_PROVIDER;
+  const preferred = provider ? adapters.find((adapter) => adapter.id === provider) : undefined;
   if (preferred?.supports(req.capability, req.model)) return preferred;
   const fallback = adapters.find((adapter) => adapter.supports(req.capability, req.model));
   if (!fallback) throw new Error(`No provider supports ${req.capability} / ${req.model}.`);

@@ -8,6 +8,7 @@ give humans and the authoring agent creative context.
 ## What Ships
 
 - Next.js app mounted with `withEve`.
+- Public landing page, docs, quickstart, and gallery.
 - Creator view at `/zap/world-cup-entrance`.
 - Dev/agent view at `/studio`.
 - Run detail view at `/runs/:runId`.
@@ -15,7 +16,8 @@ give humans and the authoring agent creative context.
 - Convex schema/functions for `zaps`, `runs`, `steps`, `assets`, `feedback`, and
   `cronLogs`.
 - Upstash Redis idempotency and provider queue helpers.
-- GMI Cloud video adapter and fal adapter behind one provider router.
+- GMI Cloud video adapter, fal adapter, and deterministic mock adapter behind one provider router.
+- Workspace packages for core schema/planning, provider queues, agent helpers, and the publishable `@zap-md/cli`.
 
 ## Environment
 
@@ -25,12 +27,18 @@ Copy `.env.example` and fill production values in Vercel/Convex:
 GMI_API_KEY=
 GMI_ORG_ID=
 FAL_KEY=
+ZAP_PROVIDER=mock
 UPSTASH_REDIS_REST_URL=
 UPSTASH_REDIS_REST_TOKEN=
 BLOB_READ_WRITE_TOKEN=
 NEXT_PUBLIC_CONVEX_URL=
 CONVEX_URL=
 AI_GATEWAY_API_KEY=
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+NEXT_PUBLIC_THIRDWEB_CLIENT_ID=
+ZAP_POLL_DRAIN_URL=
+ZAP_POLL_DRAIN_SECRET=
 ZAP_BASIC_USER=
 ZAP_BASIC_PASSWORD=
 ```
@@ -53,12 +61,14 @@ npm run dev
 Useful checks:
 
 ```bash
+npm run cli -- doctor
+npm run cli -- validate
+npm run cli -- run agent/skills/zap-world-cup-entrance/Zap.md --json
 npm run typecheck
 npm test
 npm run eve:info
 npm run eve:build
 ```
 
-Live provider smoke tests are opt-in only. The adapters are implemented, but no
-test submits paid GMI/fal work unless explicit credentials and a live run are
-requested.
+Live provider smoke tests are opt-in only. CLI and web runs default to mock mode
+unless explicit credentials and a live run are requested.
