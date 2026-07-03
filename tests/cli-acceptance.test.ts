@@ -47,6 +47,10 @@ describe("zap CLI acceptance", () => {
 
       const docs = runZap(project, ["docs", "quickstart"]);
       expect(docs).toContain("npx @zap-md/cli init demo --non-interactive");
+
+      expect(runZap(project, ["docs", "zap-spec"])).toContain("# Zap Spec");
+      expect(runZap(project, ["docs", "steps"])).toContain("# Steps");
+      expect(runZap(project, ["docs", "eve"])).toContain("# Eve");
     } finally {
       rmSync(root, { force: true, recursive: true });
     }

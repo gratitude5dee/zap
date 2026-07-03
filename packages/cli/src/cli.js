@@ -315,7 +315,19 @@ async function addCommand(args, flags) {
 }
 
 async function docsCommand(args, flags) {
-  const topic = args[0] ?? "index";
+  const requestedTopic = args[0] ?? "index";
+  const aliases = {
+    agents: "quickstart/agents",
+    cli: "reference/cli",
+    deploy: "deploy",
+    providers: "providers",
+    runtime: "reference/runtime",
+    schema: "zap-spec",
+    "supabase-secrets": "deployment/supabase-secrets",
+    vercel: "deployment/vercel",
+    "zap-spec": "zap-spec",
+  };
+  const topic = aliases[requestedTopic] ?? requestedTopic;
   const docsRoot = path.join(findResourceRoot(), "docs");
   const candidates = [
     path.join(docsRoot, `${topic}.md`),
@@ -326,12 +338,12 @@ async function docsCommand(args, flags) {
   const file = candidates.find((candidate) => existsSync(candidate));
   if (!file) {
     const topics = await listMarkdownTopics(docsRoot);
-    if (flags.json) printJson({ topics });
+    if (flags.json) printJson({ requestedTopic, topics });
     else topics.forEach((entry) => console.log(entry));
     return;
   }
   const content = await fs.readFile(file, "utf8");
-  if (flags.json) printJson({ content, file, topic });
+  if (flags.json) printJson({ content, file, requestedTopic, topic });
   else console.log(content);
 }
 
