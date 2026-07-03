@@ -11,7 +11,7 @@ export const falAdapter: ProviderAdapter = {
     return quoteStep({ id: req.stepId, kind: req.capability, model: req.model, duration_s: req.durationS });
   },
   async submit(req) {
-    requireFalKey();
+    requireFalKey(req.secrets?.fal_key);
     const model = normalizeFalModel(req.model, req.capability);
     const result = await fal.queue.submit(model, {
       input: {
@@ -25,8 +25,8 @@ export const falAdapter: ProviderAdapter = {
     const id = (result as { request_id?: string; requestId?: string }).request_id ?? (result as { requestId?: string }).requestId ?? "";
     return { provider: "fal", requestId: `${model}::${id}` };
   },
-  async poll(requestId) {
-    requireFalKey();
+  async poll(requestId, secrets) {
+    requireFalKey(secrets?.fal_key);
     const [model, id] = requestId.includes("::") ? requestId.split("::", 2) : ["fal-ai/flux/dev", requestId];
     const status = await fal.queue.status(model, { requestId: id, logs: true } as never);
     const queueStatus = String((status as { status?: string }).status ?? "").toLowerCase();
@@ -53,8 +53,8 @@ function extractUrl(result: unknown): string | undefined {
   return value.data?.video?.url ?? value.data?.audio?.url ?? value.data?.images?.[0]?.url ?? value.data?.url;
 }
 
-function requireFalKey() {
-  const key = process.env.FAL_KEY;
+function requireFalKey(secretKey?: string) {
+  const key = secretKey ?? process.env.FAL_KEY;
   if (!key) throw new Error("FAL_KEY is required for live fal generation.");
   fal.config({ credentials: key });
 }

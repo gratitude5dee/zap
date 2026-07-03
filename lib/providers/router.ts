@@ -21,10 +21,10 @@ export async function submitGeneration(req: GenRequest) {
   return { idemKey, provider: adapter.id, requestId: submitted.requestId };
 }
 
-export async function pollGeneration(provider: string, requestId: string): Promise<ProviderPollResult> {
+export async function pollGeneration(provider: string, requestId: string, secrets?: Record<string, string>): Promise<ProviderPollResult> {
   const adapter = adapters.find((candidate) => candidate.id === provider);
   if (!adapter) throw new Error(`Unknown provider ${provider}.`);
-  return adapter.poll(requestId);
+  return adapter.poll(requestId, secrets);
 }
 
 export function quoteGeneration(req: GenRequest) {

@@ -2,6 +2,7 @@ import { nanoid } from "nanoid";
 import { persistDataUrlAsset, persistRemoteAsset } from "./blob-store";
 import { loadZapSpec, readPrompt } from "./zap-files";
 import { pollGeneration, quoteGeneration, submitGeneration } from "./providers/router";
+import { revealZapSecretsForProvider } from "./supabase/server";
 import type { GenRequest } from "./provider-types";
 import type { ZapSpec, ZapStep } from "./zap-schema";
 
@@ -11,6 +12,7 @@ export type RunZapInput = {
   live?: boolean;
   provider?: string;
   slug: string;
+  userAccessToken?: string;
 };
 
 export type RunZapSubmittedStep = {
@@ -27,7 +29,7 @@ export type RunZapSubmittedStep = {
   stepId: string;
 };
 
-export async function runZapRecipe({ extendCount, inputs, live = false, provider, slug }: RunZapInput) {
+export async function runZapRecipe({ extendCount, inputs, live = false, provider, slug, userAccessToken }: RunZapInput) {
   const zap = await loadZapSpec(slug);
   if (!zap) throw new Error(`Unknown Zap ${slug}.`);
   validateInputs(zap, inputs);
@@ -62,6 +64,7 @@ export async function runZapRecipe({ extendCount, inputs, live = false, provider
 
     const request = await buildGenerationRequest(zap, runId, step, normalizedInputs, assetUrls, {
       provider: live ? provider : "mock",
+      userAccessToken: live ? userAccessToken : undefined,
     });
     const submitted = await submitGeneration(request);
     const submittedStep: RunZapSubmittedStep = {
@@ -76,7 +79,7 @@ export async function runZapRecipe({ extendCount, inputs, live = false, provider
     };
     submittedSteps.push(submittedStep);
 
-    const result = await pollGenerationUntilDone(submitted.provider, submitted.requestId);
+    const result = await pollGenerationUntilDone(submitted.provider, submitted.requestId, request.secrets);
     if (!result.outputUrl) {
       throw new Error(`Provider ${submitted.provider} completed ${step.id} without an output URL.`);
     }
@@ -104,10 +107,11 @@ export async function buildGenerationRequest(
   step: ZapStep,
   inputs: Record<string, unknown>,
   assetUrls = new Map<string, string>(),
-  options: { provider?: string } = {},
+  options: { provider?: string; userAccessToken?: string } = {},
 ): Promise<GenRequest> {
   const prompt = interpolate(await readPrompt(zap.zap, step.prompt), inputs);
   const imageUrls = resolveImageUrls(step, inputs, assetUrls);
+  const provider = options.provider ?? step.provider ?? zap.defaults.provider;
   return {
     capability: step.kind,
     durationS: step.duration_s,
@@ -119,8 +123,9 @@ export async function buildGenerationRequest(
     },
     model: step.model ?? "local",
     prompt,
-    provider: options.provider ?? step.provider ?? zap.defaults.provider,
+    provider,
     runId,
+    secrets: await revealZapSecretsForProvider(provider, options.userAccessToken),
     stepId: step.id,
   };
 }
@@ -210,11 +215,11 @@ function resolveRef(ref: string, inputs: Record<string, unknown>, assetUrls: Map
   return typeof inputValue === "string" ? inputValue : undefined;
 }
 
-async function pollGenerationUntilDone(provider: string, requestId: string) {
+async function pollGenerationUntilDone(provider: string, requestId: string, secrets?: Record<string, string>) {
   const deadline = Date.now() + Number(process.env.ZAP_SYNC_POLL_TIMEOUT_MS ?? 1000 * 60 * 20);
   const delayMs = Number(process.env.ZAP_SYNC_POLL_INTERVAL_MS ?? 5000);
   while (Date.now() < deadline) {
-    const result = await pollGeneration(provider, requestId);
+    const result = await pollGeneration(provider, requestId, secrets);
     if (result.status === "done") return result;
     if (result.status === "failed") {
       throw new Error(result.error ?? `${provider} generation ${requestId} failed.`);

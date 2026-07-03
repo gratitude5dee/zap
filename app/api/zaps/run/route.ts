@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { getBearerToken } from "@/lib/supabase/server";
 import { runZapRecipe } from "@/lib/zap-runner-server";
 
 const requestSchema = z.object({
@@ -13,7 +14,7 @@ const requestSchema = z.object({
 export async function POST(request: Request) {
   try {
     const input = requestSchema.parse(await request.json());
-    const result = await runZapRecipe(input);
+    const result = await runZapRecipe({ ...input, userAccessToken: getBearerToken(request) });
     return NextResponse.json(result);
   } catch (error) {
     return NextResponse.json(

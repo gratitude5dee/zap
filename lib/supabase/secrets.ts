@@ -13,6 +13,7 @@ export type ZapSecretType = typeof secretTypes[number];
 export type MaskedZapSecret = {
   createdAt?: string;
   last4?: string;
+  provider?: string;
   secretType: ZapSecretType;
   updatedAt?: string;
 };
@@ -37,6 +38,14 @@ export function requiredSecretTypesForProvider(provider: string): ZapSecretType[
     default:
       return [];
   }
+}
+
+export function providerFromSecretType(secretType: ZapSecretType) {
+  if (secretType.startsWith("gmi_")) return "gmi";
+  if (secretType.startsWith("fal_")) return "fal";
+  if (secretType.startsWith("openrouter_")) return "openrouter";
+  if (secretType.startsWith("ai_gateway_")) return "ai_gateway";
+  return secretType.replace(/_key$|_api_key$|_org_id$/g, "");
 }
 
 export const zapSecretTypes = secretTypes;

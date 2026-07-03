@@ -18,6 +18,7 @@ export default async function Page() {
             <div className="flex items-center gap-2">
               <Link className="hidden rounded-md px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-100 sm:inline-flex" href="/docs">Docs</Link>
               <Link className="hidden rounded-md px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-100 sm:inline-flex" href="/gallery">Gallery</Link>
+              <Link className="hidden rounded-md px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-100 sm:inline-flex" href="/settings">Settings</Link>
               <Link className="inline-flex items-center gap-2 rounded-md bg-zinc-950 px-3 py-2 font-medium text-sm text-white" href="/studio">
                 <TerminalSquare className="size-4" />
                 Studio

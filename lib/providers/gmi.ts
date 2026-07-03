@@ -12,13 +12,13 @@ export const gmiAdapter: ProviderAdapter = {
     return quoteStep({ id: req.stepId, kind: req.capability, model: req.model, duration_s: req.durationS });
   },
   async submit(req, idemKey) {
-    const apiKey = requireEnv("GMI_API_KEY");
+    const apiKey = req.secrets?.gmi_api_key ?? requireEnv("GMI_API_KEY");
     const response = await fetch(`${GMI_BASE_URL}/video/generations`, {
       body: JSON.stringify({
         duration: req.durationS,
         idempotency_key: idemKey,
         model: req.model,
-        organization_id: process.env.GMI_ORG_ID,
+        organization_id: req.secrets?.gmi_org_id ?? process.env.GMI_ORG_ID,
         prompt: req.prompt,
         reference_images: req.inputs.referenceImages,
         webhook_url: req.webhookUrl,
@@ -35,8 +35,8 @@ export const gmiAdapter: ProviderAdapter = {
     const body = (await response.json()) as { id?: string; request_id?: string };
     return { provider: "gmi", requestId: body.request_id ?? body.id ?? idemKey };
   },
-  async poll(requestId) {
-    const apiKey = requireEnv("GMI_API_KEY");
+  async poll(requestId, secrets) {
+    const apiKey = secrets?.gmi_api_key ?? requireEnv("GMI_API_KEY");
     const response = await fetch(`${GMI_BASE_URL}/video/generations/${requestId}`, {
       headers: { authorization: `Bearer ${apiKey}` },
     });

@@ -11,6 +11,7 @@ export type GenRequest = {
   prompt: string;
   provider?: string;
   runId: string;
+  secrets?: Record<string, string>;
   stepId: string;
   webhookUrl?: string;
 };
@@ -30,7 +31,7 @@ export type ProviderPollResult = {
 
 export interface ProviderAdapter {
   id: "gmi" | "fal" | "mock";
-  poll(requestId: string): Promise<ProviderPollResult>;
+  poll(requestId: string, secrets?: Record<string, string>): Promise<ProviderPollResult>;
   price(req: GenRequest): number;
   submit(req: GenRequest, idemKey: string): Promise<ProviderSubmitResult>;
   supports(capability: Capability, model: string): boolean;
