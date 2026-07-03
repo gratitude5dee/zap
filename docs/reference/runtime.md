@@ -11,4 +11,4 @@ Zap separates planning from provider execution.
 - Explicit `stitch.engine: hyperframes` steps generate a temporary HyperFrames project, write a Zap visual identity, run `lint`, `validate`, and `inspect`, render with `npx hyperframes render`, and persist the result to Blob when configured.
 - If HyperFrames is unavailable or a generated composition check fails, the runtime records the error on the local step and falls back to the first resolved stitch asset.
 
-Live provider spend requires an explicit `live` flag in the API or `--live` in the CLI.
+Live provider spend requires an explicit `live` flag in the API or `--live` in the CLI. Web API live runs also require a wallet-authenticated Supabase bearer token; mock creator demos stay public and zero-spend.

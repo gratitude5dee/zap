@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getBearerToken } from "@/lib/supabase/server";
+import { liveRunAuthError } from "@/lib/zap-run-auth";
 import { runZapRecipe } from "@/lib/zap-runner-server";
 
 const requestSchema = z.object({
@@ -14,7 +15,16 @@ const requestSchema = z.object({
 export async function POST(request: Request) {
   try {
     const input = requestSchema.parse(await request.json());
-    const result = await runZapRecipe({ ...input, userAccessToken: getBearerToken(request) });
+    const userAccessToken = getBearerToken(request);
+    const authError = liveRunAuthError(input.live, userAccessToken);
+    if (authError) {
+      return NextResponse.json(
+        { error: authError },
+        { status: 401 },
+      );
+    }
+
+    const result = await runZapRecipe({ ...input, userAccessToken });
     return NextResponse.json(result);
   } catch (error) {
     return NextResponse.json(

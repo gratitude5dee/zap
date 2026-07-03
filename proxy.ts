@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-const protectedPrefixes = ["/zap", "/studio", "/runs", "/api/providers", "/eve"];
+const protectedPrefixes = ["/api/providers", "/eve"];
 
 export function proxy(request: NextRequest) {
   if (!protectedPrefixes.some((prefix) => request.nextUrl.pathname.startsWith(prefix))) {
@@ -41,5 +41,5 @@ function hasBasicAuth(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/zap/:path*", "/studio/:path*", "/runs/:path*", "/api/providers/:path*", "/eve/:path*"],
+  matcher: ["/api/providers/:path*", "/eve/:path*"],
 };
