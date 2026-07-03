@@ -1,4 +1,5 @@
 import { Buffer } from "node:buffer";
+import { readFile } from "node:fs/promises";
 import { put } from "@vercel/blob";
 
 export async function persistRemoteAsset(url: string, key: string) {
@@ -29,6 +30,19 @@ export async function persistDataUrlAsset(dataUrl: string, key: string) {
   const extension = mime.split("/").at(1)?.split("+").at(0) ?? "bin";
   const body = new Blob([Buffer.from(encoded, "base64")], { type: mime });
   const stored = await put(`${key}.${extension}`, body, {
+    access: "public",
+    token: process.env.BLOB_READ_WRITE_TOKEN,
+  });
+  return { storageKey: stored.pathname, url: stored.url };
+}
+
+export async function persistLocalFileAsset(filePath: string, key: string, contentType = "application/octet-stream") {
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    return { storageKey: key, url: `file://${filePath}` };
+  }
+
+  const body = new Blob([await readFile(filePath)], { type: contentType });
+  const stored = await put(key, body, {
     access: "public",
     token: process.env.BLOB_READ_WRITE_TOKEN,
   });

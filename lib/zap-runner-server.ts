@@ -1,5 +1,6 @@
 import { nanoid } from "nanoid";
 import { persistDataUrlAsset, persistRemoteAsset } from "./blob-store";
+import { renderHyperframesStitch } from "./hyperframes-stitch";
 import { loadZapSpec, readPrompt } from "./zap-files";
 import { pollGeneration, quoteGeneration, submitGeneration } from "./providers/router";
 import { revealZapSecretsForProvider } from "./supabase/server";
@@ -29,6 +30,11 @@ export type RunZapSubmittedStep = {
   stepId: string;
 };
 
+type LocalStepResult = {
+  assetUrl?: string;
+  error?: string;
+};
+
 export async function runZapRecipe({ extendCount, inputs, live = false, provider, slug, userAccessToken }: RunZapInput) {
   const zap = await loadZapSpec(slug);
   if (!zap) throw new Error(`Unknown Zap ${slug}.`);
@@ -49,14 +55,15 @@ export async function runZapRecipe({ extendCount, inputs, live = false, provider
   for (const step of planned) {
     const stepQuoteUsd = quoteForStep(zap, runId, step, inputs);
     if (isLocalStep(step)) {
-      const stitched = step.kind === "stitch" ? resolveAssetRefs(step.inputs ?? [], assetUrls).at(0) : undefined;
-      if (stitched) zapUrl = stitched;
+      const stitched = await runLocalStep(runId, step, assetUrls);
+      if (stitched.assetUrl) zapUrl = stitched.assetUrl;
       submittedSteps.push({
-        assetUrl: stitched,
+        assetUrl: stitched.assetUrl,
+        error: stitched.error,
         kind: step.kind,
         model: step.model,
         quoteUsd: stepQuoteUsd,
-        status: stitched ? "done" : "skipped",
+        status: stitched.assetUrl ? "done" : "skipped",
         stepId: step.id,
       });
       continue;
@@ -178,6 +185,21 @@ function quoteForStep(zap: ZapSpec, runId: string, step: ZapStep, inputs: Record
 
 function isLocalStep(step: ZapStep) {
   return step.kind === "stitch" || step.kind === "keyframes";
+}
+
+async function runLocalStep(runId: string, step: ZapStep, assetUrls: Map<string, string>): Promise<LocalStepResult> {
+  if (step.kind !== "stitch") return {};
+
+  const resolvedAssets = resolveAssetRefs(step.inputs ?? [], assetUrls);
+  if (step.stitch?.engine === "hyperframes") {
+    return renderHyperframesStitch({
+      assetUrls: resolvedAssets,
+      runId,
+      step,
+    });
+  }
+
+  return { assetUrl: resolvedAssets.at(0) };
 }
 
 function resolveImageUrls(step: ZapStep, inputs: Record<string, unknown>, assetUrls: Map<string, string>) {

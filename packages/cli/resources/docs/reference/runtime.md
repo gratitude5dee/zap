@@ -8,5 +8,7 @@ Zap separates planning from provider execution.
 - The mock provider returns deterministic zero-cost outputs for demos and tests.
 - The poll drain endpoint consumes Upstash jobs and updates Convex when configured.
 - Live BYOK runs can reveal provider keys from Supabase only with the user's JWT and the server reveal token.
+- Explicit `stitch.engine: hyperframes` steps generate a temporary HyperFrames project, write a Zap visual identity, run `lint`, `validate`, and `inspect`, render with `npx hyperframes render`, and persist the result to Blob when configured.
+- If HyperFrames is unavailable or a generated composition check fails, the runtime records the error on the local step and falls back to the first resolved stitch asset.
 
 Live provider spend requires an explicit `live` flag in the API or `--live` in the CLI.

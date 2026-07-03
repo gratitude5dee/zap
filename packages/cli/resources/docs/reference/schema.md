@@ -52,3 +52,4 @@ stitch:
 ```
 
 HyperFrames recipes must include a `DESIGN.md` visual identity before composition HTML is generated.
+At runtime, Zap also writes a minimal temporary `DESIGN.md` for generated stitch wrappers so provider assets render through a compliant HyperFrames project. If the HyperFrames CLI is not installed, the runner falls back to the local stitch path and returns the first resolved asset with an explanatory step error.
