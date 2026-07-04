@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { z } from "zod";
-import { rerunZapRunFromStep } from "@/lib/zap-runner-server";
+import { executeZapRun, prepareRerunZapRunFromStep } from "@/lib/zap-runner-server";
 import { toZapErrorPayload } from "@/lib/zap-errors";
 
 const bodySchema = z.object({
@@ -15,8 +15,9 @@ export async function POST(
   try {
     const { runId } = await params;
     const body = bodySchema.parse(await request.json().catch(() => ({})));
-    const snapshot = await rerunZapRunFromStep(runId, body.stepId, body.comment);
-    return NextResponse.json(snapshot);
+    const prepared = await prepareRerunZapRunFromStep(runId, body.stepId, body.comment);
+    after(() => executeZapRun(prepared.execution));
+    return NextResponse.json(prepared.snapshot);
   } catch (error) {
     return NextResponse.json({ error: toZapErrorPayload(error) }, { status: 400 });
   }

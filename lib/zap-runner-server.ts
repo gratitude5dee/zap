@@ -634,7 +634,7 @@ export async function resumeZapRun(runId: string) {
   return getZapRunStatus(runId);
 }
 
-export async function rerunZapRunFromStep(runId: string, stepId: string, comment = `Re-run from ${stepId}.`) {
+export async function prepareRerunZapRunFromStep(runId: string, stepId: string, comment = `Re-run from ${stepId}.`) {
   const snapshot = await getRunSnapshot(runId);
   if (!snapshot.run) {
     throw new ZapRunError({
@@ -716,15 +716,23 @@ export async function rerunZapRunFromStep(runId: string, stepId: string, comment
     zapUrl: snapshot.run.zapUrl,
   });
 
-  startZapRunExecution({
-    inputs: snapshot.run.inputs,
-    live: false,
-    planned,
-    quoteUsd: snapshot.steps.reduce((sum, step) => sum + step.priceQuoteUsd, 0),
-    runId,
-    zap,
-  });
-  return getZapRunStatus(runId);
+  return {
+    execution: {
+      inputs: snapshot.run.inputs,
+      live: false,
+      planned,
+      quoteUsd: snapshot.steps.reduce((sum, step) => sum + step.priceQuoteUsd, 0),
+      runId,
+      zap,
+    },
+    snapshot: await getZapRunStatus(runId),
+  };
+}
+
+export async function rerunZapRunFromStep(runId: string, stepId: string, comment = `Re-run from ${stepId}.`) {
+  const prepared = await prepareRerunZapRunFromStep(runId, stepId, comment);
+  startZapRunExecution(prepared.execution);
+  return prepared.snapshot;
 }
 
 export async function buildGenerationRequest(
