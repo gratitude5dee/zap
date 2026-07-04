@@ -10,7 +10,7 @@ function runZap(cwd: string, args: string[]) {
   return execFileSync(process.execPath, [cli, ...args], {
     cwd,
     encoding: "utf8",
-    env: { ...process.env, ZAP_PROVIDER: "mock" },
+    env: { ...process.env, CONVEX_URL: "", NEXT_PUBLIC_CONVEX_URL: "", ZAP_PROVIDER: "mock" },
   });
 }
 
@@ -41,6 +41,10 @@ describe("zap CLI acceptance", () => {
 
       const status = JSON.parse(runZap(project, ["status", run.runId, "--json"]));
       expect(status.runId).toBe(run.runId);
+
+      const improve = JSON.parse(runZap(project, ["improve", "my-test", "--json"]));
+      expect(improve.evidence.doneRuns).toBeGreaterThanOrEqual(1);
+      expect(improve.evidence.sources.localRuns).toBeGreaterThanOrEqual(1);
 
       const skills = JSON.parse(runZap(project, ["skills", "check", "--json"]));
       expect(skills.ok).toBe(true);

@@ -11,7 +11,7 @@ The publishable package is `@wzrdtech/zap`; it exposes the `zap` binary.
 - `zap run <Zap.md>` performs a mock run by default.
 - `zap run <Zap.md> --live` plans live provider spend.
 - `zap status [runId]` reads local `.zap/runs`.
-- `zap improve <slug|Zap.md>` proposes a version bump from local run traces and feedback.
+- `zap improve <slug|Zap.md>` proposes a version bump from Convex run/feedback evidence when `CONVEX_URL` is configured, plus local `.zap` traces as offline evidence.
 - `zap docs [topic]` prints bundled docs.
 - `zap skills` generates `skills/skills-manifest.json`.
 - `zap doctor` checks Node, project files, Convex, Upstash, Supabase, and optional HyperFrames.

@@ -27,6 +27,7 @@
     "README.md"
   ],
   "dependencies": {
+    "convex": "^1.28.0",
     "yaml": "^2.8.1"
   },
   "engines": {

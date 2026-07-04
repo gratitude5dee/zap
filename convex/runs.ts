@@ -86,6 +86,35 @@ export const listRecent = query({
   },
 });
 
+export const listByZap = query({
+  args: { limit: v.optional(v.number()), zapSlug: v.string() },
+  returns: v.array(v.any()),
+  handler: async (ctx, args) => {
+    const runs = await ctx.db
+      .query("runs")
+      .withIndex("by_zap", (q: any) => q.eq("zapSlug", args.zapSlug))
+      .take(Math.min(args.limit ?? 20, 50));
+
+    return await Promise.all(
+      runs.map(async (run: any) => {
+        const steps = await ctx.db
+          .query("steps")
+          .withIndex("by_run", (q: any) => q.eq("runId", run.runId))
+          .collect();
+        const assets = await ctx.db
+          .query("assets")
+          .withIndex("by_run", (q: any) => q.eq("runId", run.runId))
+          .collect();
+        const feedback = await ctx.db
+          .query("feedback")
+          .withIndex("by_run", (q: any) => q.eq("runId", run.runId))
+          .collect();
+        return { assets, feedback, run, steps };
+      }),
+    );
+  },
+});
+
 export const getAsset = query({
   args: { assetId: v.id("assets") },
   returns: v.union(v.any(), v.null()),
