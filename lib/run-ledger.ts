@@ -189,7 +189,8 @@ export async function addFeedbackLedger(args: {
     createdAt: Date.now(),
     ...args,
   };
-  const convexFeedbackId = await mutate(addFeedbackMutation, feedback) as string | undefined;
+  const convexFeedback = { createdAt: feedback.createdAt, ...args };
+  const convexFeedbackId = await mutate(addFeedbackMutation, convexFeedback) as string | undefined;
   const id = convexFeedbackId ?? feedbackId;
   memoryFeedback.set(id, { ...feedback, _id: id });
   return id;
