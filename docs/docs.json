@@ -3,6 +3,8 @@
   "theme": "mint",
   "name": "Zap",
   "description": "Agent-first generative content recipes on Eve, Convex, Upstash, and Vercel.",
+  "logo": "/zaplogo.png",
+  "favicon": "/zaplogo.png",
   "colors": {
     "primary": "#2287ff"
   },
