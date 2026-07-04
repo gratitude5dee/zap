@@ -12,6 +12,10 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  if (isPollDrain(request.nextUrl.pathname) && hasCronSecret(request)) {
+    return NextResponse.next();
+  }
+
   if (isLocal(request) || hasBasicAuth(request)) {
     return NextResponse.next();
   }
@@ -32,6 +36,15 @@ function isLocal(request: NextRequest) {
 
 function isProviderWebhook(pathname: string) {
   return pathname === "/api/providers/fal/webhook" || pathname === "/api/providers/gmi/webhook";
+}
+
+function isPollDrain(pathname: string) {
+  return pathname === "/api/providers/poll/drain";
+}
+
+function hasCronSecret(request: NextRequest) {
+  const expected = process.env.ZAP_POLL_DRAIN_SECRET;
+  return Boolean(expected) && request.headers.get("x-zap-cron-secret") === expected;
 }
 
 function hasBasicAuth(request: NextRequest) {
