@@ -4,6 +4,7 @@ import path from "node:path";
 import { put } from "@vercel/blob";
 
 export async function persistRemoteAsset(url: string, key: string) {
+  assertAllowedRemoteAssetUrl(url);
   if (!process.env.BLOB_READ_WRITE_TOKEN) {
     return { storageKey: key, url };
   }
@@ -73,4 +74,43 @@ function sanitizeStorageKey(key: string) {
     .filter(Boolean)
     .map((segment) => segment.replace(/[^A-Za-z0-9_.-]/g, "_"))
     .join("/");
+}
+
+function assertAllowedRemoteAssetUrl(rawUrl: string) {
+  const parsed = new URL(rawUrl);
+  if (parsed.protocol !== "https:") {
+    throw new Error("Provider asset URLs must use https.");
+  }
+  if (isPrivateHost(parsed.hostname)) {
+    throw new Error("Provider asset URL host is not allowed.");
+  }
+  const allowlist = (process.env.ZAP_OUTPUT_HOST_ALLOWLIST ?? [
+    "fal.media",
+    "fal.run",
+    "gmicloud.ai",
+    "runware.ai",
+    "prodia.com",
+    "vercel-storage.com",
+    "public.blob.vercel-storage.com",
+  ].join(","))
+    .split(",")
+    .map((host) => host.trim().toLowerCase())
+    .filter(Boolean);
+  if (!allowlist.some((host) => parsed.hostname.toLowerCase() === host || parsed.hostname.toLowerCase().endsWith(`.${host}`))) {
+    throw new Error(`Provider asset host ${parsed.hostname} is not in ZAP_OUTPUT_HOST_ALLOWLIST.`);
+  }
+}
+
+function isPrivateHost(hostname: string) {
+  const lower = hostname.toLowerCase();
+  if (lower === "localhost" || lower.endsWith(".localhost")) return true;
+  const parts = lower.split(".").map(Number);
+  if (parts.length !== 4 || parts.some((part) => Number.isNaN(part))) return false;
+  const [a, b] = parts;
+  return a === 10
+    || a === 127
+    || (a === 172 && b >= 16 && b <= 31)
+    || (a === 192 && b === 168)
+    || (a === 169 && b === 254)
+    || a === 0;
 }

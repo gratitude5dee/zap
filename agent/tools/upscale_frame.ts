@@ -7,7 +7,7 @@ export default defineTool({
   inputSchema: z.object({
     imageUrl: z.string().url(),
     model: z.string().default("seedance-2-0-260128-upscale"),
-    provider: z.enum(["gmi", "fal"]).optional(),
+    provider: z.enum(["gmi", "fal", "prodia", "runware"]).optional(),
     runId: z.string(),
     stepId: z.string(),
   }),
@@ -17,7 +17,7 @@ export default defineTool({
       inputs: { imageUrl: input.imageUrl },
       model: input.model,
       prompt: "Upscale this frame to 4K while preserving identity and composition.",
-      provider: input.provider,
+      provider: input.provider ?? "gmi",
       runId: input.runId,
       stepId: input.stepId,
     });

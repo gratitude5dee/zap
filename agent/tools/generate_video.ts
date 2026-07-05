@@ -10,7 +10,7 @@ export default defineTool({
     kind: z.enum(["video.gen", "video.extend"]).default("video.gen"),
     model: z.string().default("seedance-2-0-260128"),
     prompt: z.string().min(1),
-    provider: z.enum(["gmi", "fal"]).optional(),
+    provider: z.enum(["gmi", "fal", "prodia", "runware"]).optional(),
     runId: z.string(),
     stepId: z.string(),
   }),
@@ -25,7 +25,7 @@ export default defineTool({
       inputs: { imageUrl: input.imageUrl },
       model: input.model,
       prompt: input.prompt,
-      provider: input.provider,
+      provider: input.provider ?? "gmi",
       runId: input.runId,
       stepId: input.stepId,
     });

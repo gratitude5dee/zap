@@ -13,4 +13,4 @@ Use this skill when invoking or extending the Zap CLI.
 - `zap docs [topic]`
 - `zap skills`
 
-CLI runs are mock by default. Use `--live` only after budget and provider-key checks pass.
+CLI runs are plan-only by default. Use `--live` only after budget and provider-key checks pass.

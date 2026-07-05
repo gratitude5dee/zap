@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { liveRunAuthError } from "../lib/zap-run-auth";
 
 describe("Zap run auth policy", () => {
-  it("allows public mock runs", () => {
+  it("allows public plan-only runs", () => {
     expect(liveRunAuthError(false)).toBeNull();
   });
 

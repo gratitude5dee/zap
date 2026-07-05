@@ -1,0 +1,29 @@
+name: Live Smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      provider:
+        description: Cheapest provider to smoke test
+        required: true
+        type: choice
+        options: [fal, prodia, runware, gmi]
+
+jobs:
+  smoke:
+    if: ${{ vars.ZAP_LIVE_TEST == '1' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run cli -- keys test ${{ inputs.provider }} --json
+        env:
+          FAL_KEY: ${{ secrets.FAL_KEY }}
+          GMI_API_KEY: ${{ secrets.GMI_API_KEY }}
+          GMI_ORG_ID: ${{ secrets.GMI_ORG_ID }}
+          PRODIA_TOKEN: ${{ secrets.PRODIA_TOKEN }}
+          RUNWARE_KEY: ${{ secrets.RUNWARE_KEY }}

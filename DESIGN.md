@@ -47,4 +47,4 @@
 - Keep app pages calmer, denser, and more utilitarian than the landing page.
 - Do not return to cream-only pages with teal accents.
 - Do not use purple/indigo gradients, decorative icon grids, oversized bubbly cards, or centered-everything sections.
-- Public demos must visibly default to mock mode until live spend is explicit.
+- Public demos must visibly default to plan-only mode until live spend is explicit.

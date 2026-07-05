@@ -1,6 +1,6 @@
 ---
 zap: caught-by-the-cam
-version: 1
+version: 2
 description: Draft Zap for a live-broadcast fan cutaway where the uploaded person is caught by the stadium camera.
 inputs:
   image:

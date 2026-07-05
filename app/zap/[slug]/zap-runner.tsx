@@ -141,7 +141,7 @@ export function ZapRunner({ zap }: { readonly zap: PublicZapSpec }) {
             <label className="flex items-center justify-between gap-3 rounded-md border border-white/10 bg-white/[0.04] px-3 py-2">
               <span>
                 <span className="block font-medium text-sm text-white">Live providers</span>
-                <span className="text-white/45 text-xs">{live ? "Provider keys and budgets required" : "Mock outputs, zero spend"}</span>
+                <span className="text-white/45 text-xs">{live ? "Provider keys and budgets required" : "Plan only, zero spend"}</span>
               </span>
               <input
                 checked={live}
@@ -153,7 +153,7 @@ export function ZapRunner({ zap }: { readonly zap: PublicZapSpec }) {
 
             <Button className="h-11 w-full gap-2 bg-zap-cyan text-zap-ink hover:bg-white" disabled={isRunning} onClick={handleSubmit}>
               <TerminalSquare className="size-4" />
-              {isRunning ? "Running Zap..." : live ? "Run Live Zap" : "Run Mock Zap"}
+              {isRunning ? "Running Zap..." : live ? "Run Live Zap" : "Plan Zap"}
             </Button>
           </div>
         </aside>

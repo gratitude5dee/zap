@@ -2,26 +2,26 @@
 
 Zap separates recipe planning from provider execution.
 
-Provider priority for v1:
+Production providers for v0.2.0:
 
-- `mock`: deterministic zero-cost outputs for docs, tests, and unauthenticated demos.
-- `gmi`: primary live image/video provider path.
-- `fal`: secondary live provider path.
+- `gmi`: GMI Cloud video generation through the request queue API.
+- `fal`: fal queue-backed image, video, and audio generation.
+- `prodia`: Prodia async image jobs using `/v2/job`.
+- `runware`: Runware async image jobs using `getResponse` polling.
 - Judge scoring uses AI Gateway via `AI_GATEWAY_API_KEY` and optional
   `ZAP_JUDGE_MODEL`; without a key, Zap records deterministic `heuristic`
   feedback instead of labeling the score as VLM-backed.
-- `runware`, `prodia`, `openrouter`, `ai_gateway`: BYOK-ready secret types.
 
-Provider keys are never required for mock runs:
+Provider keys are never required for plan-only runs:
 
 ```bash
-ZAP_PROVIDER=mock npx @wzrdtech/zap@0.1.0 run world-cup-entrance --json
+npx @wzrdtech/zap@0.2.0 run world-cup-entrance --json
 ```
 
 Live runs require explicit approval:
 
 ```bash
-npx @wzrdtech/zap@0.1.0 run world-cup-entrance --live --input SELFIE=./selfie.png
+npx @wzrdtech/zap@0.2.0 run world-cup-entrance --live --input SELFIE=./selfie.png
 ```
 
 Web live runs require wallet auth and user-owned provider keys stored in Supabase:
@@ -30,7 +30,7 @@ Web live runs require wallet auth and user-owned provider keys stored in Supabas
 - `gmi_org_id`
 - `fal_key`
 - `runware_key`
-- `prodia_key`
+- `prodia_token`
 - `openrouter_key`
 - `ai_gateway_api_key`
 

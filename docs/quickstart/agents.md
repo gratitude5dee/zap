@@ -15,8 +15,8 @@ https://zap.wzrd.tech/api/skills/zap?format=json
 
 ```text
 Use the Zap skills from https://zap.wzrd.tech/api/skills and validate with:
-npx @wzrdtech/zap@0.1.0 validate
-npx @wzrdtech/zap@0.1.0 run agent/skills/zap-world-cup-entrance/Zap.md --json
+npx @wzrdtech/zap@0.2.0 validate
+npx @wzrdtech/zap@0.2.0 run agent/skills/zap-world-cup-entrance/Zap.md --json
 ```
 
 ## Claude Code
@@ -30,7 +30,7 @@ Run zap validate and zap lint before committing.
 
 ```text
 Use Zap.md frontmatter as the source of truth. Keep prompt files under the same skill directory.
-Default to provider: mock until the user asks for live spend.
+Default to plan-only runs until the user asks for live spend.
 ```
 
 ## OpenClaw and Hermes

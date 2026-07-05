@@ -10,7 +10,7 @@ const requestSchema = z.object({
   extendCount: z.number().int().min(0).max(64).default(0),
   inputs: z.record(z.string(), z.unknown()).default({}),
   live: z.boolean().default(false),
-  provider: z.string().optional(),
+  provider: z.enum(["gmi", "fal", "prodia", "runware"]).optional(),
   slug: z.string(),
 });
 

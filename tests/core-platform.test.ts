@@ -1,14 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { mockAdapter } from "../lib/providers/mock";
 import { planZapRun } from "../packages/core/src/planner";
 import { parseZapMarkdown } from "../packages/core/src/schema";
+import { listProviderAdapters } from "@wzrdtech/providers";
 
 describe("platform core", () => {
   it("parses HyperFrames stitch settings", () => {
     const zap = parseZapMarkdown(`---
 zap: hyperframes-demo
-version: 1
+version: 2
 description: demo
+inputs:
+  initial_gen: { type: video, required: false }
 budget:
   estimate_usd: 0
   cap_usd: 1
@@ -29,7 +31,7 @@ steps:
   it("rejects duplicate step ids", () => {
     expect(() => parseZapMarkdown(`---
 zap: duplicate-demo
-version: 1
+version: 2
 description: demo
 budget:
   estimate_usd: 0
@@ -46,7 +48,7 @@ steps:
   it("plans repeated extension steps within max", () => {
     const zap = parseZapMarkdown(`---
 zap: repeat-demo
-version: 1
+version: 2
 description: demo
 budget:
   estimate_usd: 0
@@ -54,6 +56,8 @@ budget:
 steps:
   - id: extend
     kind: video.extend
+    duration_s: 5
+    model: seedance-2-0-260128
     repeat:
       max: 2
   - id: stitch
@@ -65,45 +69,7 @@ steps:
     expect(plan.steps.map((step) => step.id)).toEqual(["extend_1", "extend_2", "stitch"]);
   });
 
-  it("returns deterministic mock outputs", async () => {
-    const submitted = await mockAdapter.submit({
-      capability: "video.gen",
-      inputs: {},
-      model: "mock-video",
-      prompt: "hello",
-      provider: "mock",
-      runId: "run_test",
-      stepId: "initial_gen",
-    }, "idem");
-    const result = await mockAdapter.poll(submitted.requestId);
-
-    expect(submitted.provider).toBe("mock");
-    expect(result.status).toBe("done");
-    expect(result.actualUsd).toBe(0);
-    expect(result.outputUrl).toContain(submitted.requestId);
-  });
-
-  it("uses mock output extensions that match the capability", async () => {
-    const image = await mockAdapter.submit({
-      capability: "image.edit",
-      inputs: {},
-      model: "mock-image",
-      prompt: "hello",
-      provider: "mock",
-      runId: "run_test",
-      stepId: "sketch",
-    }, "idem-image");
-    const audio = await mockAdapter.submit({
-      capability: "audio.sfx",
-      inputs: {},
-      model: "mock-audio",
-      prompt: "hello",
-      provider: "mock",
-      runId: "run_test",
-      stepId: "sound",
-    }, "idem-audio");
-
-    await expect(mockAdapter.poll(image.requestId)).resolves.toMatchObject({ outputUrl: expect.stringMatching(/\.png$/) });
-    await expect(mockAdapter.poll(audio.requestId)).resolves.toMatchObject({ outputUrl: expect.stringMatching(/\.wav$/) });
+  it("exports only live BYOK provider adapters", () => {
+    expect(listProviderAdapters().map((adapter) => adapter.id).sort()).toEqual(["fal", "gmi", "prodia", "runware"]);
   });
 });

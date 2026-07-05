@@ -1,6 +1,6 @@
 {
   "name": "@wzrdtech/agent",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": false,
   "description": "Agent prompts and helper utilities for authoring and running Zap recipes.",
   "type": "module",
@@ -9,7 +9,7 @@
     "./instructions": "./src/instructions.ts"
   },
   "dependencies": {
-    "@wzrdtech/core": "0.1.0"
+    "@wzrdtech/core": "0.2.0"
   },
   "engines": {
     "node": "24.x"

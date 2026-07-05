@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-07-03T10:06:29.230Z",
+  "generatedAt": "2026-07-05T02:25:43.627Z",
   "skills": [
     {
       "fileCount": 1,
-      "hash": "3846dfcbe4b58071eb085168b11b134858e8fb97ae7cd370f5d1ef6847e0a427",
+      "hash": "67f0b987b0e2487c9f41b226d0de98ef3d2547d2e51b0c05445b2c82f65717fc",
       "path": "skills/zap",
       "skill": "zap"
     },
@@ -15,19 +15,19 @@
     },
     {
       "fileCount": 1,
-      "hash": "26c9fc315ec5368bfd6c82f302960a35e31e85c5b6ab027a0fdee6a7ca42ec77",
+      "hash": "3944b2e03f81d72b5179b9c690440e7a697de252688aae35a307d37f4908660e",
       "path": "skills/zap-cli",
       "skill": "zap-cli"
     },
     {
       "fileCount": 1,
-      "hash": "dc1599d2a24d2910367e3d3710077b2e54571b32409446cd4dcc9bafb68e707f",
+      "hash": "b512fdeabcb9c662e8586ffd6083c0df81c08d26017aeed2cfe6bf1bc5841a69",
       "path": "skills/zap-providers",
       "skill": "zap-providers"
     },
     {
       "fileCount": 1,
-      "hash": "03b9fbd60634e61ead3b082cc5d65a40ff8b8dd5e5e45cfff53f8f88a5b88619",
+      "hash": "caddc3669db2ba93142a106311ae0de3d3b1aaf94a185e4df50415c09a579aea",
       "path": "skills/zap-webapp",
       "skill": "zap-webapp"
     }

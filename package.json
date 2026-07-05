@@ -1,6 +1,6 @@
 {
   "name": "zap-platform",
-  "version": "0.0.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Zap: one-click generative content recipes on Eve, Next.js, Convex, Upstash, GMI Cloud, and fal.",
   "type": "module",

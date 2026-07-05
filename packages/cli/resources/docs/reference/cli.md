@@ -8,8 +8,11 @@ The publishable package is `@wzrdtech/zap`; it exposes the `zap` binary.
 - `zap new <slug>` scaffolds `agent/skills/zap-<slug>`.
 - `zap validate [Zap.md]` validates recipe frontmatter and variable references.
 - `zap lint [Zap.md]` checks policy warnings such as live provider defaults.
-- `zap run <Zap.md>` performs a mock run by default.
-- `zap run <Zap.md> --live` plans live provider spend.
+- `zap run <Zap.md>` performs a zero-spend plan by default.
+- `zap run <Zap.md> --live` submits live provider work with locally stored BYOK keys.
+- `zap keys add/list/test/remove/sync` manages encrypted provider credentials.
+- `zap deploy` publishes a Zap bundle to the hosted API.
+- `zap inspect` and `zap embed` expose non-interactive recipe and embed metadata.
 - `zap status [runId]` reads local `.zap/runs`.
 - `zap improve <slug|Zap.md>` proposes a version bump from Convex run/feedback evidence when `CONVEX_URL` is configured, plus local `.zap` traces as offline evidence.
 - `zap docs [topic]` prints bundled docs.
@@ -18,4 +21,4 @@ The publishable package is `@wzrdtech/zap`; it exposes the `zap` binary.
 
 ## Safety Defaults
 
-CLI runs are mock unless `--live` is provided. Telemetry is off unless the user explicitly runs `zap telemetry on`.
+CLI runs are plan-only unless `--live` is provided. Telemetry is off unless the user explicitly runs `zap telemetry on`.

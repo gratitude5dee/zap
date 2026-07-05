@@ -68,12 +68,12 @@ export async function prepareExtendFirstFrame({
   }
 
   const parents = parentStepId ? [parentStepId] : [];
-  if (shouldUseMockManifest([previousVideoUrl])) {
+  if (shouldUseFixtureManifest([previousVideoUrl])) {
     return persistJsonManifest(
       runId,
       step,
       {
-        engine: "mock",
+        engine: "fixture",
         from: "prev.last_frame",
         source: previousVideoUrl,
         stepId: step.id,
@@ -133,9 +133,9 @@ async function stitchVideos({
     });
   }
 
-  if (shouldUseMockManifest(inputUrls)) {
+  if (shouldUseFixtureManifest(inputUrls)) {
     return persistJsonManifest(runId, step, {
-      engine: "mock",
+      engine: "fixture",
       inputs: inputUrls,
       output: "Zap.mp4",
       stepId: step.id,
@@ -222,9 +222,9 @@ async function extractKeyframes({
     });
   }
 
-  if (shouldUseMockManifest(inputUrls)) {
+  if (shouldUseFixtureManifest(inputUrls)) {
     return persistJsonManifest(runId, step, {
-      engine: "mock",
+      engine: "fixture",
       frames: inputUrls,
       stepId: step.id,
     });
@@ -372,8 +372,8 @@ function localMediaError(message: string) {
   });
 }
 
-function shouldUseMockManifest(inputUrls: string[]) {
-  return process.env.ZAP_PROVIDER === "mock" || inputUrls.every((url) => url.startsWith("data:application/json") || url.startsWith("mock://"));
+function shouldUseFixtureManifest(inputUrls: string[]) {
+  return inputUrls.every((url) => url.startsWith("data:application/json") || url.startsWith("mock://"));
 }
 
 function extensionForMime(mime: string) {

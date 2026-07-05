@@ -3,11 +3,11 @@ import { CodeWindow, Eyebrow, PageShell, SiteNav } from "@/app/_components/zap-c
 
 const agents = ["Codex", "Claude Code", "Cursor", "OpenClaw", "Hermes"];
 
-const install = `npx @wzrdtech/zap@0.1.0 init my-zap-app
+const install = `npx @wzrdtech/zap@0.2.0 init my-zap-app
 cd my-zap-app
-npx @wzrdtech/zap@0.1.0 new creator-intro
-npx @wzrdtech/zap@0.1.0 validate
-npx @wzrdtech/zap@0.1.0 run agent/skills/zap-creator-intro/Zap.md --json`;
+npx @wzrdtech/zap@0.2.0 new creator-intro
+npx @wzrdtech/zap@0.2.0 validate
+npx @wzrdtech/zap@0.2.0 run agent/skills/zap-creator-intro/Zap.md --json`;
 
 export default function QuickstartPage() {
   return (
@@ -23,7 +23,7 @@ export default function QuickstartPage() {
             </Eyebrow>
             <h1 className="mt-4 text-balance font-semibold text-5xl leading-none text-white sm:text-6xl">Point your agent at Zap.</h1>
             <p className="mt-5 max-w-3xl text-pretty leading-7 text-white/62">
-              Give the agent a URL, repo, or bundled skill. It can fetch the framework rules, create recipes, validate the spec, and run mock output before any live spend.
+              Give the agent a URL, repo, or bundled skill. It can fetch the framework rules, create recipes, validate the spec, and plan spend before any live call.
             </p>
           </div>
           <CodeWindow label="install" status="dry-run first">
@@ -40,7 +40,7 @@ export default function QuickstartPage() {
               <div>
                 <h2 className="font-semibold text-2xl leading-tight text-white">Agent instruction</h2>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-white/58">
-                  Read `skills/zap/SKILL.md`, then use `skills/zap-authoring/SKILL.md` before editing any `Zap.md` recipe. Keep provider defaults mock unless the user approves live spend.
+                  Read `skills/zap/SKILL.md`, then use `skills/zap-authoring/SKILL.md` before editing any `Zap.md` recipe. Keep runs plan-only unless the user approves live spend.
                 </p>
               </div>
             </div>

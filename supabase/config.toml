@@ -1,0 +1,7 @@
+project_id = "ixkkrousepsiorwlaycp"
+
+[functions.zap-user-secrets]
+verify_jwt = false
+
+[functions.zap-wallet-proof]
+verify_jwt = false

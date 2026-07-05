@@ -1,6 +1,6 @@
 {
   "name": "@wzrdtech/zap",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": false,
   "description": "Agent-first CLI for creating, validating, and running Zap recipes.",
   "license": "MIT",
@@ -27,6 +27,8 @@
     "README.md"
   ],
   "dependencies": {
+    "@wzrdtech/core": "0.2.0",
+    "@wzrdtech/providers": "0.2.0",
     "convex": "^1.28.0",
     "yaml": "^2.8.1"
   },

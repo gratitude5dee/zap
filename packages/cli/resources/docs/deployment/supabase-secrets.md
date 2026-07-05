@@ -50,7 +50,7 @@ ZAP_WALLET_TOKEN_TTL_SECONDS=604800
 - `gmi_org_id`
 - `fal_key`
 - `runware_key`
-- `prodia_key`
+- `prodia_token`
 - `openrouter_key`
 - `ai_gateway_api_key`
 

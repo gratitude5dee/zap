@@ -1,4 +1,4 @@
-import type { ZapSpec, ZapStep } from "./schema";
+import type { ZapSpec, ZapStep } from "./schema.ts";
 
 export type PlannedZapStep = ZapStep & {
   originalId: string;

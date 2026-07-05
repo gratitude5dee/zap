@@ -15,11 +15,11 @@ type Topic = {
 };
 
 const topics: Topic[] = [
-  { description: "Start a project and run a zero-cost mock Zap.", file: "quickstart.md", id: "quickstart", title: "Quickstart" },
+  { description: "Start a project and run a zero-cost Zap plan.", file: "quickstart.md", id: "quickstart", title: "Quickstart" },
   { description: "Codex, Claude Code, Cursor, OpenClaw, Hermes, and skill download URLs.", file: "quickstart/agents.md", id: "agents", title: "Agent Quickstart" },
   { description: "Zap.md frontmatter fields and validation rules.", file: "zap-spec.md", id: "zap-spec", title: "Zap Spec" },
   { description: "Generation step kinds, dependencies, and HyperFrames stitch escape hatch.", file: "steps.md", id: "steps", title: "Steps" },
-  { description: "Mock, GMI, fal, and BYOK provider key behavior.", file: "providers.md", id: "providers", title: "Providers" },
+  { description: "GMI, fal, Prodia, Runware, and BYOK provider key behavior.", file: "providers.md", id: "providers", title: "Providers" },
   { description: "Estimate, cap, and live-run approval rules.", file: "budget.md", id: "budget", title: "Budget" },
   { description: "How coding agents should read, edit, and run Zap skills.", file: "agent.md", id: "agent", title: "Agent Framework" },
   { description: "Creator, gallery, studio, settings, and run-status surfaces.", file: "webapp.md", id: "webapp", title: "Web App" },
@@ -48,7 +48,7 @@ export default function DocsPage() {
             </Eyebrow>
             <h1 className="mt-4 text-balance font-semibold text-5xl leading-none text-white sm:text-6xl">Zap Docs</h1>
             <p className="mt-5 max-w-3xl text-pretty leading-7 text-white/62">
-              The web docs and `zap docs` CLI topics share the same markdown source. Agents can read these topics offline, then validate each recipe with mock runs before live provider spend.
+              The web docs and `zap docs` CLI topics share the same markdown source. Agents can read these topics offline, then validate each recipe with plan-only runs before live provider spend.
             </p>
           </div>
           <div className="rounded-md border border-white/10 bg-black/25 p-5">

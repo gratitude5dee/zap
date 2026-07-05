@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { deleteZapSecret, getBearerToken, getSupabasePublicConfig, listZapSecrets, upsertZapSecret } from "@/lib/supabase/server";
+import { getProviderAdapter } from "@wzrdtech/providers";
+import { deleteZapSecret, getBearerToken, getSupabasePublicConfig, listZapSecrets, revealZapSecretsForProvider, upsertZapSecret } from "@/lib/supabase/server";
 import { isZapSecretType, zapSecretTypes } from "@/lib/supabase/secrets";
 
 const upsertSchema = z.object({
@@ -10,6 +11,11 @@ const upsertSchema = z.object({
 
 const deleteSchema = z.object({
   secretType: z.string(),
+});
+
+const validateSchema = z.object({
+  provider: z.enum(["gmi", "fal", "prodia", "runware"]),
+  secrets: z.record(z.string(), z.string()).optional(),
 });
 
 export async function GET(request: Request) {
@@ -61,6 +67,18 @@ export async function DELETE(request: Request) {
   }
   try {
     return NextResponse.json(await deleteZapSecret(token, input.secretType));
+  } catch (error) {
+    return secretError(error);
+  }
+}
+
+export async function POST(request: Request) {
+  const input = validateSchema.parse(await request.json());
+  const token = getBearerToken(request);
+  const secrets = input.secrets ?? await revealZapSecretsForProvider(input.provider, token);
+  try {
+    const result = await getProviderAdapter(input.provider).validateKey(secrets);
+    return NextResponse.json(result, { status: result.ok ? 200 : 400 });
   } catch (error) {
     return secretError(error);
   }

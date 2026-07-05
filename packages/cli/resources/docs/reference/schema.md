@@ -5,13 +5,16 @@
 ```yaml
 ---
 zap: launch-trailer
-version: 1
+version: 2
 description: A short creator video.
 budget:
   estimate_usd: 0
   cap_usd: 5
 defaults:
-  provider: mock
+  provider: fal
+  models:
+    image.gen: fal-ai/flux/dev
+    video.gen: fal-ai/kling-video/v2.1/pro/image-to-video
 inputs:
   PROMPT:
     type: textarea
@@ -19,13 +22,13 @@ inputs:
 steps:
   - id: initial_frame
     kind: image.gen
-    provider: mock
-    model: mock-image
+    provider: fal
+    model: fal-ai/flux/dev
     prompt: prompts/initial-frame.md
   - id: initial_gen
     kind: video.gen
-    provider: mock
-    model: mock-video
+    provider: fal
+    model: fal-ai/kling-video/v2.1/pro/image-to-video
     inputs: [initial_frame]
     duration_s: 15
     retry:

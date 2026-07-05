@@ -5,7 +5,7 @@ import { listCapabilityManifest } from "../../lib/providers/router.js";
 export default defineTool({
   description: "List provider/model capabilities and pricing units available to Zap planning.",
   inputSchema: z.object({
-    includeMock: z.boolean().default(false),
+    includeMock: z.boolean().default(false).describe("Deprecated; production capabilities never include mock providers."),
   }),
   async execute({ includeMock }) {
     return {

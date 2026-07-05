@@ -10,7 +10,7 @@ function runZap(cwd: string, args: string[]) {
   return execFileSync(process.execPath, [cli, ...args], {
     cwd,
     encoding: "utf8",
-    env: { ...process.env, CONVEX_URL: "", NEXT_PUBLIC_CONVEX_URL: "", ZAP_PROVIDER: "mock" },
+    env: { ...process.env, CONVEX_URL: "", NEXT_PUBLIC_CONVEX_URL: "" },
   });
 }
 
@@ -35,22 +35,21 @@ describe("zap CLI acceptance", () => {
         "PROMPT=A bright launch bumper",
         "--json",
       ]));
-      expect(run.mode).toBe("mock");
-      expect(run.status).toBe("done");
-      expect(run.zapUrl).toContain("mock://zap/my-test/");
+      expect(run.mode).toBe("plan");
+      expect(run.status).toBe("planned");
+      expect(run.zapUrl).toBeUndefined();
 
       const status = JSON.parse(runZap(project, ["status", run.runId, "--json"]));
       expect(status.runId).toBe(run.runId);
 
       const improve = JSON.parse(runZap(project, ["improve", "my-test", "--json"]));
-      expect(improve.evidence.doneRuns).toBeGreaterThanOrEqual(1);
       expect(improve.evidence.sources.localRuns).toBeGreaterThanOrEqual(1);
 
       const skills = JSON.parse(runZap(project, ["skills", "check", "--json"]));
       expect(skills.ok).toBe(true);
 
       const docs = runZap(project, ["docs", "quickstart"]);
-      expect(docs).toContain("npx @wzrdtech/zap@0.1.0 init demo --non-interactive");
+      expect(docs).toContain("npx @wzrdtech/zap@0.2.0 init demo --non-interactive");
 
       expect(runZap(project, ["docs", "zap-spec"])).toContain("# Zap Spec");
       expect(runZap(project, ["docs", "steps"])).toContain("# Steps");

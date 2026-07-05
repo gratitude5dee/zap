@@ -1,13 +1,15 @@
-import { createHash } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHash, randomBytes, scryptSync } from "node:crypto";
 import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { promises as fs } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { parseDocument, stringify } from "yaml";
+import { parseZapMarkdown, validateZapPromptTemplates } from "@wzrdtech/core/schema";
+import { defaultModelFor, getProviderAdapter } from "@wzrdtech/providers";
+import { stringify } from "yaml";
 
-const version = "0.1.0";
+const version = "0.2.0";
 const commands = [
   "init",
   "new",
@@ -21,7 +23,13 @@ const commands = [
   "docs",
   "skills",
   "doctor",
+  "embed",
   "info",
+  "inspect",
+  "keys",
+  "login",
+  "logout",
+  "deploy",
   "upgrade",
   "improve",
   "feedback",
@@ -92,8 +100,26 @@ async function main(argv) {
     case "doctor":
       await doctorCommand(flags);
       break;
+    case "embed":
+      await embedCommand(args.slice(1), flags);
+      break;
     case "info":
       await infoCommand(flags);
+      break;
+    case "inspect":
+      await inspectCommand(args.slice(1), flags);
+      break;
+    case "keys":
+      await keysCommand(args.slice(1), flags);
+      break;
+    case "login":
+      await loginCommand(flags);
+      break;
+    case "logout":
+      await logoutCommand(flags);
+      break;
+    case "deploy":
+      await deployCommand(args.slice(1), flags);
       break;
     case "upgrade":
       await upgradeCommand(flags);
@@ -138,12 +164,11 @@ async function initCommand(args, flags) {
     "# Zap Agent Project",
     "",
     "Use `zap new`, `zap validate`, `zap lint`, and `zap run --json` before shipping recipes.",
-    "Mock mode is the default. Use `--live` only after provider keys and budget approval are present.",
+    "`zap run` plans spend without provider calls. Use `--live` only after provider keys and budget approval are present.",
     "",
   ].join("\n"));
   await writeNewFile(path.join(root, ".gitignore"), ".env*\n!.env.example\n.zap/runs\nnode_modules\n");
   await writeNewFile(path.join(root, ".env.example"), [
-    "ZAP_PROVIDER=mock",
     "UPSTASH_REDIS_REST_URL=",
     "UPSTASH_REDIS_REST_TOKEN=",
     "NEXT_PUBLIC_CONVEX_URL=",
@@ -176,7 +201,13 @@ async function scaffoldRecipe(projectRoot, rawSlug, flags) {
     "---",
     stringify({
       budget: { cap_usd: 5, estimate_usd: 0 },
-      defaults: { provider: "mock" },
+      defaults: {
+        models: {
+          "image.gen": "fal-ai/flux/dev",
+          "video.gen": "fal-ai/kling-video/v2.1/pro/image-to-video",
+        },
+        provider: "fal",
+      },
       description: `A one-click ${titleize(slug)} content recipe.`,
       inputs: {
         PROMPT: {
@@ -191,18 +222,18 @@ async function scaffoldRecipe(projectRoot, rawSlug, flags) {
         {
           id: "initial_frame",
           kind: "image.gen",
-          model: "mock-image",
+          model: "fal-ai/flux/dev",
           prompt: "prompts/initial-frame.md",
-          provider: "mock",
+          provider: "fal",
         },
         {
           duration_s: 15,
           id: "initial_gen",
           inputs: ["initial_frame"],
           kind: "video.gen",
-          model: "mock-video",
+          model: "fal-ai/kling-video/v2.1/pro/image-to-video",
           prompt: "prompts/initial-gen.md",
-          provider: "mock",
+          provider: "fal",
         },
         {
           id: "stitch",
@@ -211,7 +242,7 @@ async function scaffoldRecipe(projectRoot, rawSlug, flags) {
           stitch: { engine: "auto", format: "mp4", quality: "standard" },
         },
       ],
-      version: 1,
+      version: 2,
       zap: slug,
     }).trim(),
     "---",
@@ -261,37 +292,162 @@ async function runCommand(args, flags) {
   if (!file) throw new Error("Usage: zap run <slug|Zap.md> [--input KEY=VALUE] [--live] [--json]");
   const spec = await parseZapFile(file);
   validateSpec(spec);
-  const inputs = withMockInputDefaults(spec, parseInputFlags(flags.input), Boolean(flags.live));
+  const inputs = withPlanInputDefaults(spec, parseInputFlags(flags.input), Boolean(flags.live));
   if (flags.live) validateRequiredInputs(spec, inputs);
   const extendCount = Number(flags.extend ?? spec.steps.find((step) => step.kind === "video.extend")?.repeat?.default ?? 0);
   const steps = expandSteps(spec, extendCount);
-  const quoteUsd = flags.live ? estimateUsd(steps) : 0;
+  const quoteUsd = estimateUsd(spec, steps);
   if (quoteUsd > spec.budget.cap_usd) {
     throw new Error(`Run quote $${quoteUsd.toFixed(2)} exceeds recipe cap $${spec.budget.cap_usd}.`);
   }
   const runId = `run_${Date.now().toString(36)}_${createHash("sha1").update(file).digest("hex").slice(0, 6)}`;
-  const result = {
-    live: Boolean(flags.live),
-    message: flags.live ? "Live provider run planned. Use the web runtime to submit provider jobs." : "Mock Zap run completed.",
-    mode: flags.live ? "live" : "mock",
-    quoteUsd,
-    runId,
-    status: flags.live ? "queued" : "done",
-    steps: steps.map((step) => ({
-      kind: step.kind,
-      model: step.model ?? "local",
-      provider: flags.live ? step.provider ?? spec.defaults?.provider ?? "gmi" : "mock",
-      quoteUsd: flags.live ? quoteStep(step) : 0,
-      status: "done",
-      stepId: step.id,
-    })),
-    zap: spec.zap,
-    zapUrl: flags.live ? undefined : `mock://zap/${spec.zap}/${runId}/Zap.mp4`,
-  };
+  const result = flags.live
+    ? await runLiveZap({ file, inputs, runId, spec, steps })
+    : {
+      live: false,
+      message: "Zap plan completed. No provider work submitted.",
+      mode: "plan",
+      quoteUsd,
+      runId,
+      status: "planned",
+      steps: steps.map((step) => plannedStep(spec, step)),
+      zap: spec.zap,
+    };
   await fs.mkdir(path.join(process.cwd(), ".zap", "runs", runId), { recursive: true });
   await fs.writeFile(path.join(process.cwd(), ".zap", "runs", runId, "result.json"), JSON.stringify(result, null, 2) + "\n");
   if (flags.json) printJson(result);
   else console.log(`${result.message} ${runId}`);
+}
+
+async function runLiveZap({ file, inputs, runId, spec, steps }) {
+  const credentials = await readCredentialStore();
+  const assetUrls = new Map();
+  const runDir = path.join(process.cwd(), ".zap", "runs", runId);
+  const results = [];
+
+  for (const step of steps) {
+    if (isLocalStep(step)) {
+      const inputUrls = resolveStepInputUrls(step, inputs, assetUrls);
+      const zapUrl = inputUrls.at(-1);
+      results.push({ ...plannedStep(spec, step), assetUrl: zapUrl, status: "done" });
+      if (zapUrl) assetUrls.set(step.id, zapUrl);
+      continue;
+    }
+
+    const provider = step.provider ?? spec.defaults?.provider ?? "fal";
+    const adapter = getProviderAdapter(provider);
+    const model = step.model ?? spec.defaults?.models?.[step.kind] ?? defaultModelFor(provider, step.kind);
+    const secrets = secretsForProvider(credentials, provider);
+    const prompt = interpolate(await readPromptFile(file, step.prompt), inputs);
+    const imageUrls = resolveStepInputUrls(step, inputs, assetUrls);
+    const request = {
+      capability: step.kind,
+      durationS: step.duration_s,
+      inputs: {
+        ...inputs,
+        imageUrl: imageUrls.at(0),
+        imageUrls,
+        referenceImages: imageUrls,
+      },
+      model,
+      prompt,
+      provider,
+      runId,
+      secrets,
+      stepId: step.id,
+    };
+    const submitted = await adapter.submit(request, `zap:cli:${runId}:${step.id}`);
+    const polled = await pollProviderUntilDone(adapter, submitted.requestId, secrets);
+    if (!polled.outputUrl) throw new Error(`${provider} completed ${step.id} without an output URL.`);
+    const assetUrl = await persistCliAsset(polled.outputUrl, path.join(runDir, "assets"), step.id);
+    assetUrls.set(step.id, assetUrl);
+    results.push({
+      ...plannedStep(spec, step),
+      actualUsd: polled.actualUsd,
+      assetUrl,
+      providerRequestId: submitted.requestId,
+      status: "done",
+    });
+  }
+
+  return {
+    live: true,
+    message: "Live Zap run completed.",
+    mode: "live",
+    quoteUsd: estimateUsd(spec, steps),
+    runId,
+    status: "done",
+    steps: results,
+    zap: spec.zap,
+    zapUrl: assetUrls.get(steps.at(-1)?.id) ?? Array.from(assetUrls.values()).at(-1),
+  };
+}
+
+async function pollProviderUntilDone(adapter, requestId, secrets) {
+  const timeoutMs = Number(process.env.ZAP_CLI_POLL_TIMEOUT_MS ?? 20 * 60 * 1000);
+  const intervalMs = Number(process.env.ZAP_CLI_POLL_INTERVAL_MS ?? 5000);
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const result = await adapter.poll(requestId, secrets);
+    if (result.status === "done") return result;
+    if (result.status === "failed") throw new Error(result.error ?? `${adapter.id} request ${requestId} failed.`);
+    await sleep(intervalMs);
+  }
+  throw new Error(`${adapter.id} request ${requestId} did not finish before timeout.`);
+}
+
+async function persistCliAsset(url, dir, stepId) {
+  await fs.mkdir(dir, { recursive: true });
+  if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("data:")) return url;
+  if (url.startsWith("data:")) {
+    const match = url.match(/^data:([^;,]+);base64,(.+)$/);
+    if (!match) return url;
+    const extension = match[1].split("/").at(1)?.split("+").at(0) ?? "bin";
+    const target = path.join(dir, `${stepId}.${extension}`);
+    await fs.writeFile(target, Buffer.from(match[2], "base64"));
+    return target;
+  }
+  const response = await fetch(url);
+  if (!response.ok) return url;
+  const extension = extensionFromUrl(url);
+  const target = path.join(dir, `${stepId}.${extension}`);
+  await fs.writeFile(target, Buffer.from(await response.arrayBuffer()));
+  return target;
+}
+
+function plannedStep(spec, step) {
+  const provider = isLocalStep(step) ? "local" : step.provider ?? spec.defaults?.provider ?? "fal";
+  const model = isLocalStep(step) ? step.model ?? "local" : step.model ?? spec.defaults?.models?.[step.kind] ?? defaultModelFor(provider, step.kind);
+  return {
+    kind: step.kind,
+    model,
+    provider,
+    quoteUsd: isLocalStep(step) ? 0 : quoteStep(spec, step),
+    status: "planned",
+    stepId: step.id,
+  };
+}
+
+function resolveStepInputUrls(step, inputs, assetUrls) {
+  const refs = [...(step.inputs ?? []), ...(step.reference_images ?? [])];
+  const urls = [];
+  for (const ref of refs) {
+    if (ref.endsWith(".*")) {
+      const prefix = ref.slice(0, -2);
+      urls.push(...Array.from(assetUrls.entries()).filter(([stepId]) => stepId === prefix || stepId.startsWith(`${prefix}_`)).map(([, url]) => url));
+      continue;
+    }
+    if (ref.startsWith("user.")) {
+      const value = inputs[ref.slice("user.".length)];
+      if (typeof value === "string") urls.push(value);
+      continue;
+    }
+    const asset = assetUrls.get(ref);
+    if (asset) urls.push(asset);
+    else if (typeof inputs[ref] === "string") urls.push(inputs[ref]);
+  }
+  if (urls.length === 0 && typeof inputs.image === "string") urls.push(inputs.image);
+  return Array.from(new Set(urls.filter(Boolean)));
 }
 
 async function statusCommand(args, flags) {
@@ -395,6 +551,16 @@ async function doctorCommand(flags) {
   else checks.forEach((item) => console.log(`${item.ok ? "ok" : "warn"} ${item.name}: ${item.detail}`));
 }
 
+async function embedCommand(args, flags) {
+  const slug = args[0] ?? flags.slug;
+  if (!slug) throw new Error("Usage: zap embed <slug> [--base-url https://zap.wzrd.tech] [--json]");
+  const baseUrl = String(flags.baseUrl ?? process.env.ZAP_PUBLIC_BASE_URL ?? "https://zap.wzrd.tech").replace(/\/$/, "");
+  const iframe = `<iframe src="${baseUrl}/embed/${slug}" width="1280" height="720" loading="lazy" allow="clipboard-write; fullscreen"></iframe>`;
+  const oembed = `${baseUrl}/api/oembed?url=${encodeURIComponent(`${baseUrl}/${slug}`)}`;
+  if (flags.json) printJson({ iframe, oembed, slug });
+  else console.log(iframe);
+}
+
 async function infoCommand(flags) {
   const info = {
     cwd: process.cwd(),
@@ -406,8 +572,166 @@ async function infoCommand(flags) {
   else Object.entries(info).forEach(([key, value]) => console.log(`${key}: ${value}`));
 }
 
+async function inspectCommand(args, flags) {
+  const file = (await resolveZapFiles(args))[0];
+  if (!file) throw new Error("Usage: zap inspect <slug|Zap.md> [--json]");
+  const spec = await parseZapFile(file);
+  const extendCount = Number(flags.extend ?? spec.steps.find((step) => step.kind === "video.extend")?.repeat?.default ?? 0);
+  const steps = expandSteps(spec, extendCount);
+  const result = {
+    budget: spec.budget,
+    defaults: spec.defaults,
+    file,
+    publish: spec.publish,
+    quoteUsd: estimateUsd(spec, steps),
+    steps: steps.map((step) => plannedStep(spec, step)),
+    version: spec.version,
+    zap: spec.zap,
+  };
+  if (flags.json) printJson(result);
+  else {
+    console.log(`${result.zap} v${result.version} quote $${result.quoteUsd.toFixed(2)}`);
+    result.steps.forEach((step) => console.log(`${step.stepId} ${step.provider}/${step.model} ${step.kind} $${step.quoteUsd.toFixed(2)}`));
+  }
+}
+
+async function keysCommand(args, flags) {
+  const subcommand = args[0] ?? "list";
+  if (subcommand === "add") return keysAdd(args.slice(1), flags);
+  if (subcommand === "list") return keysList(flags);
+  if (subcommand === "remove") return keysRemove(args.slice(1), flags);
+  if (subcommand === "test") return keysTest(args.slice(1), flags);
+  if (subcommand === "sync") return keysSync(flags);
+  throw new Error("Usage: zap keys [add|list|test|remove|sync] [--json]");
+}
+
+async function keysAdd(args, flags) {
+  const provider = args[0] ?? flags.provider;
+  if (!provider) throw new Error("Usage: zap keys add <provider> <secretType> <value>");
+  const adapter = getProviderAdapter(provider);
+  const secretType = String(flags.type ?? args[1] ?? adapter.secretTypes[0]);
+  if (!adapter.secretTypes.includes(secretType)) {
+    throw new Error(`${secretType} is not valid for ${provider}. Expected ${adapter.secretTypes.join(", ")}.`);
+  }
+  const value = String(flags.value ?? args[2] ?? process.env[secretType.toUpperCase()] ?? "");
+  if (!value) throw new Error(`Secret value required for ${secretType}. Use --value or pass it as an argument.`);
+  const store = await readCredentialStore();
+  store.secrets[secretType] = {
+    ...encryptValue(value),
+    last4: value.slice(-4),
+    provider,
+    secretType,
+    updatedAt: new Date().toISOString(),
+  };
+  await writeCredentialStore(store);
+  const result = { ok: true, provider, secretType, last4: value.slice(-4) };
+  if (flags.json) printJson(result);
+  else console.log(`Saved ${provider}/${secretType} ****${value.slice(-4)}`);
+}
+
+async function keysList(flags) {
+  const store = await readCredentialStore();
+  const secrets = Object.values(store.secrets).map((entry) => ({
+    last4: entry.last4,
+    provider: entry.provider,
+    secretType: entry.secretType,
+    updatedAt: entry.updatedAt,
+  }));
+  if (flags.json) printJson({ secrets });
+  else secrets.forEach((secret) => console.log(`${secret.provider}/${secret.secretType} ****${secret.last4}`));
+}
+
+async function keysRemove(args, flags) {
+  const secretType = String(flags.type ?? args.at(-1) ?? "");
+  if (!secretType) throw new Error("Usage: zap keys remove <secretType>");
+  const store = await readCredentialStore();
+  delete store.secrets[secretType];
+  await writeCredentialStore(store);
+  if (flags.json) printJson({ ok: true, secretType });
+  else console.log(`Removed ${secretType}`);
+}
+
+async function keysTest(args, flags) {
+  const provider = args[0] ?? flags.provider;
+  const providers = provider ? [provider] : ["gmi", "fal", "prodia", "runware"];
+  const credentials = await readCredentialStore();
+  const results = [];
+  for (const id of providers) {
+    const adapter = getProviderAdapter(id);
+    results.push(await adapter.validateKey(secretsForProvider(credentials, id)));
+  }
+  if (flags.json) printJson({ results });
+  else results.forEach((result) => console.log(`${result.ok ? "ok" : "fail"} ${result.provider}${result.error ? `: ${result.error}` : ""}`));
+  if (results.some((result) => !result.ok)) process.exitCode = 1;
+}
+
+async function keysSync(flags) {
+  const auth = await readAuthStore();
+  const token = String(flags.token ?? auth.token ?? process.env.ZAP_TOKEN ?? "");
+  if (!token) throw new Error("zap keys sync requires `zap login --token ...` or ZAP_TOKEN.");
+  const apiBase = String(flags.apiUrl ?? auth.apiUrl ?? process.env.ZAP_API_URL ?? "https://zap.wzrd.tech").replace(/\/$/, "");
+  const credentials = await readCredentialStore();
+  const synced = [];
+  for (const [secretType, entry] of Object.entries(credentials.secrets)) {
+    const response = await fetch(`${apiBase}/api/secrets`, {
+      body: JSON.stringify({ secretType, value: decryptValue(entry) }),
+      headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+      method: "PUT",
+    });
+    if (!response.ok) throw new Error(`Sync failed for ${secretType}: ${await response.text()}`);
+    synced.push(secretType);
+  }
+  if (flags.json) printJson({ ok: true, synced });
+  else console.log(`Synced ${synced.length} secret(s) to ${apiBase}`);
+}
+
+async function loginCommand(flags) {
+  const token = String(flags.token ?? process.env.ZAP_TOKEN ?? "");
+  if (!token) throw new Error("Usage: zap login --token <token> [--api-url https://zap.wzrd.tech]");
+  const apiUrl = String(flags.apiUrl ?? process.env.ZAP_API_URL ?? "https://zap.wzrd.tech").replace(/\/$/, "");
+  await writeAuthStore({ apiUrl, token });
+  if (flags.json) printJson({ apiUrl, ok: true });
+  else console.log(`Logged in to ${apiUrl}`);
+}
+
+async function logoutCommand(flags) {
+  const file = path.join(await zapConfigDir(), "auth.json");
+  if (existsSync(file)) await fs.rm(file, { force: true });
+  if (flags.json) printJson({ ok: true });
+  else console.log("Logged out.");
+}
+
+async function deployCommand(args, flags) {
+  const file = (await resolveZapFiles(args))[0];
+  if (!file) throw new Error("Usage: zap deploy <slug|Zap.md> [--json]");
+  const spec = await parseZapFile(file);
+  const auth = await readAuthStore();
+  const token = String(flags.token ?? auth.token ?? process.env.ZAP_TOKEN ?? "");
+  const apiBase = String(flags.apiUrl ?? auth.apiUrl ?? process.env.ZAP_API_URL ?? "https://zap.wzrd.tech").replace(/\/$/, "");
+  const body = await bundleZapSource(file, spec);
+  body.status = flags.draft ? "draft" : "published";
+  if (!token) {
+    const dir = path.join(process.cwd(), ".zap", "deployments");
+    await fs.mkdir(dir, { recursive: true });
+    const target = path.join(dir, `${spec.zap}.json`);
+    await fs.writeFile(target, JSON.stringify(body, null, 2) + "\n");
+    if (flags.json) printJson({ file: target, ok: true, offline: true, slug: spec.zap });
+    else console.log(`Prepared offline deployment ${target}`);
+    return;
+  }
+  const response = await fetch(`${apiBase}/api/zaps/publish`, {
+    body: JSON.stringify(body),
+    headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+    method: "POST",
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload.error ?? `Deploy failed with ${response.status}.`);
+  if (flags.json) printJson(payload);
+  else console.log(`Deployed ${payload.slug ?? spec.zap} to ${apiBase}/${payload.slug ?? spec.zap}`);
+}
+
 async function upgradeCommand(flags) {
-  const message = "Upgrade checks are intentionally local in v0.1. Reinstall @wzrdtech/zap to upgrade.";
+  const message = "Upgrade checks are local in v0.2. Reinstall @wzrdtech/zap or run npm update @wzrdtech/zap to upgrade.";
   if (flags.json) printJson({ message });
   else console.log(message);
 }
@@ -484,6 +808,95 @@ async function telemetryCommand(args, flags) {
   else console.log(`Telemetry ${enabled ? "on" : "off"}`);
 }
 
+async function bundleZapSource(file, spec) {
+  const zapMd = await fs.readFile(file, "utf8");
+  const prompts = {};
+  await Promise.all((spec.steps ?? []).map(async (step) => {
+    if (!step.prompt || !(step.prompt.endsWith(".md") || step.prompt.startsWith("prompts/"))) return;
+    prompts[step.prompt] = await readPromptFile(file, step.prompt);
+  }));
+  return {
+    estimateUsd: spec.budget.estimate_usd,
+    prompts,
+    slug: spec.publish?.slug ?? spec.zap,
+    source: { prompts, zapMd },
+    tags: [],
+    version: spec.version,
+    zapMd,
+  };
+}
+
+async function zapConfigDir() {
+  const projectDir = path.join(process.cwd(), ".zap");
+  if (existsSync(path.join(process.cwd(), "package.json"))) {
+    await fs.mkdir(projectDir, { recursive: true });
+    return projectDir;
+  }
+  const homeDir = path.join(os.homedir(), ".zap");
+  await fs.mkdir(homeDir, { recursive: true });
+  return homeDir;
+}
+
+async function readCredentialStore() {
+  const file = path.join(await zapConfigDir(), "credentials.json");
+  if (!existsSync(file)) return { secrets: {}, version: 1 };
+  const parsed = JSON.parse(await fs.readFile(file, "utf8"));
+  return { secrets: parsed.secrets ?? {}, version: parsed.version ?? 1 };
+}
+
+async function writeCredentialStore(store) {
+  const dir = await zapConfigDir();
+  const file = path.join(dir, "credentials.json");
+  await fs.writeFile(file, JSON.stringify({ secrets: store.secrets ?? {}, version: 1 }, null, 2) + "\n", { mode: 0o600 });
+  await fs.chmod(file, 0o600);
+}
+
+async function readAuthStore() {
+  const file = path.join(await zapConfigDir(), "auth.json");
+  if (!existsSync(file)) return {};
+  return JSON.parse(await fs.readFile(file, "utf8"));
+}
+
+async function writeAuthStore(auth) {
+  const file = path.join(await zapConfigDir(), "auth.json");
+  await fs.writeFile(file, JSON.stringify(auth, null, 2) + "\n", { mode: 0o600 });
+  await fs.chmod(file, 0o600);
+}
+
+function encryptValue(value) {
+  const iv = randomBytes(12);
+  const cipher = createCipheriv("aes-256-gcm", localEncryptionKey(), iv);
+  const ciphertext = Buffer.concat([cipher.update(value, "utf8"), cipher.final()]);
+  return {
+    ciphertext: ciphertext.toString("base64"),
+    iv: iv.toString("base64"),
+    tag: cipher.getAuthTag().toString("base64"),
+  };
+}
+
+function decryptValue(entry) {
+  const decipher = createDecipheriv("aes-256-gcm", localEncryptionKey(), Buffer.from(entry.iv, "base64"));
+  decipher.setAuthTag(Buffer.from(entry.tag, "base64"));
+  return Buffer.concat([
+    decipher.update(Buffer.from(entry.ciphertext, "base64")),
+    decipher.final(),
+  ]).toString("utf8");
+}
+
+function localEncryptionKey() {
+  return scryptSync(`${os.userInfo().username}:${os.hostname()}`, "zap-cli-credentials-v1", 32);
+}
+
+function secretsForProvider(store, provider) {
+  const adapter = getProviderAdapter(provider);
+  const secrets = {};
+  for (const secretType of adapter.secretTypes) {
+    const entry = store.secrets[secretType];
+    if (entry) secrets[secretType] = decryptValue(entry);
+  }
+  return secrets;
+}
+
 function parseArgs(argv) {
   const flags = {};
   const args = [];
@@ -544,27 +957,13 @@ function resolveZapFile(entry) {
 
 async function parseZapFile(file) {
   const content = await fs.readFile(file, "utf8");
-  const match = content.match(/^---\n([\s\S]*?)\n---/);
-  if (!match) throw new Error(`${file} is missing YAML frontmatter.`);
-  const parsed = parseDocument(match[1]).toJS();
-  return parsed;
+  const spec = parseZapMarkdown(content);
+  validateZapPromptTemplates(spec, await readPromptContents(file, spec));
+  return spec;
 }
 
 function validateSpec(spec) {
-  const required = ["zap", "version", "description", "budget", "steps"];
-  for (const key of required) {
-    if (spec[key] === undefined) throw new Error(`Zap is missing required field ${key}.`);
-  }
-  if (!Array.isArray(spec.steps) || spec.steps.length === 0) throw new Error("Zap must include at least one step.");
-  const inputNames = new Set(Object.keys(spec.inputs ?? {}));
-  const stepIds = new Set();
   for (const step of spec.steps) {
-    if (!step.id || !step.kind) throw new Error("Every step needs id and kind.");
-    if (stepIds.has(step.id)) throw new Error(`Duplicate step id ${step.id}.`);
-    stepIds.add(step.id);
-    for (const variable of String(step.prompt ?? "").matchAll(/\{([A-Z0-9_]+)\}/g)) {
-      if (!inputNames.has(variable[1])) throw new Error(`Step ${step.id} references undeclared input {${variable[1]}}.`);
-    }
     if (step.kind === "stitch" && step.stitch?.engine === "hyperframes" && !existsSync(path.join(process.cwd(), "DESIGN.md"))) {
       throw new Error("HyperFrames stitch requires a DESIGN.md visual identity.");
     }
@@ -591,12 +990,12 @@ function parseInputFlags(value) {
   return inputs;
 }
 
-function withMockInputDefaults(spec, inputs, live) {
+function withPlanInputDefaults(spec, inputs, live) {
   if (live) return inputs;
   const next = { ...inputs };
   for (const [name, input] of Object.entries(spec.inputs ?? {})) {
     if (input.required && next[name] === undefined) {
-      next[name] = input.type === "image" ? `mock://input/${name}` : `mock-${name.toLowerCase()}`;
+      next[name] = input.type === "image" ? `https://example.com/${name}.png` : `example-${name.toLowerCase()}`;
     }
   }
   return next;
@@ -604,8 +1003,8 @@ function withMockInputDefaults(spec, inputs, live) {
 
 function lintSpec(spec) {
   const warnings = [];
-  if (spec.defaults?.provider !== "mock" && !process.env.ZAP_LINT_ALLOW_LIVE_DEFAULT) {
-    warnings.push("defaults.provider is live; mock is safer for published templates.");
+  if (!["gmi", "fal", "prodia", "runware"].includes(spec.defaults?.provider)) {
+    warnings.push("defaults.provider must be one of gmi, fal, prodia, or runware.");
   }
   if (Number(spec.budget?.cap_usd ?? 0) <= 0) warnings.push("budget.cap_usd should be positive.");
   if (!spec.steps.some((step) => step.kind === "stitch")) warnings.push("Zap should end with a stitch step.");
@@ -621,24 +1020,62 @@ function expandSteps(spec, extendCount) {
   });
 }
 
-function quoteStep(step) {
+function quoteStep(spec, step) {
   if (step.kind === "stitch" || step.kind === "keyframes") return 0;
-  const rates = {
-    "fal-ai/flux/dev": { perRequest: 0.03 },
-    "fal-ai/kling-video/v2.1/pro/image-to-video": { perSecond: 0.28 },
-    "fal-ai/veo3.1": { perSecond: 0.45 },
-    "gemini-omni-flash-preview": { perSecond: 0.1 },
-    "happyhorse-1.1-i2v": { perSecond: 0.28 },
-    "seedance-2-0-260128": { perSecond: 0.07 },
-    "seedance-2-0-260128-upscale": { perSecond: 0.056 },
-  };
-  const rate = rates[step.model ?? "local"];
-  if (!rate) return 0;
-  return rate.perRequest ?? (rate.perSecond ?? 0) * (step.duration_s ?? 1);
+  const provider = step.provider ?? spec.defaults?.provider ?? "fal";
+  const model = step.model ?? spec.defaults?.models?.[step.kind] ?? defaultModelFor(provider, step.kind);
+  const rates = getProviderAdapter(provider);
+  try {
+    return rates.price({
+      capability: step.kind,
+      durationS: step.duration_s,
+      inputs: {},
+      model,
+      prompt: "",
+      provider,
+      runId: "quote",
+      stepId: step.id,
+    });
+  } catch {
+    return 0;
+  }
 }
 
-function estimateUsd(steps) {
-  return steps.reduce((sum, step) => sum + quoteStep(step), 0);
+function estimateUsd(spec, steps) {
+  return steps.reduce((sum, step) => sum + quoteStep(spec, step), 0);
+}
+
+async function readPromptContents(file, spec) {
+  const entries = {};
+  await Promise.all((spec.steps ?? []).map(async (step) => {
+    if (!step.prompt || !(step.prompt.endsWith(".md") || step.prompt.startsWith("prompts/"))) return;
+    entries[step.prompt] = await readPromptFile(file, step.prompt);
+  }));
+  return entries;
+}
+
+async function readPromptFile(zapFile, promptPath) {
+  if (!promptPath) return "";
+  if (!(promptPath.endsWith(".md") || promptPath.startsWith("prompts/"))) return promptPath;
+  return fs.readFile(path.join(path.dirname(zapFile), promptPath), "utf8");
+}
+
+function interpolate(template, inputs) {
+  return template.replace(/\{([A-Z0-9_]+)\}/g, (_, name) => String(inputs[name] ?? ""));
+}
+
+function extensionFromUrl(url) {
+  const pathname = new URL(url).pathname;
+  const extension = path.extname(pathname).replace(/^\./, "");
+  return extension || "bin";
+}
+
+function isLocalStep(step) {
+  return step.kind === "stitch" || step.kind === "keyframes";
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function readLocalRunsForZap(slug) {
@@ -772,7 +1209,7 @@ function summarizeStepFailures(runs) {
 function buildImproveRecommendations({ failedRuns, feedback, spec, stepFailures, warnings }) {
   const recommendations = [];
   if (warnings.some((warning) => warning.includes("defaults.provider is live"))) {
-    recommendations.push("Change published template defaults.provider to mock, or document why this recipe intentionally defaults live.");
+    recommendations.push("Document why this recipe intentionally defaults to a specific live provider, or switch defaults.provider to the cheapest supported provider.");
   }
   if (failedRuns.length > 0 || Object.keys(stepFailures).length > 0) {
     recommendations.push("Add or tune per-step retry policies for failing provider steps, including fallback_provider/fallback_model where support exists.");
@@ -994,8 +1431,13 @@ Commands:
   new <slug>          Scaffold agent/skills/zap-<slug>
   validate [Zap.md]   Validate one or more recipes
   lint [Zap.md]       Run recipe policy checks
-  run <Zap.md>        Run a mock Zap by default
+  run <Zap.md>        Plan a Zap by default; use --live to submit providers
   status [runId]      Show local run status
+  keys                Manage encrypted BYOK provider keys
+  login/logout        Store or remove a Zap API token
+  deploy <Zap.md>     Publish a Zap to the hosted API
+  inspect <Zap.md>    Show provider/model plan details
+  embed <slug>        Print iframe/oEmbed embed snippets
   dev                 Start the web app dev server
   studio              Start the web studio
   add <name>          Add a registry Zap

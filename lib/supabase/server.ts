@@ -4,7 +4,7 @@ type SupabaseEdgeOptions = {
   body?: unknown;
   method?: "DELETE" | "GET" | "POST" | "PUT";
   serverReveal?: boolean;
-  userAccessToken: string;
+  userAccessToken?: string;
 };
 
 export type RevealedZapSecrets = Partial<Record<ZapSecretType, string>>;
@@ -32,7 +32,7 @@ export async function callSupabaseFunction<T>(functionName: string, options: Sup
     body: options.body === undefined ? undefined : JSON.stringify(options.body),
     headers: {
       apikey: apiKey,
-      authorization: `Bearer ${options.userAccessToken}`,
+      authorization: `Bearer ${options.userAccessToken ?? apiKey}`,
       "content-type": "application/json",
       ...(options.serverReveal && process.env.ZAP_SECRET_REVEAL_TOKEN
         ? { "x-zap-server-secret": process.env.ZAP_SECRET_REVEAL_TOKEN }
@@ -82,6 +82,18 @@ export async function revealZapSecretsForProvider(provider: string, userAccessTo
     method: "POST",
     serverReveal: true,
     userAccessToken,
+  });
+  return result.secrets;
+}
+
+export async function revealZapSecretsForProviderByUserId(provider: string, userId?: string): Promise<RevealedZapSecrets | undefined> {
+  if (!userId) return undefined;
+  const secretTypes = requiredSecretTypesForProvider(provider);
+  if (secretTypes.length === 0) return undefined;
+  const result = await callSupabaseFunction<{ secrets: RevealedZapSecrets }>("zap-user-secrets", {
+    body: { secretTypes, userId },
+    method: "POST",
+    serverReveal: true,
   });
   return result.secrets;
 }

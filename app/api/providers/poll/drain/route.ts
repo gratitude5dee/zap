@@ -2,8 +2,10 @@ import { NextResponse } from "next/server";
 import { recordProviderProgress } from "@/lib/provider-webhooks";
 import { deadLetterProviderPoll, dequeueProviderPoll, requeueProviderPoll } from "@/lib/redis";
 import { pollGeneration } from "@/lib/providers/router";
+import { getRunSnapshot } from "@/lib/run-ledger";
+import { revealZapSecretsForProviderByUserId } from "@/lib/supabase/server";
 
-const providers = ["mock", "gmi", "fal"] as const;
+const providers = ["gmi", "fal", "prodia", "runware"] as const;
 const maxAttempts = 24;
 
 export async function POST(request: Request) {
@@ -21,9 +23,11 @@ export async function POST(request: Request) {
       if (!job) break;
 
       try {
-        const result = await pollGeneration(provider, job.requestId);
         const runId = job.payload?.runId;
         const stepId = job.payload?.stepId;
+        const owner = runId ? (await getRunSnapshot(runId)).run?.userId : undefined;
+        const secrets = await revealZapSecretsForProviderByUserId(provider, owner);
+        const result = await pollGeneration(provider, job.requestId, secrets);
         await recordProviderProgress(provider, result, {
           capability: job.payload?.capability,
           requestId: job.requestId,

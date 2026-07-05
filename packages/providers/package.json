@@ -1,17 +1,24 @@
 {
   "name": "@wzrdtech/providers",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": false,
   "description": "Provider adapters and queue helpers for Zap runtimes.",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./mock": "./src/mock.ts",
-    "./poll-queue": "./src/poll-queue.ts"
+    "./errors": "./src/errors.ts",
+    "./fal": "./src/fal.ts",
+    "./gmi": "./src/gmi.ts",
+    "./poll-queue": "./src/poll-queue.ts",
+    "./pricing": "./src/pricing.ts",
+    "./prodia": "./src/prodia.ts",
+    "./registry": "./src/registry.ts",
+    "./runware": "./src/runware.ts"
   },
   "dependencies": {
+    "@fal-ai/client": "^1.8.0",
     "@upstash/redis": "^1.38.0",
-    "@wzrdtech/core": "0.1.0"
+    "@wzrdtech/core": "0.2.0"
   },
   "engines": {
     "node": "24.x"

@@ -7,7 +7,7 @@ export default defineTool({
   inputSchema: z.object({
     model: z.string().default("gemini-omni-flash-preview"),
     prompt: z.string().min(1),
-    provider: z.enum(["gmi", "fal"]).optional(),
+    provider: z.enum(["gmi", "fal", "prodia", "runware"]).optional(),
     runId: z.string(),
     stepId: z.string(),
     videoUrl: z.string().url(),
@@ -19,7 +19,7 @@ export default defineTool({
       inputs: { videoUrl: input.videoUrl },
       model: input.model,
       prompt: input.prompt,
-      provider: input.provider,
+      provider: input.provider ?? "gmi",
       runId: input.runId,
       stepId: input.stepId,
     });

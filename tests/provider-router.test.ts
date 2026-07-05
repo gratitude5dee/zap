@@ -36,7 +36,7 @@ describe("provider router", () => {
       inputs: { NAME: "Ada" },
       model: "seedance-2-0-260128",
       prompt: "test",
-      provider: "gmi",
+      provider: "gmi" as const,
       runId: "run_test",
       stepId: "initial_gen",
     };
@@ -44,17 +44,16 @@ describe("provider router", () => {
     expect(buildIdempotencyKey(req)).toBe(buildIdempotencyKey({ ...req }));
   });
 
-  it("quotes mock provider at zero cost", () => {
-    const quote = quoteGeneration({
+  it("rejects mock provider at runtime", () => {
+    expect(() => quoteGeneration({
       capability: "video.gen",
       durationS: 15,
       inputs: {},
       model: "anything",
       prompt: "test",
-      provider: "mock",
+      provider: "mock" as never,
       runId: "run_test",
       stepId: "initial_gen",
-    });
-    expect(quote).toBe(0);
+    })).toThrow(/mock/);
   });
 });

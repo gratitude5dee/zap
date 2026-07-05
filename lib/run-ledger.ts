@@ -208,7 +208,7 @@ export async function getRunSnapshot(runId: string, budgetCapUsd?: number): Prom
       };
       return withRemainingBudget({ ...data, feedback: data.feedback ?? [], statusUrl: `/runs/${runId}` }, budgetCapUsd);
     } catch {
-      // Fall back to process-local state so local mock runs remain observable.
+      // Fall back to process-local state so local plan/live test runs remain observable.
     }
   }
   const run = memoryRuns.get(runId) ?? null;

@@ -15,9 +15,10 @@ Primary routes:
 
 Auth posture:
 
-- Public docs, gallery, and mock demo runs are accessible.
+- Public docs, gallery, and plan-only demo runs are accessible.
 - Creator live runs and provider secrets require wallet-authenticated Supabase bearer tokens.
-- Provider webhooks are public callbacks; poll drain and Eve operational surfaces may still require Basic Auth.
+- Provider webhooks require `ZAP_PROVIDER_WEBHOOK_SECRET` in production; hosted publishing requires `ZAP_PUBLISH_TOKEN`.
+- Poll drain and Eve operational surfaces may still require Basic Auth or their own shared secret.
 
 Smoke production after deploy:
 

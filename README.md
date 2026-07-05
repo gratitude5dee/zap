@@ -17,7 +17,7 @@ give humans and the authoring agent creative context.
 - Convex schema/functions for `zaps`, `runs`, `steps`, `assets`, `feedback`, and
   `cronLogs`.
 - Upstash Redis idempotency and provider queue helpers.
-- GMI Cloud video adapter, fal adapter, and deterministic mock adapter behind one provider router.
+- GMI Cloud, fal, Prodia, and Runware BYOK adapters behind one deterministic provider router.
 - Workspace packages for core schema/planning, provider queues, agent helpers, and the publishable `@wzrdtech/zap`.
 
 ## Environment
@@ -28,7 +28,6 @@ Copy `.env.example` and fill production values in Vercel/Convex:
 GMI_API_KEY=
 GMI_ORG_ID=
 FAL_KEY=
-ZAP_PROVIDER=mock
 UPSTASH_REDIS_REST_URL=
 UPSTASH_REDIS_REST_TOKEN=
 BLOB_READ_WRITE_TOKEN=
@@ -45,7 +44,7 @@ ZAP_BASIC_USER=
 ZAP_BASIC_PASSWORD=
 ```
 
-Public gallery, docs, quickstart, studio, recipe pages, and mock runs are open.
+Public gallery, docs, quickstart, studio, recipe pages, and plan-only runs are open.
 Live provider spend requires a wallet-authenticated Supabase bearer token.
 Provider webhook callbacks are public so hosted providers can report completion;
 poll drain and Eve operational endpoints still support HTTP Basic auth for
@@ -74,5 +73,5 @@ npm run eve:info
 npm run eve:build
 ```
 
-Live provider smoke tests are opt-in only. CLI and web runs default to mock mode
+Live provider smoke tests are opt-in only. CLI and web runs default to plan-only mode
 unless explicit credentials and a live run are requested.

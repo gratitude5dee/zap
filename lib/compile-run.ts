@@ -53,7 +53,7 @@ export async function compileRun(runId: string, options: CompileRunOptions = {})
   const steps = await compileSteps(sourceZap, snapshot);
   const frontmatter = {
     zap: slug,
-    version: 1,
+    version: 2,
     description: `${sourceZap.description} Compiled from run ${runId}.`,
     compiled_from_run_id: runId,
     lineage: {

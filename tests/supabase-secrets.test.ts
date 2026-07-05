@@ -13,6 +13,8 @@ describe("Supabase BYOK secret contract", () => {
   it("maps providers to required secret types", () => {
     expect(requiredSecretTypesForProvider("gmi")).toEqual(["gmi_api_key", "gmi_org_id"]);
     expect(requiredSecretTypesForProvider("fal")).toEqual(["fal_key"]);
+    expect(requiredSecretTypesForProvider("prodia")).toEqual(["prodia_token"]);
+    expect(requiredSecretTypesForProvider("runware")).toEqual(["runware_key"]);
     expect(requiredSecretTypesForProvider("openrouter")).toEqual(["openrouter_key"]);
   });
 

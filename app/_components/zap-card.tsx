@@ -165,7 +165,7 @@ function ZapHeroCard({
   const [shareToast, setShareToast] = useState("");
   const [thumb, setThumb] = useState<"up" | "down" | null>(null);
   const previewItems = buildPreviewItems(zap, inputPreview);
-  const playableUrl = view.outputUrl && !view.outputUrl.startsWith("mock://") ? view.outputUrl : "";
+  const playableUrl = view.outputUrl ?? "";
   const shareTargets: Array<{ icon: ComponentType<{ className?: string }>; key: string; label: string }> = [
     { icon: Share2, key: "native", label: "Native" },
     { icon: Copy, key: "url", label: "URL" },
@@ -173,7 +173,7 @@ function ZapHeroCard({
   ];
 
   async function handleShare(label: string) {
-    const url = view.outputUrl?.startsWith("mock://") ? `${window.location.origin}/zap/${zap.zap}` : view.outputUrl ?? `${window.location.origin}/zap/${zap.zap}`;
+    const url = view.outputUrl ?? `${window.location.origin}/${zap.zap}`;
     if (label === "native" && navigator.share) {
       await navigator.share({ text: `${zap.title} generated with Zap`, title: zap.title, url });
       setShareToast("Shared");
@@ -290,7 +290,7 @@ function ZapHeroCard({
           <ZapChip active>est ${view.estimate} / cap ${view.cap}</ZapChip>
           <ZapChip muted>{view.stepsLabel}</ZapChip>
           <ZapChip muted>{view.durationLabel} output</ZapChip>
-          <ZapChip muted>{live ? "live providers" : "mock safe"}</ZapChip>
+          <ZapChip muted>{live ? "live providers" : "plan safe"}</ZapChip>
         </div>
 
         {view.state === "idle" || view.state === "error" ? (
@@ -319,7 +319,7 @@ function ZapHeroCard({
             {onRun ? (
               <button className="zap-card-run-button" disabled={disabled} onClick={onRun} type="button">
                 <Zap className="size-4" />
-                {live ? "Run live Zap" : "Run mock Zap"}
+                {live ? "Run live Zap" : "Plan Zap"}
               </button>
             ) : primaryHref ? (
               <Link className="zap-card-run-button" href={primaryHref}>
@@ -612,7 +612,7 @@ function statusFor(state: ZapCardState, run: ZapCardRun | null | undefined, step
   if (state === "error") return run?.error ?? "run failed";
   if (state === "done") return "complete - every step metered";
   if (state === "running") return `${step?.id ?? "queued"} / ${step?.model ?? step?.kind ?? "provider"} / ${run?.stage ?? "running"}`;
-  return `idle - ${Object.keys(zap.inputs).length} inputs / mock by default`;
+  return `idle - ${Object.keys(zap.inputs).length} inputs / plan by default`;
 }
 
 function buildPreviewItems(zap: PublicZapSpec, inputPreview?: Record<string, string>) {

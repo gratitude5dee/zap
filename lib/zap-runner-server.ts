@@ -12,9 +12,9 @@ import {
   type RunSnapshot,
 } from "./run-ledger";
 import { loadZapSpec, readPrompt } from "./zap-files";
-import { pollGeneration, quoteGeneration, submitGeneration } from "./providers/router";
+import { defaultProviderModel, pollGeneration, quoteGeneration, submitGeneration } from "./providers/router";
 import { revealZapSecretsForProvider } from "./supabase/server";
-import type { GenRequest, ProviderPollResult } from "./provider-types";
+import type { GenRequest, ProviderId, ProviderPollResult, ProviderSecrets } from "./provider-types";
 import { toZapErrorPayload, ZapRunError } from "./zap-errors";
 import type { ZapSpec, ZapStep } from "./zap-schema";
 
@@ -23,7 +23,7 @@ export type RunZapInput = {
   extendCount: number;
   inputs: Record<string, unknown>;
   live?: boolean;
-  provider?: string;
+  provider?: ProviderId;
   sessionId?: string;
   slug: string;
   userAccessToken?: string;
@@ -59,7 +59,7 @@ export type ZapExecutionTicket = {
   inputs: Record<string, unknown>;
   live?: boolean;
   planned: ZapStep[];
-  provider?: string;
+  provider?: ProviderId;
   quoteUsd: number;
   runId: string;
   userAccessToken?: string;
@@ -96,7 +96,7 @@ export async function createZapRunTicket({
 
   const runId = `run_${nanoid(12)}`;
   const planned = planSteps(zap, extendCount);
-  const steps = await describePlannedSteps(zap, runId, planned, inputs, dryRun);
+  const steps = await describePlannedSteps(zap, runId, planned, inputs, dryRun || !live);
   const quoteUsd = steps.reduce((sum, step) => sum + step.quoteUsd, 0);
   if (quoteUsd > zap.budget.cap_usd) {
     throw new ZapRunError({
@@ -108,7 +108,7 @@ export async function createZapRunTicket({
     });
   }
 
-  if (dryRun) {
+  if (dryRun || !live) {
     return {
       response: {
         dryRun: true,
@@ -261,8 +261,8 @@ export async function executeZapRun({ inputs, live = false, planned, provider, q
         const attemptQuoteUsd = attempt === 1 ? stepQuoteUsd : quoteForStep(zap, runId, attemptStep, normalizedInputs);
         try {
           const request = await buildGenerationRequest(zap, runId, attemptStep, normalizedInputs, assetUrls, conditioning.imageUrls, {
-            provider: live ? provider : "mock",
-            userAccessToken: live ? userAccessToken : undefined,
+            provider,
+            userAccessToken,
           });
           request.attemptSalt = attemptSalt(step.id, attempt, humanRetryCounts);
           const submitted = await submitGeneration(request);
@@ -625,7 +625,7 @@ export async function resumeZapRun(runId: string) {
   });
   startZapRunExecution({
     inputs: snapshot.run.inputs,
-    live: false,
+    live: true,
     planned,
     quoteUsd: snapshot.steps.reduce((sum, step) => sum + step.priceQuoteUsd, 0),
     runId,
@@ -719,7 +719,7 @@ export async function prepareRerunZapRunFromStep(runId: string, stepId: string, 
   return {
     execution: {
       inputs: snapshot.run.inputs,
-      live: false,
+      live: true,
       planned,
       quoteUsd: snapshot.steps.reduce((sum, step) => sum + step.priceQuoteUsd, 0),
       runId,
@@ -742,11 +742,12 @@ export async function buildGenerationRequest(
   inputs: Record<string, unknown>,
   assetUrls = new Map<string, string>(),
   conditioningImageUrls: string[] = [],
-  options: { provider?: string; userAccessToken?: string } = {},
+  options: { provider?: ProviderId; userAccessToken?: string } = {},
 ): Promise<GenRequest> {
   const prompt = interpolate(await readPrompt(zap.zap, step.prompt), inputs);
   const imageUrls = uniqueUrls([...conditioningImageUrls, ...resolveImageUrls(step, inputs, assetUrls)]);
   const selectedProvider = options.provider ?? step.provider ?? zap.defaults.provider;
+  const model = step.model ?? zap.defaults.models?.[step.kind] ?? defaultProviderModel(selectedProvider, step.kind);
   return {
     capability: step.kind,
     durationS: step.duration_s,
@@ -757,7 +758,7 @@ export async function buildGenerationRequest(
       imageUrls,
       referenceImages: imageUrls,
     },
-    model: step.model ?? "local",
+    model,
     prompt,
     provider: selectedProvider,
     runId,
@@ -768,9 +769,6 @@ export async function buildGenerationRequest(
 
 export async function persistStepOutput(runId: string, step: ZapStep, outputUrl?: string) {
   if (!outputUrl) return null;
-  if (outputUrl.startsWith("mock://")) {
-    return { storageKey: `runs/${runId}/${step.id}/${Date.now()}`, url: outputUrl };
-  }
   if (outputUrl.startsWith("data:")) {
     return persistDataUrlAsset(outputUrl, `runs/${runId}/${step.id}/${Date.now()}`);
   }
@@ -829,7 +827,9 @@ async function describePlannedSteps(
   return Promise.all(
     planned.map(async (step) => ({
       kind: step.kind,
-      model: step.model,
+      model: isLocalStep(step)
+        ? step.model
+        : step.model ?? zap.defaults.models?.[step.kind] ?? defaultProviderModel(step.provider ?? zap.defaults.provider, step.kind),
       prompt: includePrompts ? interpolate(await readPrompt(zap.zap, step.prompt), inputs) : undefined,
       provider: isLocalStep(step) ? "local" : step.provider ?? zap.defaults.provider,
       quoteUsd: quoteForStep(zap, runId, step, inputs),
@@ -841,13 +841,15 @@ async function describePlannedSteps(
 
 function quoteForStep(zap: ZapSpec, runId: string, step: ZapStep, inputs: Record<string, unknown>) {
   if (isLocalStep(step)) return 0;
+  const provider = step.provider ?? zap.defaults.provider;
+  const model = step.model ?? zap.defaults.models?.[step.kind] ?? defaultProviderModel(provider, step.kind);
   return quoteGeneration({
     capability: step.kind,
     durationS: step.duration_s,
     inputs,
-    model: step.model ?? "local",
+    model,
     prompt: "",
-    provider: step.provider ?? zap.defaults.provider,
+    provider,
     runId,
     stepId: step.id,
   });
@@ -982,7 +984,7 @@ function uniqueUrls(urls: string[]) {
 async function pollGenerationUntilDone(
   provider: string,
   requestId: string,
-  secrets: Record<string, string> | undefined,
+  secrets: ProviderSecrets | undefined,
   onProgress: (progress: number) => Promise<void>,
 ) {
   const deadline = Date.now() + Number(process.env.ZAP_SYNC_POLL_TIMEOUT_MS ?? 1000 * 60 * 20);

@@ -22,12 +22,12 @@ export default async function GalleryPage() {
             <div>
               <h1 className="text-balance font-semibold text-5xl leading-none text-white sm:text-6xl">Zap Gallery</h1>
               <p className="mt-5 max-w-3xl text-pretty leading-7 text-white/62">
-                Pick a recipe, inspect the step graph, run a mock pipeline, then switch to live providers only when keys and budgets are ready.
+                Pick a recipe, inspect the step graph, plan spend, then switch to live providers only when keys and budgets are ready.
               </p>
             </div>
             <div className="grid grid-cols-3 gap-2">
               <RegistryMetric label="recipes" value={String(zaps.length)} />
-              <RegistryMetric label="mock default" value="$0" />
+              <RegistryMetric label="plan default" value="$0" />
               <RegistryMetric label="est. live" value={`$${totalEstimate.toFixed(2)}`} />
             </div>
           </div>
@@ -40,7 +40,7 @@ export default async function GalleryPage() {
         </div>
 
         <section className="mt-10 grid gap-4 border-white/10 border-t pt-8 md:grid-cols-2">
-          <GalleryNote icon={<Film className="size-5" />} title="Creator view" body="Each card opens a one-click runner with mock mode, input capture, progress, output, and feedback." />
+          <GalleryNote icon={<Film className="size-5" />} title="Creator view" body="Each card opens a one-click runner with plan mode, input capture, progress, output, and feedback." />
           <GalleryNote icon={<BadgeDollarSign className="size-5" />} title="Budget guard" body="Every recipe carries an estimate and hard cap before live providers are allowed." />
         </section>
       </div>

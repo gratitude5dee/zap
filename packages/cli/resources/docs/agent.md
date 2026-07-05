@@ -18,14 +18,14 @@ creator request
   -> select zap-<slug> skill
   -> collect declared inputs
   -> validate budget
-  -> run mock or live pipeline
+  -> plan or run live pipeline
   -> return run id and final asset URL
 ```
 
 Agent quickstarts:
 
 ```bash
-npx @wzrdtech/zap@0.1.0 docs agents
+npx @wzrdtech/zap@0.2.0 docs agents
 ```
 
 Remote skill registry:

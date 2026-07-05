@@ -3,7 +3,7 @@ const secretTypes = [
   "gmi_org_id",
   "fal_key",
   "runware_key",
-  "prodia_key",
+  "prodia_token",
   "openrouter_key",
   "ai_gateway_api_key",
 ] as const;
@@ -33,6 +33,10 @@ export function requiredSecretTypesForProvider(provider: string): ZapSecretType[
       return ["gmi_api_key", "gmi_org_id"];
     case "fal":
       return ["fal_key"];
+    case "prodia":
+      return ["prodia_token"];
+    case "runware":
+      return ["runware_key"];
     case "openrouter":
       return ["openrouter_key"];
     default:
@@ -43,6 +47,8 @@ export function requiredSecretTypesForProvider(provider: string): ZapSecretType[
 export function providerFromSecretType(secretType: ZapSecretType) {
   if (secretType.startsWith("gmi_")) return "gmi";
   if (secretType.startsWith("fal_")) return "fal";
+  if (secretType.startsWith("prodia_")) return "prodia";
+  if (secretType.startsWith("runware_")) return "runware";
   if (secretType.startsWith("openrouter_")) return "openrouter";
   if (secretType.startsWith("ai_gateway_")) return "ai_gateway";
   return secretType.replace(/_key$|_api_key$|_org_id$/g, "");

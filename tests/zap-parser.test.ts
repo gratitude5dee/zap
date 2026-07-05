@@ -5,7 +5,7 @@ describe("Zap parser", () => {
   it("parses a valid Zap recipe with future-facing grammar fields", () => {
     const spec = parseZapMarkdown(`---
 zap: test-zap
-version: 1
+version: 2
 description: Test Zap
 inputs:
   NAME: { type: string, required: true }
@@ -47,7 +47,7 @@ output: Zap.mp4
   it("rejects undeclared template variables in executable prompts", () => {
     expect(() => parseZapMarkdown(`---
 zap: test-zap
-version: 1
+version: 2
 description: Test Zap
 inputs:
   NAME: { type: string, required: true }
@@ -65,7 +65,7 @@ output: Zap.mp4
   it("rejects extend repeat bounds over the v1 maximum", () => {
     expect(() => parseZapMarkdown(`---
 zap: test-zap
-version: 1
+version: 2
 description: Test Zap
 budget: { estimate_usd: 1, cap_usd: 5 }
 steps:

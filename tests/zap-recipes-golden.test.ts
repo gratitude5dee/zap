@@ -1,16 +1,11 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { createZapRunTicket } from "../lib/zap-runner-server";
 import { loadZapSpec } from "../lib/zap-files";
 
 describe("packaged Zap recipe golden dry-runs", () => {
-  afterEach(() => {
-    delete process.env.ZAP_PROVIDER;
-  });
-
-  it("plans every packaged Zap with mock provider and synthetic inputs", async () => {
-    process.env.ZAP_PROVIDER = "mock";
+  it("plans every packaged Zap with synthetic inputs", async () => {
     const slugs = await listZapSlugs();
 
     expect(slugs.length).toBeGreaterThan(0);

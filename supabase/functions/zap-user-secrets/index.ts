@@ -6,7 +6,7 @@ const secretTypes = new Set([
   "gmi_org_id",
   "fal_key",
   "runware_key",
-  "prodia_key",
+  "prodia_token",
   "openrouter_key",
   "ai_gateway_api_key",
 ]);
@@ -14,7 +14,6 @@ const secretTypes = new Set([
 const corsHeaders = {
   "access-control-allow-headers": "authorization, apikey, content-type, x-zap-server-secret",
   "access-control-allow-methods": "DELETE, GET, OPTIONS, POST, PUT",
-  "access-control-allow-origin": "*",
 };
 
 Deno.serve(async (request: Request) => {
@@ -34,6 +33,18 @@ Deno.serve(async (request: Request) => {
 async function getContext(request: Request) {
   const supabaseUrl = requiredEnv("SUPABASE_URL");
   const serviceRoleKey = supabaseSecretKey();
+  const serverRevealAllowed = request.headers.get("x-zap-server-secret") === Deno.env.get("ZAP_SECRET_REVEAL_TOKEN");
+  if (serverRevealAllowed && request.method === "POST") {
+    const body = await request.clone().json().catch(() => ({}));
+    if (typeof body.userId === "string" && body.userId.length > 0) {
+      return {
+        admin: createClient(supabaseUrl, serviceRoleKey),
+        revealAllowed: true,
+        userId: body.userId,
+      };
+    }
+  }
+
   const authHeader = request.headers.get("authorization") ?? "";
   const token = authHeader.toLowerCase().startsWith("bearer ") ? authHeader.slice("bearer ".length) : "";
   if (!token) throw new Error("Authorization bearer token required.");
@@ -47,7 +58,7 @@ async function getContext(request: Request) {
   const admin = createClient(supabaseUrl, serviceRoleKey);
   return {
     admin,
-    revealAllowed: request.headers.get("x-zap-server-secret") === Deno.env.get("ZAP_SECRET_REVEAL_TOKEN"),
+    revealAllowed: serverRevealAllowed,
     userId: data.user.id,
   };
 }
@@ -130,6 +141,12 @@ async function revealSecrets(request: Request, context: Awaited<ReturnType<typeo
   for (const row of data ?? []) {
     if (row.secret_type && row.ciphertext && row.nonce) {
       secrets[row.secret_type] = await decrypt(row.ciphertext, row.nonce);
+      await context.admin.from("secret_access_log").insert({
+        accessed_at: new Date().toISOString(),
+        reason: "provider_reveal",
+        secret_type: row.secret_type,
+        user_id: context.userId,
+      });
     }
   }
   return json({ secrets });
@@ -168,6 +185,8 @@ function assertSecretType(secretType: string) {
 function providerFromSecretType(secretType: string) {
   if (secretType.startsWith("gmi_")) return "gmi";
   if (secretType.startsWith("fal_")) return "fal";
+  if (secretType.startsWith("prodia_")) return "prodia";
+  if (secretType.startsWith("runware_")) return "runware";
   if (secretType.startsWith("openrouter_")) return "openrouter";
   if (secretType.startsWith("ai_gateway_")) return "ai_gateway";
   return secretType.replace(/_key$|_api_key$|_org_id$/g, "");
@@ -201,7 +220,12 @@ function decodeBase64(value: string) {
 
 function json(payload: unknown, status = 200) {
   return new Response(JSON.stringify(payload), {
-    headers: { ...corsHeaders, "content-type": "application/json" },
+    headers: { ...corsHeaders, "access-control-allow-origin": allowedOrigin(), "content-type": "application/json" },
     status,
   });
+}
+
+function allowedOrigin() {
+  const configured = Deno.env.get("ZAP_SECRETS_ALLOWED_ORIGIN");
+  return configured && configured.length > 0 ? configured : "https://zap.wzrd.tech";
 }

@@ -131,7 +131,7 @@ function scoreCriterion({
   const forced = Number(process.env.ZAP_JUDGE_FORCE_SCORE);
   if (Number.isFinite(forced)) return clampScore(forced);
   if (assetUrl.includes("fail_judge")) return 0.4;
-  if (process.env.ZAP_PROVIDER === "mock" || assetUrl.startsWith("data:application/json") || assetUrl.startsWith("mock://")) return 0.92;
+  if (assetUrl.startsWith("data:application/json") || assetUrl.startsWith("mock://")) return 0.92;
 
   const hash = createHash("sha256")
     .update(`${runId}:${stepId}:${assetId}:${criterion}:${assetUrl}`)
@@ -207,7 +207,7 @@ async function scoreWithGateway(input: JudgeAssetInput & { assetUrl: string; cri
 function scoreWithHeuristic(input: JudgeAssetInput & { assetUrl: string; criteria: string[] }) {
   return {
     mode: "heuristic" as const,
-    rationale: "Deterministic local score used for mock mode, CI, or missing AI Gateway credentials.",
+    rationale: "Deterministic local score used for fixtures, CI, or missing AI Gateway credentials.",
     scores: Object.fromEntries(input.criteria.map((criterion) => [criterion, scoreCriterion({ ...input, criterion })])),
   };
 }

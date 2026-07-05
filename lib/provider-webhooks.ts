@@ -1,8 +1,9 @@
 import type { ProviderPollResult } from "./provider-types";
 import { getRedis } from "./redis";
 import { addAssetLedger, getRunSnapshot, updateRunLedger, upsertStepLedger } from "./run-ledger";
+import { getProviderAdapter } from "@wzrdtech/providers";
 
-type ProviderWebhookProvider = "fal" | "gmi" | "mock";
+type ProviderWebhookProvider = "fal" | "gmi" | "prodia" | "runware";
 type ProviderWebhookSource = { url?: string };
 type ProviderProgressMeta = {
   capability?: string;
@@ -14,11 +15,16 @@ type ProviderProgressMeta = {
 export function buildProviderWebhookUrl(provider: string, meta: Required<Pick<ProviderProgressMeta, "runId" | "stepId">> & Pick<ProviderProgressMeta, "capability">) {
   const baseUrl = getPublicBaseUrl();
   if (!baseUrl) return undefined;
+  const webhookSecret = process.env.ZAP_PROVIDER_WEBHOOK_SECRET;
+  if (!webhookSecret && process.env.NODE_ENV === "production") return undefined;
 
   const url = new URL(`/api/providers/${provider}/webhook`, baseUrl);
   url.searchParams.set("runId", meta.runId);
   url.searchParams.set("stepId", meta.stepId);
   if (meta.capability) url.searchParams.set("capability", meta.capability);
+  if (webhookSecret) {
+    url.searchParams.set("secret", webhookSecret);
+  }
   return url.toString();
 }
 
@@ -28,7 +34,7 @@ export async function recordProviderWebhook(provider: ProviderWebhookProvider, p
     await redis.lpush(`zap:webhook:${provider}`, JSON.stringify({ payload, sourceUrl: source.url, ts: Date.now() }));
   }
 
-  const parsed = parseProviderWebhook(payload, source.url);
+  const parsed = getProviderAdapter(provider).parseWebhook?.(payload, source.url) ?? parseProviderWebhook(payload, source.url);
   return recordProviderProgress(provider, parsed, parsed);
 }
 

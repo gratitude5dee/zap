@@ -19,17 +19,16 @@ import { ZapCard } from "@/app/_components/zap-card";
 import { ZAP_DOCS_URL } from "@/lib/zap-urls";
 import { listZapSpecs } from "@/lib/zap-files";
 
-const cliProof = `npx @wzrdtech/zap@0.1.0 init match-day
+const cliProof = `npx @wzrdtech/zap@0.2.0 init match-day
 cd match-day
-npx @wzrdtech/zap@0.1.0 new world-cup-entrance
-npx @wzrdtech/zap@0.1.0 validate
-npx @wzrdtech/zap@0.1.0 run agent/skills/zap-world-cup-entrance/Zap.md --json
+npx @wzrdtech/zap@0.2.0 new world-cup-entrance
+npx @wzrdtech/zap@0.2.0 validate
+npx @wzrdtech/zap@0.2.0 run agent/skills/zap-world-cup-entrance/Zap.md --json
 
 {
-  "mode": "mock",
-  "status": "done",
-  "spendUsd": 0,
-  "zapUrl": "mock://zap/world-cup-entrance/Zap.mp4"
+  "mode": "plan",
+  "status": "planned",
+  "quoteUsd": 1.50
 }`;
 
 export default async function Page() {
@@ -45,7 +44,7 @@ export default async function Page() {
 
           <div className="grid items-center gap-8 py-8 lg:grid-cols-[minmax(0,0.92fr)_minmax(420px,560px)] lg:py-10">
             <div className="relative z-10 max-w-3xl">
-              <p className="font-mono text-[12px] tracking-[0.24em] text-zap-cyan uppercase">agent media runtime / v0.1.0</p>
+              <p className="font-mono text-[12px] tracking-[0.24em] text-zap-cyan uppercase">agent media runtime / v0.2.0</p>
               <h1 className="mt-5 text-balance font-semibold text-[clamp(4.5rem,16vw,11rem)] leading-[0.78] text-white tracking-normal">
                 Zap
               </h1>
@@ -65,7 +64,7 @@ export default async function Page() {
               <div className="mt-8 max-w-2xl overflow-hidden rounded-md border border-white/10 bg-black/25">
                 <div className="grid grid-cols-3 divide-x divide-white/10">
                   <Signal label="recipes" value={String(zaps.length)} />
-                  <Signal label="default" value="mock" />
+                  <Signal label="default" value="plan" />
                   <Signal label="package" value="@wzrdtech/zap" />
                 </div>
               </div>
@@ -85,7 +84,7 @@ export default async function Page() {
           </div>
 
           <div className="grid gap-3 border-white/10 border-t pt-5 sm:grid-cols-3">
-            <RuntimeSignal icon={<BadgeDollarSign className="size-4" />} label="Zero-spend demos" value="Mock runs are the default until the creator explicitly chooses live providers." />
+            <RuntimeSignal icon={<BadgeDollarSign className="size-4" />} label="Zero-spend demos" value="Plan-only runs are the default until the creator explicitly chooses live providers." />
             <RuntimeSignal icon={<Workflow className="size-4" />} label="Durable run state" value="Convex records runs while Upstash handles idempotency, queues, and polling." />
             <RuntimeSignal icon={<KeyRound className="size-4" />} label="BYOK vault" value="Provider keys stay user-owned in Supabase, masked in the browser." />
           </div>
@@ -113,7 +112,7 @@ export default async function Page() {
 
           <div className="grid gap-3">
             <RuntimeRow icon={<Boxes className="size-5" />} title="Skill package" body="Every Zap ships as SKILL.md, Zap.md, prompt files, and registry metadata." detail={`${zaps.length} local recipes`} />
-            <RuntimeRow icon={<ShieldCheck className="size-5" />} title="Budget guard" body="CLI and server paths estimate spend, enforce caps, and require explicit live approval." detail="mock by default" />
+            <RuntimeRow icon={<ShieldCheck className="size-5" />} title="Budget guard" body="CLI and server paths estimate spend, enforce caps, and require explicit live approval." detail="plan by default" />
             <RuntimeRow icon={<Clock3 className="size-5" />} title="Polling flow" body="Provider submissions enqueue durable poll jobs and update Convex idempotently." detail="retry + dead letter" />
           </div>
         </div>
@@ -151,7 +150,7 @@ export default async function Page() {
               Point Codex, Claude Code, Cursor, OpenClaw, or Hermes at the URL.
             </h2>
             <p className="mt-4 max-w-2xl leading-7 text-white/62">
-              The framework exposes skill downloads, JSON manifests, docs topics, and mock run commands so agents can start with evidence.
+              The framework exposes skill downloads, JSON manifests, docs topics, and plan commands so agents can start with evidence.
             </p>
           </div>
           <div className="grid gap-4">

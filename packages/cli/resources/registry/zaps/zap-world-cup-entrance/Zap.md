@@ -1,6 +1,6 @@
 ---
 zap: world-cup-entrance
-version: 1
+version: 2
 description: World Cup player-entrance highlight reel from a selfie. Use when the user wants a cinematic stadium intro video of themselves.
 inputs:
   image:

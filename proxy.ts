@@ -35,7 +35,12 @@ function isLocal(request: NextRequest) {
 }
 
 function isProviderWebhook(pathname: string) {
-  return pathname === "/api/providers/fal/webhook" || pathname === "/api/providers/gmi/webhook";
+  return [
+    "/api/providers/fal/webhook",
+    "/api/providers/gmi/webhook",
+    "/api/providers/prodia/webhook",
+    "/api/providers/runware/webhook",
+  ].includes(pathname);
 }
 
 function isPollDrain(pathname: string) {
