@@ -31,7 +31,8 @@ Supabase Edge Function secrets:
 NPM release auth:
 
 - Preferred: configure npm trusted publishing for `@wzrdtech/core`, `@wzrdtech/providers`, and `@wzrdtech/zap` with GitHub owner `gratitude5dee`, repository `Zap`, workflow filename `release.yml`, and allowed action `npm publish`.
-- Fallback: add a GitHub Actions secret named `NPM_TOKEN` with publish access to the `@wzrdtech` scope.
+- Fallback: add a GitHub Actions secret named `NPM_TOKEN` with package creation and publish access to the `@wzrdtech` scope.
+- First publication of new workspace packages, such as `@wzrdtech/core` and `@wzrdtech/providers`, requires either package-level trusted publisher authorization for those package names or an `NPM_TOKEN` that can create packages in the scope.
 - The Release workflow uses `NPM_TOKEN` when present; otherwise it leaves `NODE_AUTH_TOKEN` unset so npm can authenticate through OIDC trusted publishing.
 
 Deploy sequence:
