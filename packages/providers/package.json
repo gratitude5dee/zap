@@ -3,7 +3,20 @@
   "version": "0.2.0",
   "private": false,
   "description": "Provider adapters and queue helpers for Zap runtimes.",
+  "license": "MIT",
   "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gratitude5dee/Zap.git",
+    "directory": "packages/providers"
+  },
+  "bugs": {
+    "url": "https://github.com/gratitude5dee/Zap/issues"
+  },
+  "homepage": "https://zap.wzrd.tech",
   "exports": {
     ".": "./src/index.ts",
     "./errors": "./src/errors.ts",
