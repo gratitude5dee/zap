@@ -1,6 +1,9 @@
 -- Zap v0.2.0 BYOK hardening.
 -- Forward-only: standardize Prodia on prodia_token and record server-side secret reveals.
 
+alter table public.user_secrets
+  add column if not exists provider text;
+
 update public.user_secrets
 set secret_type = 'prodia_token',
     provider = 'prodia'
