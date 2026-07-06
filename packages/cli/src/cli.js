@@ -529,7 +529,7 @@ async function docsCommand(args, flags) {
 
 async function galleryCommand(args, flags) {
   const auth = await readAuthStore();
-  const apiBase = String(flags.apiUrl ?? auth.apiUrl ?? process.env.ZAP_API_URL ?? "https://zap.wzrd-tech.xyz").replace(/\/$/, "");
+  const apiBase = String(flags.apiUrl ?? auth.apiUrl ?? process.env.ZAP_API_URL ?? "https://zap.wzrd.tech").replace(/\/$/, "");
   if (flags.remote) {
     const response = await fetch(`${apiBase}/api/zaps`);
     const payload = await response.json().catch(() => ({}));
@@ -561,7 +561,7 @@ async function finalizeCommand(args, flags) {
   const auth = await readAuthStore();
   const token = String(flags.token ?? auth.token ?? process.env.ZAP_TOKEN ?? "");
   if (!token) throw new Error("zap finalize requires `zap login --token ...`, --token, or ZAP_TOKEN.");
-  const apiBase = String(flags.apiUrl ?? auth.apiUrl ?? process.env.ZAP_API_URL ?? "https://zap.wzrd-tech.xyz").replace(/\/$/, "");
+  const apiBase = String(flags.apiUrl ?? auth.apiUrl ?? process.env.ZAP_API_URL ?? "https://zap.wzrd.tech").replace(/\/$/, "");
   const body = {
     finalizedBy: flags.finalizedBy,
     heroAssetUrl: flags.heroAssetUrl,
@@ -799,8 +799,8 @@ async function doctorCommand(flags) {
 
 async function embedCommand(args, flags) {
   const slug = args[0] ?? flags.slug;
-  if (!slug) throw new Error("Usage: zap embed <slug> [--base-url https://zap.wzrd-tech.xyz] [--json]");
-  const baseUrl = String(flags.baseUrl ?? process.env.ZAP_PUBLIC_ORIGIN ?? process.env.ZAP_PUBLIC_BASE_URL ?? "https://zap.wzrd-tech.xyz").replace(/\/$/, "");
+  if (!slug) throw new Error("Usage: zap embed <slug> [--base-url https://zap.wzrd.tech] [--json]");
+  const baseUrl = String(flags.baseUrl ?? process.env.ZAP_PUBLIC_ORIGIN ?? process.env.ZAP_PUBLIC_BASE_URL ?? "https://zap.wzrd.tech").replace(/\/$/, "");
   const iframe = `<iframe src="${baseUrl}/embed/${slug}" width="1280" height="720" loading="lazy" allow="clipboard-write; fullscreen"></iframe>`;
   const oembed = `${baseUrl}/api/oembed?url=${encodeURIComponent(`${baseUrl}/${slug}`)}`;
   if (flags.json) printJson({ iframe, oembed, slug });
@@ -915,7 +915,7 @@ async function keysSync(flags) {
   const auth = await readAuthStore();
   const token = String(flags.token ?? auth.token ?? process.env.ZAP_TOKEN ?? "");
   if (!token) throw new Error("zap keys sync requires `zap login --token ...` or ZAP_TOKEN.");
-  const apiBase = String(flags.apiUrl ?? auth.apiUrl ?? process.env.ZAP_API_URL ?? "https://zap.wzrd-tech.xyz").replace(/\/$/, "");
+  const apiBase = String(flags.apiUrl ?? auth.apiUrl ?? process.env.ZAP_API_URL ?? "https://zap.wzrd.tech").replace(/\/$/, "");
   const credentials = await readCredentialStore();
   const synced = [];
   for (const [secretType, entry] of Object.entries(credentials.secrets)) {
@@ -933,8 +933,8 @@ async function keysSync(flags) {
 
 async function loginCommand(flags) {
   const token = String(flags.token ?? process.env.ZAP_TOKEN ?? "");
-  if (!token) throw new Error("Usage: zap login --token <token> [--api-url https://zap.wzrd-tech.xyz]");
-  const apiUrl = String(flags.apiUrl ?? process.env.ZAP_API_URL ?? "https://zap.wzrd-tech.xyz").replace(/\/$/, "");
+  if (!token) throw new Error("Usage: zap login --token <token> [--api-url https://zap.wzrd.tech]");
+  const apiUrl = String(flags.apiUrl ?? process.env.ZAP_API_URL ?? "https://zap.wzrd.tech").replace(/\/$/, "");
   await writeAuthStore({ apiUrl, token });
   if (flags.json) printJson({ apiUrl, ok: true });
   else console.log(`Logged in to ${apiUrl}`);
@@ -953,7 +953,7 @@ async function deployCommand(args, flags) {
   const spec = await parseZapFile(file);
   const auth = await readAuthStore();
   const token = String(flags.token ?? auth.token ?? process.env.ZAP_TOKEN ?? "");
-  const apiBase = String(flags.apiUrl ?? auth.apiUrl ?? process.env.ZAP_API_URL ?? "https://zap.wzrd-tech.xyz").replace(/\/$/, "");
+  const apiBase = String(flags.apiUrl ?? auth.apiUrl ?? process.env.ZAP_API_URL ?? "https://zap.wzrd.tech").replace(/\/$/, "");
   const body = await bundleZapSource(file, spec);
   body.finalize = Boolean(flags.finalize);
   body.status = flags.finalize ? "published" : "draft";

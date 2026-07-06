@@ -31,7 +31,7 @@ npx @wzrdtech/zap@0.3.0 docs agents
 Remote skill registry:
 
 ```text
-https://zap.wzrd-tech.xyz/api/skills
-https://zap.wzrd-tech.xyz/api/skills/zap
-https://zap.wzrd-tech.xyz/api/skills/zap-authoring
+https://zap.wzrd.tech/api/skills
+https://zap.wzrd.tech/api/skills/zap
+https://zap.wzrd.tech/api/skills/zap-authoring
 ```

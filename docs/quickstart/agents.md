@@ -5,16 +5,16 @@ Point your coding agent at the Zap project URL or repo, then ask it to install o
 Machine-readable skill registry:
 
 ```text
-https://zap.wzrd-tech.xyz/api/skills
-https://zap.wzrd-tech.xyz/api/skills/zap
-https://zap.wzrd-tech.xyz/api/skills/zap-authoring
-https://zap.wzrd-tech.xyz/api/skills/zap?format=json
+https://zap.wzrd.tech/api/skills
+https://zap.wzrd.tech/api/skills/zap
+https://zap.wzrd.tech/api/skills/zap-authoring
+https://zap.wzrd.tech/api/skills/zap?format=json
 ```
 
 ## Codex
 
 ```text
-Use the Zap skills from https://zap.wzrd-tech.xyz/api/skills and validate with:
+Use the Zap skills from https://zap.wzrd.tech/api/skills and validate with:
 npx @wzrdtech/zap@0.3.0 validate
 npx @wzrdtech/zap@0.3.0 run agent/skills/zap-world-cup-entrance/Zap.md --json
 ```

@@ -152,9 +152,9 @@ export default async function Page() {
               {cliProof}
             </CodeWindow>
             <div className="grid gap-3 text-sm sm:grid-cols-3">
-              <Endpoint label="Manifest" value="https://zap.wzrd-tech.xyz/api/skills" />
-              <Endpoint label="Core skill" value="https://zap.wzrd-tech.xyz/api/skills/zap" />
-              <Endpoint label="Authoring" value="https://zap.wzrd-tech.xyz/api/skills/zap-authoring" />
+              <Endpoint label="Manifest" value="https://zap.wzrd.tech/api/skills" />
+              <Endpoint label="Core skill" value="https://zap.wzrd.tech/api/skills/zap" />
+              <Endpoint label="Authoring" value="https://zap.wzrd.tech/api/skills/zap-authoring" />
             </div>
           </div>
         </div>

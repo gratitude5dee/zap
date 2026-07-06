@@ -34,7 +34,7 @@ describe("provider webhooks", () => {
         request_id: "req_123",
         status: "COMPLETED",
       },
-      { url: `https://zap.wzrd-tech.xyz/api/providers/fal/webhook?runId=${runId}&stepId=${stepId}&capability=video.gen` },
+      { url: `https://zap.wzrd.tech/api/providers/fal/webhook?runId=${runId}&stepId=${stepId}&capability=video.gen` },
     );
 
     const snapshot = await getRunSnapshot(runId);
@@ -49,7 +49,7 @@ describe("provider webhooks", () => {
     const result = await recordProviderWebhook(
       "fal",
       { request_id: "req_missing", status: "COMPLETED" },
-      { url: "https://zap.wzrd-tech.xyz/api/providers/fal/webhook?runId=run_missing&stepId=initial_gen&capability=video.gen" },
+      { url: "https://zap.wzrd.tech/api/providers/fal/webhook?runId=run_missing&stepId=initial_gen&capability=video.gen" },
     );
 
     const snapshot = await getRunSnapshot("run_missing");

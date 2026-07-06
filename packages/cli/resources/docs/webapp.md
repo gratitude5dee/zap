@@ -1,6 +1,6 @@
 # Web App
 
-The Zap web app is the creator and developer surface deployed at `zap.wzrd-tech.xyz`.
+The Zap web app is the creator and developer surface deployed at `zap.wzrd.tech`.
 
 Primary routes:
 
@@ -23,7 +23,7 @@ Auth posture:
 Smoke production after deploy:
 
 ```bash
-curl -I https://zap.wzrd-tech.xyz/
-curl -I https://zap.wzrd-tech.xyz/docs
-curl -I https://zap.wzrd-tech.xyz/studio
+curl -I https://zap.wzrd.tech/
+curl -I https://zap.wzrd.tech/docs
+curl -I https://zap.wzrd.tech/studio
 ```

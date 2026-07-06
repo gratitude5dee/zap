@@ -240,5 +240,5 @@ function json(payload: unknown, status = 200) {
 
 function allowedOrigin() {
   const configured = Deno.env.get("ZAP_SECRETS_ALLOWED_ORIGIN");
-  return configured && configured.length > 0 ? configured : "https://zap.wzrd-tech.xyz";
+  return configured && configured.length > 0 ? configured : "https://zap.wzrd.tech";
 }

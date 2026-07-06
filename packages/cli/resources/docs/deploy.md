@@ -4,7 +4,7 @@ Production target:
 
 ```text
 Vercel project: zap
-Domain: zap.wzrd-tech.xyz
+Domain: zap.wzrd.tech
 Node: 24.x
 Supabase project: wzrdstudio / ixkkrousepsiorwlaycp
 ```

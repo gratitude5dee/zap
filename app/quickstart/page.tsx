@@ -46,10 +46,10 @@ export default function QuickstartPage() {
             </div>
 
             <div className="mt-6 grid gap-3">
-              <Endpoint label="Manifest" value="https://zap.wzrd-tech.xyz/api/skills" />
-              <Endpoint label="Core skill" value="https://zap.wzrd-tech.xyz/api/skills/zap" />
-              <Endpoint label="Authoring skill" value="https://zap.wzrd-tech.xyz/api/skills/zap-authoring" />
-              <Endpoint label="JSON mode" value="https://zap.wzrd-tech.xyz/api/skills/zap?format=json" />
+              <Endpoint label="Manifest" value="https://zap.wzrd.tech/api/skills" />
+              <Endpoint label="Core skill" value="https://zap.wzrd.tech/api/skills/zap" />
+              <Endpoint label="Authoring skill" value="https://zap.wzrd.tech/api/skills/zap-authoring" />
+              <Endpoint label="JSON mode" value="https://zap.wzrd.tech/api/skills/zap?format=json" />
             </div>
           </div>
 

@@ -3,11 +3,11 @@ import { listZapSkillDownloads, readZapSkill } from "../lib/zap-skills";
 
 describe("Zap skill registry", () => {
   it("adds stable download URLs to the bundled manifest", async () => {
-    const manifest = await listZapSkillDownloads("https://zap.wzrd-tech.xyz");
+    const manifest = await listZapSkillDownloads("https://zap.wzrd.tech");
     const core = manifest.skills.find((entry) => entry.skill === "zap");
 
-    expect(core?.downloadUrl).toBe("https://zap.wzrd-tech.xyz/api/skills/zap");
-    expect(core?.jsonUrl).toBe("https://zap.wzrd-tech.xyz/api/skills/zap?format=json");
+    expect(core?.downloadUrl).toBe("https://zap.wzrd.tech/api/skills/zap");
+    expect(core?.jsonUrl).toBe("https://zap.wzrd.tech/api/skills/zap?format=json");
     expect(manifest.skills.length).toBeGreaterThan(0);
   });
 

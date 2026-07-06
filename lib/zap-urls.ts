@@ -7,7 +7,7 @@ export function publicZapOrigin(fallback?: string) {
     ?? process.env.VERCEL_PROJECT_PRODUCTION_URL
     ?? process.env.VERCEL_URL
     ?? fallback
-    ?? "https://zap.wzrd-tech.xyz";
+    ?? "https://zap.wzrd.tech";
   const normalized = configured.startsWith("http://") || configured.startsWith("https://")
     ? configured
     : `https://${configured}`;

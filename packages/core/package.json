@@ -25,7 +25,7 @@
   "bugs": {
     "url": "https://github.com/gratitude5dee/Zap/issues"
   },
-  "homepage": "https://zap.wzrd-tech.xyz",
+  "homepage": "https://zap.wzrd.tech",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
