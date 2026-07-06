@@ -10,10 +10,15 @@ The publishable package is `@wzrdtech/zap`; it exposes the `zap` binary.
 - `zap lint [Zap.md]` checks policy warnings such as live provider defaults.
 - `zap run <Zap.md>` performs a zero-spend plan by default.
 - `zap run <Zap.md> --live` submits live provider work with locally stored BYOK keys.
+- `zap run <Zap.md> --budget-cap-usd <n>` overrides the recipe spend cap for that run.
+- `zap gallery [--remote]` lists local recipes or the hosted gallery.
 - `zap keys add/list/test/remove/sync` manages encrypted provider credentials.
 - `zap deploy` publishes a Zap bundle to the hosted API.
+- `zap finalize <slug>` promotes a deployed draft into the Gallery.
+- `zap import hyperframes|openmontage` converts upstream templates into local Zap recipes.
 - `zap inspect` and `zap embed` expose non-interactive recipe and embed metadata.
 - `zap status [runId]` reads local `.zap/runs`.
+- `zap mcp` starts the `@wzrdtech/zap-mcp` stdio server for agent clients.
 - `zap improve <slug|Zap.md>` proposes a version bump from Convex run/feedback evidence when `CONVEX_URL` is configured, plus local `.zap` traces as offline evidence.
 - `zap docs [topic]` prints bundled docs.
 - `zap skills` generates `skills/skills-manifest.json`.

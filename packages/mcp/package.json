@@ -1,12 +1,16 @@
 {
-  "name": "@wzrdtech/zap",
+  "name": "@wzrdtech/zap-mcp",
   "version": "0.3.0",
   "private": false,
-  "description": "Agent-first CLI for creating, validating, and running Zap recipes.",
+  "description": "MCP stdio server for driving Zap recipes from agents.",
   "license": "MIT",
   "type": "module",
   "bin": {
-    "zap": "./bin/zap.js"
+    "zap-mcp": "./bin/zap-mcp.js"
+  },
+  "exports": {
+    ".": "./src/server.js",
+    "./server": "./src/server.js"
   },
   "publishConfig": {
     "access": "public"
@@ -14,7 +18,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/gratitude5dee/Zap.git",
-    "directory": "packages/cli"
+    "directory": "packages/mcp"
   },
   "bugs": {
     "url": "https://github.com/gratitude5dee/Zap/issues"
@@ -22,16 +26,13 @@
   "homepage": "https://zap.wzrd.tech",
   "files": [
     "bin",
-    "resources",
     "src",
     "README.md"
   ],
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@wzrdtech/core": "0.3.0",
-    "@wzrdtech/zap-mcp": "0.3.0",
-    "@wzrdtech/providers": "0.3.0",
-    "convex": "^1.28.0",
-    "yaml": "^2.8.1"
+    "@wzrdtech/providers": "0.3.0"
   },
   "engines": {
     "node": "24.x"

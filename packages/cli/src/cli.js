@@ -307,6 +307,11 @@ async function runCommand(args, flags) {
   const file = (await resolveZapFiles(args))[0];
   if (!file) throw new Error("Usage: zap run <slug|Zap.md> [--input KEY=VALUE] [--live] [--json]");
   const spec = await parseZapFile(file);
+  const budgetCapUsd = flags.budgetCapUsd === undefined ? undefined : Number(flags.budgetCapUsd);
+  if (budgetCapUsd !== undefined) {
+    if (!Number.isFinite(budgetCapUsd) || budgetCapUsd < 0) throw new Error("--budget-cap-usd must be a non-negative number.");
+    spec.budget.cap_usd = budgetCapUsd;
+  }
   validateSpec(spec);
   const inputs = withPlanInputDefaults(spec, parseInputFlags(flags.input), Boolean(flags.live));
   if (flags.live) validateRequiredInputs(spec, inputs);
@@ -731,30 +736,30 @@ async function writeImportedZap({ description, metadata, prompts, slug, stitch, 
 }
 
 async function mcpCommand(flags) {
+  const tools = [
+    "zap_validate",
+    "zap_lint",
+    "zap_run",
+    "zap_status",
+    "zap_keys_list",
+    "zap_gallery_list",
+    "zap_deploy",
+    "zap_import_hyperframes",
+    "zap_import_openmontage",
+    "zap_docs",
+  ];
   if (flags.json) {
     printJson({
+      package: "@wzrdtech/zap-mcp",
       command: "zap mcp",
-      tools: ["validate_zap", "inspect_zap", "list_gallery"],
+      tools,
       transport: "stdio",
     });
     return;
   }
-  process.stdin.setEncoding("utf8");
-  process.stdin.resume();
-  let buffer = "";
-  process.stdin.on("data", async (chunk) => {
-    buffer += chunk;
-    const messages = [];
-    while (true) {
-      const parsed = takeMcpMessage(buffer);
-      if (!parsed) break;
-      messages.push(parsed.message);
-      buffer = parsed.rest;
-    }
-    for (const message of messages) {
-      await respondToMcp(message);
-    }
-  });
+  process.env.ZAP_CLI_BIN ??= fileURLToPath(new URL("../bin/zap.js", import.meta.url));
+  const { startZapMcpServer } = await import("@wzrdtech/zap-mcp/server");
+  await startZapMcpServer();
 }
 
 async function skillsCommand(args, flags) {
@@ -1142,122 +1147,6 @@ function secretsForProvider(store, provider) {
     if (entry) secrets[secretType] = decryptValue(entry);
   }
   return secrets;
-}
-
-function takeMcpMessage(buffer) {
-  const headerEnd = buffer.indexOf("\r\n\r\n");
-  if (headerEnd !== -1) {
-    const header = buffer.slice(0, headerEnd);
-    const lengthMatch = header.match(/content-length:\s*(\d+)/i);
-    if (!lengthMatch) throw new Error("MCP message missing Content-Length.");
-    const length = Number(lengthMatch[1]);
-    const bodyStart = headerEnd + 4;
-    const bodyEnd = bodyStart + length;
-    if (buffer.length < bodyEnd) return null;
-    return { message: JSON.parse(buffer.slice(bodyStart, bodyEnd)), rest: buffer.slice(bodyEnd) };
-  }
-
-  const newline = buffer.indexOf("\n");
-  if (newline === -1 || !buffer.trimStart().startsWith("{")) return null;
-  return { message: JSON.parse(buffer.slice(0, newline)), rest: buffer.slice(newline + 1) };
-}
-
-async function respondToMcp(message) {
-  if (!message || message.method === "notifications/initialized") return;
-  try {
-    if (message.method === "initialize") {
-      writeMcp({
-        id: message.id,
-        jsonrpc: "2.0",
-        result: {
-          capabilities: { tools: {} },
-          protocolVersion: message.params?.protocolVersion ?? "2025-06-18",
-          serverInfo: { name: "zap-cli", version },
-        },
-      });
-      return;
-    }
-    if (message.method === "tools/list") {
-      writeMcp({
-        id: message.id,
-        jsonrpc: "2.0",
-        result: {
-          tools: [
-            {
-              description: "Validate a Zap.md recipe.",
-              inputSchema: { properties: { file: { type: "string" } }, type: "object" },
-              name: "validate_zap",
-            },
-            {
-              description: "Inspect a Zap recipe quote and step plan.",
-              inputSchema: { properties: { file: { type: "string" } }, type: "object" },
-              name: "inspect_zap",
-            },
-            {
-              description: "List local Zap recipes in the current project.",
-              inputSchema: { properties: {}, type: "object" },
-              name: "list_gallery",
-            },
-          ],
-        },
-      });
-      return;
-    }
-    if (message.method === "tools/call") {
-      const result = await callMcpTool(message.params?.name, message.params?.arguments ?? {});
-      writeMcp({
-        id: message.id,
-        jsonrpc: "2.0",
-        result: { content: [{ text: JSON.stringify(result, null, 2), type: "text" }] },
-      });
-      return;
-    }
-    writeMcp({ error: { code: -32601, message: `Unknown method ${message.method}` }, id: message.id, jsonrpc: "2.0" });
-  } catch (error) {
-    writeMcp({
-      error: { code: -32000, message: error instanceof Error ? error.message : String(error) },
-      id: message.id,
-      jsonrpc: "2.0",
-    });
-  }
-}
-
-async function callMcpTool(name, args) {
-  if (name === "validate_zap") {
-    const file = (await resolveZapFiles(args.file ? [args.file] : []))[0];
-    if (!file) throw new Error("No Zap.md file found.");
-    const spec = await parseZapFile(file);
-    validateSpec(spec);
-    return { file, ok: true, zap: spec.zap };
-  }
-  if (name === "inspect_zap") {
-    const file = (await resolveZapFiles(args.file ? [args.file] : []))[0];
-    if (!file) throw new Error("No Zap.md file found.");
-    const spec = await parseZapFile(file);
-    const steps = expandSteps(spec, Number(args.extend ?? 0));
-    return {
-      budget: spec.budget,
-      file,
-      quoteUsd: estimateUsd(spec, steps),
-      steps: steps.map((step) => plannedStep(spec, step)),
-      zap: spec.zap,
-    };
-  }
-  if (name === "list_gallery") {
-    const files = await resolveZapFiles([]);
-    const zaps = [];
-    for (const file of files) {
-      const spec = await parseZapFile(file);
-      zaps.push({ estimateUsd: spec.budget.estimate_usd, file, slug: spec.zap, steps: spec.steps.length });
-    }
-    return { zaps };
-  }
-  throw new Error(`Unknown tool ${name}.`);
-}
-
-function writeMcp(message) {
-  const body = JSON.stringify(message);
-  process.stdout.write(`Content-Length: ${Buffer.byteLength(body, "utf8")}\r\n\r\n${body}`);
 }
 
 function parseArgs(argv) {
@@ -1832,6 +1721,7 @@ Common flags:
   --json              Machine-readable output
   --live              Allow live provider spend for run
   --input KEY=VALUE   Provide a recipe input; repeatable
+  --budget-cap-usd N  Override the recipe spend cap for this run
   --force             Overwrite generated recipe files
   --version           Print version
 `);
