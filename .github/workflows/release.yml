@@ -26,6 +26,25 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run typecheck
+      - name: Check npm first-publish authorization
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          missing_packages=()
+          for package_name in @wzrdtech/core @wzrdtech/providers; do
+            if ! npm view "$package_name" version >/dev/null 2>&1; then
+              missing_packages+=("$package_name")
+            fi
+          done
+
+          if [ "${#missing_packages[@]}" -gt 0 ] && [ -z "$NPM_TOKEN" ]; then
+            {
+              echo "The following packages do not exist on npm yet: ${missing_packages[*]}."
+              echo "First publication requires a GitHub Actions NPM_TOKEN with package creation rights for @wzrdtech."
+              echo "After first publish, package-level trusted publishing can publish without a long-lived token."
+            } >&2
+            exit 1
+          fi
       - name: Publish @wzrdtech/core
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
