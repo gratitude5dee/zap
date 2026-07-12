@@ -2,7 +2,7 @@ import { ProviderError } from "./errors.ts";
 import type { ProviderPollResult, ProviderSecrets, ProviderWebhookResult } from "./types.ts";
 
 export function requireSecret(secrets: ProviderSecrets | undefined, name: keyof ProviderSecrets, envName: string) {
-  const value = secrets?.[name] ?? process.env[envName];
+  const value = secrets === undefined ? process.env[envName] : secrets[name];
   if (!value) {
     throw new ProviderError(`${envName} is required for live provider calls.`, {
       code: "KEY_MISSING",

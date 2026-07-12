@@ -6,7 +6,7 @@
   "license": "MIT",
   "type": "module",
   "bin": {
-    "zap": "./bin/zap.js"
+    "zap": "bin/zap.js"
   },
   "publishConfig": {
     "access": "public"

@@ -2,6 +2,7 @@ import { after, NextResponse } from "next/server";
 import { z } from "zod";
 import { executeZapRun, prepareRerunZapRunFromStep } from "@/lib/zap-runner-server";
 import { toZapErrorPayload } from "@/lib/zap-errors";
+import { assertRunOwner } from "@/lib/run-request-auth";
 
 const bodySchema = z.object({
   comment: z.string().optional(),
@@ -14,6 +15,7 @@ export async function POST(
 ) {
   try {
     const { runId } = await params;
+    await assertRunOwner(request, runId);
     const body = bodySchema.parse(await request.json().catch(() => ({})));
     const prepared = await prepareRerunZapRunFromStep(runId, body.stepId, body.comment);
     after(() => executeZapRun(prepared.execution));

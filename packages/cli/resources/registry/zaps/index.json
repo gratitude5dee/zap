@@ -1,0 +1,111 @@
+{
+  "version": 1,
+  "zaps": [
+    {
+      "budget": {
+        "cap_usd": 10,
+        "estimate_usd": 4.5
+      },
+      "description": "Draft Zap for a live-broadcast fan cutaway where the uploaded person is caught by the stadium camera.",
+      "inputs": {
+        "image": {
+          "type": "image",
+          "required": true,
+          "hint": "clear selfie or fan photo"
+        },
+        "FAN_COUNTRY": {
+          "type": "string",
+          "required": true,
+          "label": "Fan country"
+        },
+        "TEAM_1": {
+          "type": "string",
+          "required": true
+        },
+        "TEAM_2": {
+          "type": "string",
+          "required": true
+        },
+        "SCORE_1": {
+          "type": "string",
+          "required": true
+        },
+        "SCORE_2": {
+          "type": "string",
+          "required": true
+        },
+        "MATCH_PERIOD": {
+          "type": "string",
+          "required": true
+        },
+        "MATCH_TIME": {
+          "type": "string",
+          "required": true
+        },
+        "STAT_TITLE": {
+          "type": "string",
+          "required": true
+        },
+        "STAT_1": {
+          "type": "string",
+          "required": true
+        },
+        "STAT_2": {
+          "type": "string",
+          "required": true
+        }
+      },
+      "providers": [
+        "fal"
+      ],
+      "slug": "caught-by-the-cam",
+      "tags": [
+        "by",
+        "cam",
+        "caught",
+        "the"
+      ],
+      "title": "Caught By The Cam"
+    },
+    {
+      "budget": {
+        "cap_usd": 15,
+        "estimate_usd": 7.5
+      },
+      "description": "World Cup player-entrance highlight reel from a selfie. Use when the user wants a cinematic stadium intro video of themselves.",
+      "inputs": {
+        "image": {
+          "type": "image",
+          "required": true,
+          "hint": "clear front-facing selfie"
+        },
+        "NAME": {
+          "type": "string",
+          "required": true,
+          "label": "Player name"
+        },
+        "COUNTRY": {
+          "type": "string",
+          "required": true,
+          "label": "Country"
+        },
+        "NO": {
+          "type": "string",
+          "required": true,
+          "label": "Jersey number"
+        }
+      },
+      "providers": [
+        "fal",
+        "gmi"
+      ],
+      "slug": "world-cup-entrance",
+      "tags": [
+        "cup",
+        "entrance",
+        "world"
+      ],
+      "title": "World Cup Entrance"
+    }
+  ]
+}

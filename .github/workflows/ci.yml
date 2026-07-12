@@ -14,7 +14,13 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - run: npm ci
+      - run: npm ci --legacy-peer-deps
       - run: npm test
       - run: npm run typecheck
-      - run: npm run cli -- validate agent/skills/zap-world-cup-entrance/Zap.md
+      - run: npm run cli -- validate
+      - run: npm run cli -- lint
+      - run: npm run registry:check
+      - run: npm run evals
+      - run: npm run docs:validate
+      - run: npm run docs:links
+      - run: npm run build

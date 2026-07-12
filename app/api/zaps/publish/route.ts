@@ -2,9 +2,11 @@ import { ConvexHttpClient } from "convex/browser";
 import { makeFunctionReference } from "convex/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { convexServiceToken } from "@/lib/convex-service";
 import { isReservedSlug } from "@/lib/reserved-slugs";
 import { parseZapMarkdown } from "@/lib/zap-schema";
 import { publicZapOrigin } from "@/lib/zap-urls";
+import { getRequestAccessToken, resolveWalletPrincipal } from "@/lib/supabase/server";
 
 const upsertZap = makeFunctionReference<"mutation">("zaps:upsert");
 const finalizeZap = makeFunctionReference<"mutation">("zaps:finalize");
@@ -23,15 +25,15 @@ const publishSchema = z.object({
   tags: z.array(z.string()).default([]),
   title: z.string().optional(),
   zapMd: z.string().optional(),
+  visibility: z.enum(["private", "public"]).optional(),
 });
 
 export async function POST(request: Request) {
   const configuredToken = process.env.ZAP_PUBLISH_TOKEN;
   const providedToken = bearerToken(request);
-  if (!configuredToken && process.env.NODE_ENV === "production") {
-    return NextResponse.json({ error: "ZAP_PUBLISH_TOKEN is required before publishing zaps." }, { status: 503 });
-  }
-  if (configuredToken && providedToken !== configuredToken) {
+  const serviceAuthorized = Boolean(configuredToken) && providedToken === configuredToken;
+  const principal = serviceAuthorized ? null : await resolveWalletPrincipal(getRequestAccessToken(request));
+  if (!serviceAuthorized && !principal) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -49,8 +51,13 @@ export async function POST(request: Request) {
   const client = new ConvexHttpClient(convexUrl);
   const source = JSON.stringify({ prompts: input.prompts, zapMd });
   const status = input.finalize ? "published" : input.status;
+  if (input.finalize && !serviceAuthorized) {
+    return NextResponse.json({ error: "Public registry publication requires the curator release token." }, { status: 403 });
+  }
+  const authorId = principal?.principalId ?? input.authorId;
+  const visibility = serviceAuthorized ? input.visibility ?? "public" : "private";
   const id = await client.mutation(upsertZap, {
-    authorId: input.authorId,
+    authorId,
     compiledFromRunId: input.compiledFromRunId,
     description: input.description ?? spec.description,
     estimateUsd: spec.budget.estimate_usd,
@@ -61,17 +68,20 @@ export async function POST(request: Request) {
     tags: input.tags,
     title: input.title,
     version: spec.version,
+    visibility,
+    serviceToken: convexServiceToken(),
   });
   if (input.finalize) {
     await client.mutation(finalizeZap, {
-      authorId: input.authorId,
+      authorId,
       compiledFromRunId: input.compiledFromRunId,
       description: input.description ?? spec.description,
-      finalizedBy: input.finalizedBy ?? input.authorId,
+      finalizedBy: input.finalizedBy ?? authorId,
       heroAssetUrl: input.heroAssetUrl,
       slug,
       tags: input.tags,
       title: input.title,
+      serviceToken: convexServiceToken(),
     });
   }
 
@@ -82,6 +92,7 @@ export async function POST(request: Request) {
     slug,
     status,
     version: spec.version,
+    visibility,
   });
 }
 

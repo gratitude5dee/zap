@@ -1,0 +1,12 @@
+{
+  "name": "@wzrdtech/sandbox-adapters",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "peerDependencies": {
+    "eve": "0.22.4"
+  }
+}

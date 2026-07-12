@@ -59,11 +59,11 @@ export default async function Page() {
               File-first media recipes for agents, creators, and operators: provider routes, budgets, assets, gallery slugs, and finalization all stay inspectable.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-[#f6ff00] px-5 font-semibold text-[#1a1a1a] transition hover:bg-white" href="/zap/world-cup-entrance">
+              <Link className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-[#f6ff00] px-5 font-semibold text-[#1a1a1a] transition hover:bg-white" href="/zap/world-cup-entrance" prefetch={false}>
                 <Play className="size-4" />
                 Run demo Zap
               </Link>
-              <Link className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md border border-white/15 px-5 font-medium text-white transition hover:bg-white/10" href="/quickstart">
+              <Link className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md border border-white/15 px-5 font-medium text-white transition hover:bg-white/10" href="/quickstart" prefetch={false}>
                 <TerminalSquare className="size-4" />
                 Agent quickstart
               </Link>
@@ -98,7 +98,7 @@ export default async function Page() {
             <p className="mt-4 text-pretty leading-7 text-white/62">
               Zap keeps prompts, provider routing, budget caps, input contracts, and output shape in files first. The studio is the control room, not a black box.
             </p>
-            <Link className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-md border border-white/15 px-4 font-medium text-sm text-white transition hover:bg-white/10" href={ZAP_DOCS_URL}>
+            <Link className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-md border border-white/15 px-4 font-medium text-sm text-white transition hover:bg-white/10" href={ZAP_DOCS_URL} prefetch={false}>
               Read the schema docs
               <ArrowRight className="size-4" />
             </Link>
@@ -119,7 +119,7 @@ export default async function Page() {
               <p className="font-mono text-sm text-zap-cyan">installed recipes</p>
               <h2 className="mt-2 font-semibold text-4xl leading-tight">Creator flows ready to run</h2>
             </div>
-            <Link className="inline-flex min-h-11 items-center gap-2 rounded-md border border-white/15 px-4 font-medium text-sm text-white transition hover:bg-white/10" href="/gallery">
+            <Link className="inline-flex min-h-11 items-center gap-2 rounded-md border border-white/15 px-4 font-medium text-sm text-white transition hover:bg-white/10" href="/gallery" prefetch={false}>
               View gallery
               <ArrowRight className="size-4" />
             </Link>

@@ -85,7 +85,7 @@ zap doctor --json`}</code></pre>
                     <p className="font-mono text-xs text-white/45">zap docs {topic.id}</p>
                     <h2 className="mt-2 font-semibold text-3xl leading-tight text-white">{topic.title}</h2>
                   </div>
-                  <Link className="inline-flex min-h-11 items-center rounded-md border border-white/10 px-3 font-medium text-sm text-white transition hover:bg-white/10" href="/api/skills/zap?format=json">Skill JSON</Link>
+                  <Link className="inline-flex min-h-11 items-center rounded-md border border-white/10 px-3 font-medium text-sm text-white transition hover:bg-white/10" href="/api/skills/zap?format=json" prefetch={false}>Skill JSON</Link>
                 </div>
                 <article className="max-w-4xl text-white/62">{renderMarkdown(topic.content, topic.id)}</article>
               </section>

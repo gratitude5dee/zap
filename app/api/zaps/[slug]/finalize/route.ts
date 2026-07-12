@@ -2,6 +2,7 @@ import { ConvexHttpClient } from "convex/browser";
 import { makeFunctionReference } from "convex/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { convexServiceToken } from "@/lib/convex-service";
 import { isReservedSlug } from "@/lib/reserved-slugs";
 
 const finalizeZap = makeFunctionReference<"mutation">("zaps:finalize");
@@ -37,7 +38,7 @@ export async function POST(
 
   const input = finalizeSchema.parse(await request.json().catch(() => ({})));
   const client = new ConvexHttpClient(convexUrl);
-  const id = await client.mutation(finalizeZap, { ...input, slug });
+  const id = await client.mutation(finalizeZap, { ...input, serviceToken: convexServiceToken(), slug });
   return NextResponse.json({ id, slug, status: "published" });
 }
 

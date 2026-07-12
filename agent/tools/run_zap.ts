@@ -1,6 +1,8 @@
 import { defineTool } from "eve/tools";
 import { z } from "zod";
 import { ZapRunError } from "../../lib/zap-errors.js";
+import { resolveChannelAwareRunContext } from "../../lib/channel-run-context.js";
+import { assertSpriteZapAllowed } from "../../lib/sprite-runtime.js";
 import { createZapRunTicket, startZapRunExecution } from "../../lib/zap-runner-server.js";
 import { zapBudget } from "../lib/budget.js";
 
@@ -8,6 +10,7 @@ export default defineTool({
   description: "Submit a Zap recipe run, or dry-run it, and return a fast run ticket with quote and status URL.",
   inputSchema: z.object({
     dryRun: z.boolean().default(false),
+    credentialMode: z.enum(["byok", "wzrd-cloud"]).optional(),
     extendCount: z.number().int().min(0).max(64).default(0),
     inputs: z.record(z.string(), z.unknown()).default({}),
     live: z.boolean().default(false),
@@ -18,9 +21,15 @@ export default defineTool({
     const input = toolInput as { live?: boolean } | undefined;
     return input?.live ? "user-approval" : "not-applicable";
   },
-  async execute(input) {
+  async execute(input, ctx) {
+    assertSpriteZapAllowed(input.slug);
+    const runContext = resolveChannelAwareRunContext({
+      auth: ctx.session.auth.current ?? ctx.session.auth.initiator,
+      credentialMode: input.credentialMode,
+      live: input.live,
+    });
     if (!input.dryRun) {
-      const rehearsal = await createZapRunTicket({ ...input, dryRun: true });
+      const rehearsal = await createZapRunTicket({ ...input, ...runContext, dryRun: true });
       const budget = zapBudget.get();
       const remaining = budget.capUsd - budget.spentUsd;
       if (rehearsal.response.quoteUsd > remaining) {
@@ -34,7 +43,7 @@ export default defineTool({
       }
     }
 
-    const result = await createZapRunTicket(input);
+    const result = await createZapRunTicket({ ...input, ...runContext });
     if (result.execution) {
       zapBudget.update((current) => {
         const runs = {

@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.zap-wallet-proof]
 verify_jwt = false
+
+[functions.zap-managed-provider-secrets]
+verify_jwt = false

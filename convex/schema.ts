@@ -44,10 +44,19 @@ export default defineSchema({
     .index("by_step", ["runId", "stepId"]),
 
   runs: defineTable({
+    credentialMode: v.optional(v.union(v.literal("byok"), v.literal("wzrd-cloud"))),
     costUsd: v.number(),
     error: v.optional(v.string()),
     finishedAt: v.optional(v.number()),
     inputs: v.any(),
+    llmModel: v.optional(v.string()),
+    llmRoute: v.optional(v.union(
+      v.literal("gateway"),
+      v.literal("openai"),
+      v.literal("anthropic"),
+      v.literal("openrouter"),
+    )),
+    principalId: v.optional(v.string()),
     runId: v.string(),
     sessionId: v.optional(v.string()),
     stage: v.optional(v.string()),
@@ -66,6 +75,7 @@ export default defineSchema({
     zapVersion: v.number(),
   })
     .index("by_runId", ["runId"])
+    .index("by_principal", ["principalId"])
     .index("by_startedAt", ["startedAt"])
     .index("by_status", ["status"])
     .index("by_zap", ["zapSlug"]),
@@ -96,6 +106,31 @@ export default defineSchema({
     .index("by_step", ["runId", "stepId"])
     .index("by_status", ["status"]),
 
+  sprites: defineTable({
+    authorId: v.string(),
+    composioMcpUrl: v.optional(v.string()),
+    composioSessionId: v.optional(v.string()),
+    composioUserId: v.string(),
+    createdAt: v.number(),
+    deploymentError: v.optional(v.string()),
+    deploymentId: v.optional(v.string()),
+    deploymentUrl: v.optional(v.string()),
+    manifest: v.string(),
+    projectId: v.optional(v.string()),
+    projectName: v.optional(v.string()),
+    slug: v.string(),
+    status: v.union(
+      v.literal("draft"),
+      v.literal("deploying"),
+      v.literal("ready"),
+      v.literal("error"),
+    ),
+    updatedAt: v.number(),
+  })
+    .index("by_author", ["authorId"])
+    .index("by_deployment", ["deploymentId"])
+    .index("by_slug", ["slug"]),
+
   zaps: defineTable({
     authorId: v.optional(v.string()),
     compiledFromRunId: v.optional(v.string()),
@@ -112,8 +147,10 @@ export default defineSchema({
     title: v.optional(v.string()),
     updatedAt: v.optional(v.number()),
     version: v.number(),
+    visibility: v.optional(v.union(v.literal("private"), v.literal("public"))),
   })
     .index("by_slug", ["slug"])
     .index("by_author", ["authorId"])
+    .index("by_author_status", ["authorId", "status"])
     .index("by_status", ["status"]),
 });

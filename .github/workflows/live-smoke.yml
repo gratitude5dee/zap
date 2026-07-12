@@ -19,7 +19,7 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - run: npm ci
+      - run: npm ci --legacy-peer-deps
       - run: npm run cli -- keys test ${{ inputs.provider }} --json
         env:
           FAL_KEY: ${{ secrets.FAL_KEY }}

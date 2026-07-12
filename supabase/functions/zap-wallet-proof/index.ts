@@ -5,8 +5,10 @@ import { verifyMessage } from "https://esm.sh/ethers@6.15.0";
 const corsHeaders = {
   "access-control-allow-headers": "authorization, apikey, content-type",
   "access-control-allow-methods": "OPTIONS, POST",
-  "access-control-allow-origin": "*",
+  "access-control-allow-origin": Deno.env.get("ZAP_PUBLIC_ORIGIN") ?? "https://zap.wzrd.tech",
 };
+
+const loginStatement = "Sign in to Zap Studio and authorize your wallet principal.";
 
 Deno.serve(async (request: Request) => {
   if (request.method === "OPTIONS") return json({ ok: true });
@@ -42,40 +44,54 @@ Deno.serve(async (request: Request) => {
 });
 
 function normalizeProof(body: Record<string, unknown>) {
-  const payload = typeof body.payload === "object" && body.payload ? body.payload as Record<string, unknown> : body;
-  const address = normalizeAddress(String(payload.address ?? body.address ?? ""));
-  const message = String(payload.message ?? body.message ?? "");
-  const signature = String(payload.signature ?? body.signature ?? "");
-  const action = String(payload.action ?? body.action ?? extractMessageField(message, "Action") ?? "");
-  const nonce = String(payload.nonce ?? body.nonce ?? extractMessageField(message, "Nonce") ?? "");
-  const issuedAt = String(payload.issuedAt ?? payload.issued_at ?? body.issuedAt ?? extractMessageField(message, "Issued At") ?? "");
-  const expirationTime = String(payload.expirationTime ?? payload.expiration_time ?? body.expirationTime ?? extractMessageField(message, "Expiration Time") ?? "");
+  if (typeof body.payload !== "object" || !body.payload) throw new Error("Thirdweb SIWE payload is required.");
+  const payload = body.payload as Record<string, unknown>;
+  const signedAddress = String(payload.address ?? "");
+  const address = normalizeAddress(signedAddress);
+  const signature = String(body.signature ?? "");
+  const normalized = {
+    address,
+    chain_id: optionalString(payload.chain_id),
+    domain: String(payload.domain ?? ""),
+    expiration_time: String(payload.expiration_time ?? ""),
+    invalid_before: String(payload.invalid_before ?? ""),
+    issued_at: String(payload.issued_at ?? ""),
+    nonce: String(payload.nonce ?? ""),
+    resources: Array.isArray(payload.resources) ? payload.resources.map(String) : undefined,
+    signedAddress,
+    statement: String(payload.statement ?? ""),
+    uri: String(payload.uri ?? ""),
+    version: String(payload.version ?? ""),
+  };
 
-  if (!address) throw new Error("Wallet address is required.");
-  if (!message) throw new Error("Signed message is required.");
+  if (!normalized.address) throw new Error("Wallet address is required.");
   if (!signature) throw new Error("Wallet signature is required.");
-  if (!nonce) throw new Error("Wallet proof nonce is required.");
-  if (action && action !== "zap-auth") throw new Error("Wallet proof action must be zap-auth.");
+  if (!/^[a-zA-Z0-9_-]{8,128}$/.test(normalized.nonce)) throw new Error("Wallet proof nonce is invalid.");
 
-  return { address, expirationTime, issuedAt, message, nonce, signature };
+  return { ...normalized, signature };
 }
 
 function verifyWalletProof(proof: ReturnType<typeof normalizeProof>) {
-  const recovered = normalizeAddress(verifyMessage(proof.message, proof.signature));
+  const expectedOrigin = (Deno.env.get("ZAP_PUBLIC_ORIGIN") ?? "https://zap.wzrd.tech").replace(/\/$/, "");
+  const expectedDomain = Deno.env.get("ZAP_AUTH_DOMAIN") ?? new URL(expectedOrigin).host;
+  if (proof.domain !== expectedDomain) throw new Error("Wallet proof domain does not match this deployment.");
+  if (proof.uri !== expectedOrigin) throw new Error("Wallet proof URI does not match this deployment.");
+  if (proof.statement !== loginStatement) throw new Error("Wallet proof statement is invalid.");
+  if (proof.version !== "1") throw new Error("Wallet proof version must be 1.");
+  if (proof.chain_id && !/^\d+$/.test(proof.chain_id)) throw new Error("Wallet proof chain id is invalid.");
+
+  const message = createLoginMessage(proof);
+  const recovered = normalizeAddress(verifyMessage(message, proof.signature));
   if (recovered !== proof.address) throw new Error("Wallet signature does not match address.");
 
   const now = Date.now();
-  if (proof.issuedAt) {
-    const issuedAtMs = Date.parse(proof.issuedAt);
-    if (Number.isNaN(issuedAtMs)) throw new Error("Wallet proof issuedAt is invalid.");
-    if (issuedAtMs > now + 1000 * 60 * 5) throw new Error("Wallet proof issuedAt is in the future.");
-  }
-
-  if (proof.expirationTime) {
-    const expiresAtMs = Date.parse(proof.expirationTime);
-    if (Number.isNaN(expiresAtMs)) throw new Error("Wallet proof expirationTime is invalid.");
-    if (expiresAtMs <= now) throw new Error("Wallet proof has expired.");
-  }
+  const issuedAtMs = parseDate(proof.issued_at, "issued at");
+  const invalidBeforeMs = parseDate(proof.invalid_before, "not before");
+  const expiresAtMs = parseDate(proof.expiration_time, "expiration time");
+  if (issuedAtMs > now + 1000 * 60 * 5) throw new Error("Wallet proof issued at is in the future.");
+  if (invalidBeforeMs > now) throw new Error("Wallet proof is not active yet.");
+  if (expiresAtMs <= now) throw new Error("Wallet proof has expired.");
+  if (expiresAtMs - issuedAtMs > 1000 * 60 * 15) throw new Error("Wallet proof validity window is too long.");
 }
 
 async function getOrCreateWalletUser(admin, address: string, password: string) {
@@ -109,6 +125,10 @@ async function createWalletUser(admin, address: string, email: string, password:
       provider: "thirdweb",
       wallet_address: address,
     },
+    app_metadata: {
+      provider: "thirdweb",
+      wallet_address: address,
+    },
   });
   if (!error && data?.user) return data.user;
 
@@ -127,6 +147,11 @@ async function updateWalletUser(admin, user, address: string, password: string) 
     password,
     user_metadata: {
       ...user.user_metadata,
+      provider: "thirdweb",
+      wallet_address: address,
+    },
+    app_metadata: {
+      ...user.app_metadata,
       provider: "thirdweb",
       wallet_address: address,
     },
@@ -174,9 +199,31 @@ function encodeBase64Url(bytes: Uint8Array) {
     .replace(/=+$/g, "");
 }
 
-function extractMessageField(message: string, field: string) {
-  const match = message.match(new RegExp(`^${field}:\\s*(.+)$`, "im"));
-  return match?.[1]?.trim();
+function createLoginMessage(payload: ReturnType<typeof normalizeProof>) {
+  const header = `${payload.domain} wants you to sign in with your Ethereum account:`;
+  let prefix = `${header}\n${payload.signedAddress}\n\n${payload.statement}`;
+  if (payload.statement) prefix += "\n";
+  const suffix = [
+    ...(payload.uri ? [`URI: ${payload.uri}`] : []),
+    `Version: ${payload.version}`,
+    ...(payload.chain_id ? [`Chain ID: ${payload.chain_id}`] : []),
+    `Nonce: ${payload.nonce}`,
+    `Issued At: ${payload.issued_at}`,
+    `Expiration Time: ${payload.expiration_time}`,
+    ...(payload.invalid_before ? [`Not Before: ${payload.invalid_before}`] : []),
+    ...(payload.resources?.length ? [["Resources:", ...payload.resources.map((resource) => `- ${resource}`)].join("\n")] : []),
+  ].join("\n");
+  return `${prefix}\n${suffix}`;
+}
+
+function parseDate(value: string, label: string) {
+  const parsed = Date.parse(value);
+  if (!Number.isFinite(parsed)) throw new Error(`Wallet proof ${label} is invalid.`);
+  return parsed;
+}
+
+function optionalString(value: unknown) {
+  return value === undefined || value === null || value === "" ? undefined : String(value);
 }
 
 function normalizeAddress(address: string) {

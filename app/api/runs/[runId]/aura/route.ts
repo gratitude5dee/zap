@@ -3,6 +3,7 @@ import { z } from "zod";
 import { scoreAuraVideo } from "@/lib/judge";
 import { getRunSnapshot } from "@/lib/run-ledger";
 import { toZapErrorPayload } from "@/lib/zap-errors";
+import { assertRunOwner } from "@/lib/run-request-auth";
 
 const auraSchema = z.object({
   assetId: z.string().optional(),
@@ -16,6 +17,7 @@ export async function POST(
 ) {
   try {
     const { runId } = await params;
+    await assertRunOwner(request, runId);
     const input = auraSchema.parse(await request.json().catch(() => ({})));
     const snapshot = await getRunSnapshot(runId);
     if (!snapshot.run && !input.assetUrl && !input.assetId) {

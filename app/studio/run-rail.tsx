@@ -1,9 +1,6 @@
 "use client";
 
-import { useQuery } from "convex/react";
-import { makeFunctionReference } from "convex/server";
-
-const listRecentRuns = makeFunctionReference<"query">("runs:listRecent");
+import { useEffect, useState } from "react";
 
 type RailRun = {
   assets: Array<{ _id?: string; kind: string; stepId: string }>;
@@ -20,26 +17,38 @@ type RailRun = {
 };
 
 export function RunRail() {
-  const hasConvex = Boolean(process.env.NEXT_PUBLIC_CONVEX_URL);
-  if (!hasConvex) {
-    return (
-      <aside className="hidden border-white/10 border-l bg-black/35 p-4 text-white xl:block">
-        <RailHeader />
-        <div className="mt-4 rounded-md border border-white/10 bg-white/[0.04] p-3 text-sm text-white/50">
-          Set NEXT_PUBLIC_CONVEX_URL to enable live run subscriptions.
-        </div>
-      </aside>
-    );
-  }
-
   return <RunRailQuery />;
 }
 
 function RunRailQuery() {
-  const runs = useQuery(listRecentRuns, { limit: 8 }) as RailRun[] | undefined;
+  const [runs, setRuns] = useState<RailRun[] | undefined>();
+  const [error, setError] = useState<string>();
+
+  useEffect(() => {
+    let active = true;
+    async function refresh() {
+      const response = await fetch("/api/studio/runs", { cache: "no-store" });
+      const payload = await response.json().catch(() => ({}));
+      if (!active) return;
+      if (!response.ok) {
+        setError(payload.error ?? "Run ledger is unavailable.");
+        return;
+      }
+      setError(undefined);
+      setRuns(payload.runs ?? []);
+    }
+    void refresh();
+    const timer = window.setInterval(() => void refresh(), 3_000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, []);
+
   return (
     <aside className="hidden overflow-y-auto border-white/10 border-l bg-black/35 p-4 text-white xl:block">
       <RailHeader />
+      {error ? <div className="mt-4 rounded-md border border-red-400/20 bg-red-400/10 p-3 text-red-100 text-sm">{error}</div> : null}
       {runs === undefined ? <div className="mt-4 rounded-md border border-white/10 bg-white/[0.04] p-3 text-sm text-white/50">Loading run ledger...</div> : null}
       {runs?.length === 0 ? <div className="mt-4 rounded-md border border-white/10 bg-white/[0.04] p-3 text-sm text-white/50">No runs yet.</div> : null}
       <div className="mt-4 space-y-3">

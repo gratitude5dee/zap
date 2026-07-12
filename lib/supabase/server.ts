@@ -9,11 +9,24 @@ type SupabaseEdgeOptions = {
 
 export type RevealedZapSecrets = Partial<Record<ZapSecretType, string>>;
 
+export type WalletPrincipal = {
+  principalId: `wallet:${string}`;
+  userId: string;
+  walletAddress: `0x${string}`;
+};
+
 export function getSupabasePublicConfig() {
   return {
-    apiKey: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    url: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    apiKey: normalizeDeploymentEnv(
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    ),
+    url: normalizeDeploymentEnv(process.env.NEXT_PUBLIC_SUPABASE_URL),
   };
+}
+
+function normalizeDeploymentEnv(value?: string) {
+  const normalized = value?.trim().replace(/(?:(?:\\r)?\\n)+$/g, "").trim();
+  return normalized || undefined;
 }
 
 export function getBearerToken(request: Request) {
@@ -24,6 +37,39 @@ export function getBearerToken(request: Request) {
 
 export function getRequestAccessToken(request: Request) {
   return getBearerToken(request) || readCookie(request.headers.get("cookie"), "zap_supabase_token");
+}
+
+export async function resolveWalletPrincipal(userAccessToken?: string): Promise<WalletPrincipal | null> {
+  if (!userAccessToken) return null;
+  const { apiKey, url } = getSupabasePublicConfig();
+  if (!url || !apiKey) return null;
+  try {
+    const response = await fetch(`${url.replace(/\/$/, "")}/auth/v1/user`, {
+      headers: {
+        apikey: apiKey,
+        authorization: `Bearer ${userAccessToken}`,
+      },
+      cache: "no-store",
+    });
+    if (!response.ok) return null;
+    const user = await response.json() as {
+      app_metadata?: { provider?: unknown; wallet_address?: unknown };
+      id?: unknown;
+    };
+    const walletAddress = typeof user.app_metadata?.wallet_address === "string"
+      ? user.app_metadata.wallet_address.toLowerCase()
+      : "";
+    if (user.app_metadata?.provider !== "thirdweb" || typeof user.id !== "string" || !/^0x[a-f0-9]{40}$/.test(walletAddress)) {
+      return null;
+    }
+    return {
+      principalId: `wallet:${walletAddress}`,
+      userId: user.id,
+      walletAddress: walletAddress as `0x${string}`,
+    };
+  } catch {
+    return null;
+  }
 }
 
 function readCookie(cookieHeader: string | null, name: string) {
@@ -104,6 +150,17 @@ export async function revealZapSecretsForProviderByUserId(provider: string, user
   if (secretTypes.length === 0) return undefined;
   const result = await callSupabaseFunction<{ secrets: RevealedZapSecrets }>("zap-user-secrets", {
     body: { secretTypes, userId },
+    method: "POST",
+    serverReveal: true,
+  });
+  return result.secrets;
+}
+
+export async function revealManagedProviderSecrets(provider: string): Promise<RevealedZapSecrets | undefined> {
+  const functionName = normalizeDeploymentEnv(process.env.ZAP_MANAGED_PROVIDER_SECRETS_FUNCTION)
+    ?? "zap-managed-provider-secrets";
+  const result = await callSupabaseFunction<{ secrets: RevealedZapSecrets }>(functionName, {
+    body: { provider },
     method: "POST",
     serverReveal: true,
   });

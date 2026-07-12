@@ -24,7 +24,7 @@ export const vertexAdapter: ProviderAdapter = {
     "vertex_output_gcs_uri",
   ],
   auth(secrets) {
-    const apiKey = secrets?.vertex_api_key ?? process.env.VERTEX_API_KEY;
+    const apiKey = readOptionalSecret(secrets, "vertex_api_key", "VERTEX_API_KEY");
     const headers: Record<string, string> = {};
     if (apiKey) headers["x-goog-api-key"] = apiKey;
     return headers;
@@ -119,7 +119,7 @@ export const vertexAdapter: ProviderAdapter = {
 
 function readVertexConfig(secrets?: ProviderSecrets) {
   const serviceAccount = readServiceAccount(secrets);
-  const project = secrets?.vertex_project ?? process.env.VERTEX_PROJECT ?? serviceAccount?.project_id;
+  const project = readOptionalSecret(secrets, "vertex_project", "VERTEX_PROJECT") ?? serviceAccount?.project_id;
   if (!project) {
     throw new ProviderError("VERTEX_PROJECT is required for live Vertex calls.", {
       code: "KEY_MISSING",
@@ -127,13 +127,13 @@ function readVertexConfig(secrets?: ProviderSecrets) {
     });
   }
   return {
-    location: secrets?.vertex_location ?? process.env.VERTEX_LOCATION ?? defaultLocation,
+    location: readOptionalSecret(secrets, "vertex_location", "VERTEX_LOCATION") ?? defaultLocation,
     project,
   };
 }
 
 function readVertexAuthMaterial(secrets?: ProviderSecrets) {
-  const apiKey = secrets?.vertex_api_key ?? process.env.VERTEX_API_KEY;
+  const apiKey = readOptionalSecret(secrets, "vertex_api_key", "VERTEX_API_KEY");
   if (apiKey) return { apiKey };
   const serviceAccount = readServiceAccount(secrets);
   if (serviceAccount?.client_email && serviceAccount.private_key) return { serviceAccount };
@@ -168,7 +168,7 @@ function buildVertexImageBody(req: GenRequest, idemKey: string) {
     instances: [{ prompt: req.prompt }],
     parameters: {
       sampleCount: Number(req.inputs.sampleCount ?? 1),
-      storageUri: req.secrets?.vertex_output_gcs_uri ?? process.env.VERTEX_OUTPUT_GCS_URI,
+      storageUri: readOptionalSecret(req.secrets, "vertex_output_gcs_uri", "VERTEX_OUTPUT_GCS_URI"),
       zapIdempotencyKey: idemKey,
     },
   };
@@ -187,7 +187,7 @@ function buildVertexVideoBody(req: GenRequest) {
       aspectRatio: stringInput(req.inputs.aspectRatio),
       durationSeconds: req.durationS,
       sampleCount: 1,
-      storageUri: req.secrets?.vertex_output_gcs_uri ?? process.env.VERTEX_OUTPUT_GCS_URI,
+      storageUri: readOptionalSecret(req.secrets, "vertex_output_gcs_uri", "VERTEX_OUTPUT_GCS_URI"),
     },
   };
 }
@@ -250,8 +250,12 @@ function splitOperationRequest(requestId: string) {
   return [model, operationName] as const;
 }
 
+function readOptionalSecret(secrets: ProviderSecrets | undefined, name: keyof ProviderSecrets, envName: string) {
+  return secrets === undefined ? process.env[envName] : secrets[name];
+}
+
 function readServiceAccount(secrets?: ProviderSecrets): ServiceAccount | undefined {
-  const raw = secrets?.vertex_service_account ?? process.env.VERTEX_SERVICE_ACCOUNT_JSON;
+  const raw = readOptionalSecret(secrets, "vertex_service_account", "VERTEX_SERVICE_ACCOUNT_JSON");
   if (!raw) return undefined;
   return parseServiceAccount(raw);
 }

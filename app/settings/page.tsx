@@ -21,7 +21,7 @@ export default function SettingsPage() {
               Connect wallet auth, store provider keys in Supabase, and keep live Zap runs user-owned.
             </p>
           </div>
-          <Link className="inline-flex min-h-11 items-center rounded-md border border-white/10 px-3 font-medium text-sm text-white transition hover:bg-white/10" href={ZAP_DOCS_URL}>Docs</Link>
+          <Link className="inline-flex min-h-11 items-center rounded-md border border-white/10 px-3 font-medium text-sm text-white transition hover:bg-white/10" href={ZAP_DOCS_URL} prefetch={false}>Docs</Link>
         </div>
         <SettingsClient secretTypes={zapSecretTypes} />
       </div>

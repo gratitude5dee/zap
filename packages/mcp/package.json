@@ -6,7 +6,7 @@
   "license": "MIT",
   "type": "module",
   "bin": {
-    "zap-mcp": "./bin/zap-mcp.js"
+    "zap-mcp": "bin/zap-mcp.js"
   },
   "exports": {
     ".": "./src/server.js",
