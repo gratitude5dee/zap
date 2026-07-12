@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useQuery } from "convex/react";
 import { makeFunctionReference } from "convex/server";
 
-const getRun = makeFunctionReference<"query">("runs:get");
+const getRun = makeFunctionReference<"query">("runs:getPublic");
 
 type RunView = {
   assets: Array<{ _id?: string; kind: string; parents?: string[]; stepId: string; url: string }>;

@@ -26,6 +26,7 @@ export function ZapRunner({ zap }: { readonly zap: PublicZapSpec }) {
   const [imageDataUrl, setImageDataUrl] = useState("");
   const [extendCount, setExtendCount] = useState(0);
   const [live, setLive] = useState(false);
+  const [credentialMode, setCredentialMode] = useState<"byok" | "wzrd-cloud">("byok");
   const [run, setRun] = useState<RunResponse | null>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +46,7 @@ export function ZapRunner({ zap }: { readonly zap: PublicZapSpec }) {
       const response = await fetch("/api/zaps/run", {
         body: JSON.stringify({
           extendCount,
+          credentialMode,
           inputs: { ...values, image: imageDataUrl || undefined },
           live,
           slug: zap.zap,
@@ -54,6 +56,11 @@ export function ZapRunner({ zap }: { readonly zap: PublicZapSpec }) {
       });
       const payload = (await response.json()) as RunResponse & { error?: string };
       if (!response.ok) {
+        if (response.status === 401 && credentialMode === "wzrd-cloud") {
+          const next = `${window.location.pathname}${window.location.search}`;
+          window.location.assign(`/?signin=1&next=${encodeURIComponent(next)}`);
+          return;
+        }
         throw new Error(payload.error ?? "Zap run failed");
       }
       setRun(payload);
@@ -69,7 +76,7 @@ export function ZapRunner({ zap }: { readonly zap: PublicZapSpec }) {
       <div className="mx-auto grid min-h-dvh w-full max-w-7xl grid-cols-1 lg:grid-cols-[390px_1fr]">
         <aside className="border-white/10 border-r bg-black/25 px-5 py-5 backdrop-blur">
           <div className="flex items-center justify-between gap-3">
-            <Link className="flex min-h-11 items-center gap-3" href="/">
+            <Link className="flex min-h-11 items-center gap-3" href="/" prefetch={false}>
               <span className="flex size-10 overflow-hidden rounded-md border border-white/15 bg-zap-ink">
                 <Image alt="Zap" className="h-full w-full object-cover" height={64} src="/zaplogo.png" width={64} />
               </span>
@@ -82,9 +89,9 @@ export function ZapRunner({ zap }: { readonly zap: PublicZapSpec }) {
           </div>
 
           <nav className="mt-5 flex gap-2 text-sm">
-            <Link className="inline-flex min-h-10 items-center rounded-md px-3 text-white/55 transition hover:bg-white/10 hover:text-white" href="/gallery">Gallery</Link>
-            <Link className="inline-flex min-h-10 items-center rounded-md px-3 text-white/55 transition hover:bg-white/10 hover:text-white" href={ZAP_DOCS_URL}>Docs</Link>
-            <Link className="inline-flex min-h-10 items-center rounded-md px-3 text-white/55 transition hover:bg-white/10 hover:text-white" href="/studio">Studio</Link>
+            <Link className="inline-flex min-h-10 items-center rounded-md px-3 text-white/55 transition hover:bg-white/10 hover:text-white" href="/gallery" prefetch={false}>Gallery</Link>
+            <Link className="inline-flex min-h-10 items-center rounded-md px-3 text-white/55 transition hover:bg-white/10 hover:text-white" href={ZAP_DOCS_URL} prefetch={false}>Docs</Link>
+            <Link className="inline-flex min-h-10 items-center rounded-md px-3 text-white/55 transition hover:bg-white/10 hover:text-white" href="/studio" prefetch={false}>Studio</Link>
           </nav>
 
           <section className="mt-7">
@@ -151,9 +158,29 @@ export function ZapRunner({ zap }: { readonly zap: PublicZapSpec }) {
               />
             </label>
 
+            {live ? (
+              <label className="block">
+                <span className="mb-2 block font-medium text-sm text-white/82">Credentials</span>
+                <select
+                  className="min-h-11 w-full rounded-md border border-white/15 bg-[#0b1016] px-3 text-sm text-white"
+                  onChange={(event) => setCredentialMode(event.target.value as "byok" | "wzrd-cloud")}
+                  value={credentialMode}
+                >
+                  <option value="byok">BYOK / self-hosted keys</option>
+                  <option value="wzrd-cloud">WZRD Cloud hosted keys (wallet sign-in)</option>
+                </select>
+              </label>
+            ) : null}
+
             <Button className="h-11 w-full gap-2 bg-zap-cyan text-zap-ink hover:bg-white" disabled={isRunning} onClick={handleSubmit}>
               <TerminalSquare className="size-4" />
-              {isRunning ? "Running Zap..." : live ? "Run Live Zap" : "Plan Zap"}
+              {isRunning
+                ? "Running Zap..."
+                : !live
+                  ? "Plan Zap"
+                  : credentialMode === "wzrd-cloud"
+                    ? "Run Hosted Zap"
+                    : "Run Live with BYOK"}
             </Button>
           </div>
         </aside>

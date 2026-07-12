@@ -29,6 +29,7 @@
           "zap-spec",
           "steps",
           "providers",
+          "sandboxes",
           "budget",
           "agent"
         ]
@@ -37,6 +38,8 @@
         "group": "Runtime",
         "pages": [
           "webapp",
+          "channels",
+          "sprite",
           "convex",
           "eve",
           "mcp"

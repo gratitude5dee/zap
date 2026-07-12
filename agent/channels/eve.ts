@@ -28,14 +28,21 @@ const supabaseSessionAuth: AuthFn<Request> = async (request) => {
     },
   });
   if (!response.ok) return null;
-  const user = await response.json() as { email?: string; id?: string };
-  if (!user.id) return null;
-  const attributes: Record<string, string> = { providerId: "supabase" };
+  const user = await response.json() as {
+    app_metadata?: { provider?: unknown; wallet_address?: unknown };
+    email?: string;
+    id?: string;
+  };
+  const walletAddress = typeof user.app_metadata?.wallet_address === "string"
+    ? user.app_metadata.wallet_address.toLowerCase()
+    : "";
+  if (!user.id || user.app_metadata?.provider !== "thirdweb" || !/^0x[a-f0-9]{40}$/.test(walletAddress)) return null;
+  const attributes: Record<string, string> = { providerId: "supabase", walletUserId: user.id };
   if (user.email) attributes.email = user.email;
   return {
     attributes,
     authenticator: "supabase",
-    principalId: user.id,
+    principalId: `wallet:${walletAddress}`,
     principalType: "user",
   };
 };

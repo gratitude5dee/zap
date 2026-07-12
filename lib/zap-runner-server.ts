@@ -1,6 +1,12 @@
 import { nanoid } from "nanoid";
 import { persistDataUrlAsset, persistRemoteAsset } from "./blob-store";
 import { judgeAsset, judgeConfigForStep, judgeFailurePayload } from "./judge";
+import { resolveLlmRoute } from "./llm-route";
+import {
+  parseManagedProviderKeys,
+  selectProviderCredentialSet,
+  type ProviderCredentialSource,
+} from "./provider-credentials";
 import { executeLocalMediaStep, prepareExtendFirstFrame } from "./local-media";
 import {
   addAssetLedger,
@@ -13,17 +19,26 @@ import {
 } from "./run-ledger";
 import { loadZapSpec, readPrompt } from "./zap-files";
 import { defaultProviderModel, pollGeneration, quoteGeneration, submitGeneration } from "./providers/router";
-import { revealZapSecretsForProvider } from "./supabase/server";
+import {
+  revealManagedProviderSecrets,
+  revealZapSecretsForProvider,
+  revealZapSecretsForProviderByUserId,
+} from "./supabase/server";
+import type { ZapCredentialMode } from "./zap-run-auth";
+import { reserveWzrdCloudSpend, settleWzrdCloudSpend } from "./wzrd-cloud-meter";
 import type { GenRequest, ProviderId, ProviderPollResult, ProviderSecrets } from "./provider-types";
 import { toZapErrorPayload, ZapRunError } from "./zap-errors";
 import type { ZapSpec, ZapStep } from "./zap-schema";
 
 export type RunZapInput = {
+  byokSecrets?: ProviderSecrets;
+  credentialMode?: ZapCredentialMode;
   dryRun?: boolean;
   extendCount: number;
   inputs: Record<string, unknown>;
   live?: boolean;
   provider?: ProviderId;
+  principalId?: string;
   sessionId?: string;
   slug: string;
   userAccessToken?: string;
@@ -56,13 +71,17 @@ export type RunZapResponse = {
 };
 
 export type ZapExecutionTicket = {
+  credentialMode: ZapCredentialMode;
+  credentialSelections: Partial<Record<ProviderId, { secrets?: ProviderSecrets; source: ProviderCredentialSource }>>;
   inputs: Record<string, unknown>;
   live?: boolean;
   planned: ZapStep[];
   provider?: ProviderId;
+  principalId?: string;
   quoteUsd: number;
   runId: string;
   userAccessToken?: string;
+  wzrdCloudMetered?: boolean;
   zap: ZapSpec;
 };
 
@@ -73,17 +92,20 @@ export async function runZapRecipe(input: RunZapInput) {
 }
 
 export async function createZapRunTicket({
+  byokSecrets,
+  credentialMode = "byok",
   dryRun = false,
   extendCount,
   inputs,
   live = false,
   provider,
+  principalId,
   sessionId,
   slug,
   userAccessToken,
   userId,
 }: RunZapInput): Promise<{ execution?: ZapExecutionTicket; response: RunZapResponse }> {
-  const zap = await loadZapSpec(slug);
+  const zap = await loadZapSpec(slug, principalId);
   if (!zap) {
     throw new ZapRunError({
       code: "UNKNOWN_ZAP",
@@ -123,9 +145,28 @@ export async function createZapRunTicket({
   }
 
   const executionInputs = await normalizeInputAssets(runId, inputs);
+  const llm = resolveLlmRoute();
+  const credentialSelections = await resolveExecutionCredentials({
+    byokSecrets,
+    credentialMode,
+    planned,
+    provider,
+    userAccessToken,
+    userId,
+    zap,
+  });
+  const wzrdCloudMetered = Object.values(credentialSelections).some((selection) => selection?.source === "wzrd-cloud");
+  if (wzrdCloudMetered) {
+    if (!principalId) throw new Error("A verified wallet principal is required for WZRD Cloud runs.");
+    await reserveWzrdCloudSpend({ principalId, quoteUsd, runId });
+  }
 
   await createRunLedger({
+    credentialMode,
     inputs: executionInputs,
+    llmModel: llm.modelId,
+    llmRoute: llm.route,
+    principalId,
     runId,
     sessionId,
     userId,
@@ -148,7 +189,20 @@ export async function createZapRunTicket({
   );
 
   return {
-    execution: { inputs: executionInputs, live, planned, provider, quoteUsd, runId, userAccessToken, zap },
+    execution: {
+      credentialMode,
+      credentialSelections,
+      inputs: executionInputs,
+      live,
+      planned,
+      principalId,
+      provider,
+      quoteUsd,
+      runId,
+      userAccessToken,
+      wzrdCloudMetered,
+      zap,
+    },
     response: {
       message: `Queued ${zap.zap} with ${steps.length} planned steps.`,
       quoteUsd,
@@ -164,7 +218,20 @@ export function startZapRunExecution(ticket: ZapExecutionTicket) {
   void executeZapRun(ticket);
 }
 
-export async function executeZapRun({ inputs, live = false, planned, provider, quoteUsd, runId, userAccessToken, zap }: ZapExecutionTicket) {
+export async function executeZapRun({
+  credentialMode,
+  credentialSelections,
+  inputs,
+  live = false,
+  planned,
+  principalId,
+  provider,
+  quoteUsd,
+  runId,
+  userAccessToken,
+  wzrdCloudMetered,
+  zap,
+}: ZapExecutionTicket) {
   let costUsd = 0;
   let zapUrl: string | undefined;
   const assetUrls = new Map<string, string>();
@@ -261,6 +328,7 @@ export async function executeZapRun({ inputs, live = false, planned, provider, q
         const attemptQuoteUsd = attempt === 1 ? stepQuoteUsd : quoteForStep(zap, runId, attemptStep, normalizedInputs);
         try {
           const request = await buildGenerationRequest(zap, runId, attemptStep, normalizedInputs, assetUrls, conditioning.imageUrls, {
+            credentialSelections,
             provider,
             userAccessToken,
           });
@@ -454,6 +522,10 @@ export async function executeZapRun({ inputs, live = false, planned, provider, q
       status,
       zapUrl,
     });
+  } finally {
+    if (wzrdCloudMetered && principalId) {
+      await settleWzrdCloudSpend({ actualUsd: costUsd, principalId, runId }).catch(() => undefined);
+    }
   }
 }
 
@@ -616,6 +688,13 @@ export async function resumeZapRun(runId: string) {
   }
 
   const planned = planStepsFromSnapshot(zap, snapshot);
+  const credentialMode = snapshot.run.credentialMode ?? "byok";
+  const credentialSelections = await resolveExecutionCredentials({
+    credentialMode,
+    planned,
+    userId: snapshot.run.userId,
+    zap,
+  });
   await updateRunLedger({
     costUsd: snapshot.run.costUsd,
     runId,
@@ -624,11 +703,15 @@ export async function resumeZapRun(runId: string) {
     zapUrl: snapshot.run.zapUrl,
   });
   startZapRunExecution({
+    credentialMode,
+    credentialSelections,
     inputs: snapshot.run.inputs,
     live: true,
     planned,
+    principalId: snapshot.run.principalId,
     quoteUsd: snapshot.steps.reduce((sum, step) => sum + step.priceQuoteUsd, 0),
     runId,
+    wzrdCloudMetered: Object.values(credentialSelections).some((selection) => selection?.source === "wzrd-cloud"),
     zap,
   });
   return getZapRunStatus(runId);
@@ -716,13 +799,25 @@ export async function prepareRerunZapRunFromStep(runId: string, stepId: string, 
     zapUrl: snapshot.run.zapUrl,
   });
 
+  const credentialMode = snapshot.run.credentialMode ?? "byok";
+  const credentialSelections = await resolveExecutionCredentials({
+    credentialMode,
+    planned,
+    userId: snapshot.run.userId,
+    zap,
+  });
+
   return {
     execution: {
+      credentialMode,
+      credentialSelections,
       inputs: snapshot.run.inputs,
       live: true,
       planned,
+      principalId: snapshot.run.principalId,
       quoteUsd: snapshot.steps.reduce((sum, step) => sum + step.priceQuoteUsd, 0),
       runId,
+      wzrdCloudMetered: Object.values(credentialSelections).some((selection) => selection?.source === "wzrd-cloud"),
       zap,
     },
     snapshot: await getZapRunStatus(runId),
@@ -742,7 +837,11 @@ export async function buildGenerationRequest(
   inputs: Record<string, unknown>,
   assetUrls = new Map<string, string>(),
   conditioningImageUrls: string[] = [],
-  options: { provider?: ProviderId; userAccessToken?: string } = {},
+  options: {
+    credentialSelections?: Partial<Record<ProviderId, { secrets?: ProviderSecrets; source: ProviderCredentialSource }>>;
+    provider?: ProviderId;
+    userAccessToken?: string;
+  } = {},
 ): Promise<GenRequest> {
   const prompt = interpolate(await readPrompt(zap.zap, step.prompt), inputs);
   const imageUrls = uniqueUrls([...conditioningImageUrls, ...resolveImageUrls(step, inputs, assetUrls)]);
@@ -762,9 +861,56 @@ export async function buildGenerationRequest(
     prompt,
     provider: selectedProvider,
     runId,
-    secrets: await revealZapSecretsForProvider(selectedProvider, options.userAccessToken),
+    secrets: options.credentialSelections?.[selectedProvider]?.secrets
+      ?? await revealZapSecretsForProvider(selectedProvider, options.userAccessToken),
     stepId: step.id,
   };
+}
+
+async function resolveExecutionCredentials({
+  byokSecrets,
+  credentialMode,
+  planned,
+  provider,
+  userAccessToken,
+  userId,
+  zap,
+}: {
+  byokSecrets?: ProviderSecrets;
+  credentialMode: ZapCredentialMode;
+  planned: ZapStep[];
+  provider?: ProviderId;
+  userAccessToken?: string;
+  userId?: string;
+  zap: ZapSpec;
+}) {
+  const providers = Array.from(new Set(planned
+    .filter((step) => !isLocalStep(step))
+    .map((step) => provider ?? step.provider ?? zap.defaults.provider)));
+  const selections: Partial<Record<ProviderId, { secrets?: ProviderSecrets; source: ProviderCredentialSource }>> = {};
+  for (const selectedProvider of providers) {
+    const vault = userAccessToken
+      ? await revealZapSecretsForProvider(selectedProvider, userAccessToken).catch(() => undefined)
+      : await revealZapSecretsForProviderByUserId(selectedProvider, userId).catch(() => undefined);
+    const managed = credentialMode === "wzrd-cloud"
+      ? parseManagedProviderKeys(process.env.WZRD_CLOUD_PROVIDER_KEYS, selectedProvider)
+        ?? await revealManagedProviderSecrets(selectedProvider).catch(() => undefined)
+      : undefined;
+    const selected = selectProviderCredentialSet(selectedProvider, {
+      managed,
+      request: byokSecrets,
+      vault,
+    });
+    if (selected) {
+      selections[selectedProvider] = selected;
+      continue;
+    }
+    if (credentialMode === "wzrd-cloud") {
+      throw new Error(`WZRD Cloud credentials are not configured for provider ${selectedProvider}.`);
+    }
+    selections[selectedProvider] = { source: "environment-byok" };
+  }
+  return selections;
 }
 
 export async function persistStepOutput(runId: string, step: ZapStep, outputUrl?: string) {

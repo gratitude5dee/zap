@@ -2,20 +2,22 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { ConvexHttpClient } from "convex/browser";
 import { makeFunctionReference } from "convex/server";
+import { convexServiceToken } from "./convex-service";
 import { parseZapMarkdown, publicZapSpec, type PublicZapSpec, type ZapSpec } from "./zap-schema";
 
 const skillsDir = path.join(process.cwd(), "agent", "skills");
 const getZapBySlug = makeFunctionReference<"query">("zaps:getBySlug");
+const getOwnedZapBySlug = makeFunctionReference<"query">("zaps:getOwnedBySlug");
 const listZaps = makeFunctionReference<"query">("zaps:list");
 const publishedPromptBundles = new Map<string, Record<string, string>>();
 
-export async function loadZapFromSkill(slug: string): Promise<PublicZapSpec | null> {
-  const spec = await loadZapSpec(slug);
+export async function loadZapFromSkill(slug: string, authorId?: string): Promise<PublicZapSpec | null> {
+  const spec = await loadZapSpec(slug, authorId);
   return spec ? publicZapSpec(spec) : null;
 }
 
-export async function loadZapSpec(slug: string): Promise<ZapSpec | null> {
-  const published = await loadPublishedZapSpec(slug);
+export async function loadZapSpec(slug: string, authorId?: string): Promise<ZapSpec | null> {
+  const published = await loadPublishedZapSpec(slug, authorId);
   if (published) return published;
   const file = path.join(skillsDir, `zap-${slug}`, "Zap.md");
   try {
@@ -43,15 +45,22 @@ export async function readPrompt(slug: string, promptPath?: string) {
   if (!promptPath) return "";
   const publishedPrompt = publishedPromptBundles.get(slug)?.[promptPath];
   if (publishedPrompt !== undefined) return publishedPrompt;
-  const file = path.join(skillsDir, `zap-${slug}`, promptPath);
+  if (!promptPath.startsWith("prompts/") || !promptPath.endsWith(".md")) return promptPath;
+  const normalizedPromptPath = path.posix.normalize(promptPath.replaceAll("\\", "/"));
+  if (!normalizedPromptPath.startsWith("prompts/") || normalizedPromptPath.includes("../")) {
+    throw new Error(`Invalid prompt file reference: ${promptPath}`);
+  }
+  const file = path.join(skillsDir, `zap-${slug}`, normalizedPromptPath);
   return fs.readFile(file, "utf8");
 }
 
-async function loadPublishedZapSpec(slug: string) {
+async function loadPublishedZapSpec(slug: string, authorId?: string) {
   const client = getConvexClient();
   if (!client) return null;
   try {
-    const row = await client.query(getZapBySlug, { slug }) as { source?: string; status?: string } | null;
+    const row = await (authorId
+      ? client.query(getOwnedZapBySlug, { authorId, serviceToken: convexServiceToken(), slug })
+      : client.query(getZapBySlug, { slug })) as { source?: string; status?: string } | null;
     if (!row || row.status !== "published" || !row.source) return null;
     return parsePublishedSource(slug, row.source);
   } catch {

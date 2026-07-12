@@ -1,5 +1,8 @@
 import { ConvexHttpClient } from "convex/browser";
 import { makeFunctionReference } from "convex/server";
+import { convexServiceToken } from "./convex-service";
+import type { LlmRoute } from "./llm-route";
+import type { ZapCredentialMode } from "./zap-run-auth";
 import type { ZapStep } from "./zap-schema";
 
 type RunStatus = "queued" | "running" | "waiting" | "done" | "failed" | "canceled";
@@ -7,10 +10,14 @@ type StepStatus = "queued" | "running" | "waiting" | "done" | "failed" | "skippe
 type AssetKind = "png" | "mp4" | "wav" | "json";
 
 export type LedgerRun = {
+  credentialMode?: ZapCredentialMode;
   costUsd: number;
   error?: string;
   finishedAt?: number;
   inputs: unknown;
+  llmModel?: string;
+  llmRoute?: LlmRoute;
+  principalId?: string;
   runId: string;
   sessionId?: string;
   stage?: string;
@@ -87,7 +94,11 @@ const memoryFeedback = new Map<string, LedgerFeedback>();
 let convexClient: ConvexHttpClient | null | undefined;
 
 export async function createRunLedger(args: {
+  credentialMode?: ZapCredentialMode;
   inputs: unknown;
+  llmModel?: string;
+  llmRoute?: LlmRoute;
+  principalId?: string;
   runId: string;
   sessionId?: string;
   userId?: string;
@@ -95,8 +106,12 @@ export async function createRunLedger(args: {
   zapVersion: number;
 }) {
   const run: LedgerRun = {
+    credentialMode: args.credentialMode,
     costUsd: 0,
     inputs: args.inputs,
+    llmModel: args.llmModel,
+    llmRoute: args.llmRoute,
+    principalId: args.principalId,
     runId: args.runId,
     sessionId: args.sessionId,
     startedAt: Date.now(),
@@ -200,7 +215,7 @@ export async function getRunSnapshot(runId: string, budgetCapUsd?: number): Prom
   const client = getConvexClient();
   if (client) {
     try {
-      const data = await client.query(getRunQuery, { runId }) as {
+      const data = await client.query(getRunQuery, { runId, serviceToken: convexServiceToken() }) as {
         assets: LedgerAsset[];
         feedback?: LedgerFeedback[];
         run: LedgerRun | null;
@@ -225,7 +240,7 @@ export async function getAssetSnapshot(assetId: string): Promise<LedgerAsset | n
   const client = getConvexClient();
   if (client) {
     try {
-      return await client.query(getAssetQuery, { assetId }) as LedgerAsset | null;
+      return await client.query(getAssetQuery, { assetId, serviceToken: convexServiceToken() }) as LedgerAsset | null;
     } catch {
       return null;
     }
@@ -253,7 +268,7 @@ async function mutate(ref: ReturnType<typeof makeFunctionReference<"mutation">>,
   const client = getConvexClient();
   if (!client) return undefined;
   try {
-    return await client.mutation(ref, args);
+    return await client.mutation(ref, { ...args, serviceToken: convexServiceToken() });
   } catch {
     // The in-memory ledger keeps the run observable locally; deployment logs
     // still show Convex failures for operators through the thrown call site.

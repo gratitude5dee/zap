@@ -16,6 +16,23 @@ alter table if exists public.user_secrets
   add column if not exists created_at timestamptz not null default now(),
   add column if not exists updated_at timestamptz not null default now();
 
+-- The shared wzrdstudio project predates Zap's AES-GCM envelope and has an
+-- unused, required `encrypted_value` column. Keep the legacy column for other
+-- consumers, but allow Zap rows to use `ciphertext` + `nonce` instead.
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'user_secrets'
+      and column_name = 'encrypted_value'
+  ) then
+    alter table public.user_secrets alter column encrypted_value drop not null;
+  end if;
+end;
+$$;
+
 create unique index if not exists user_secrets_user_id_secret_type_idx
   on public.user_secrets (user_id, secret_type);
 

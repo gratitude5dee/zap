@@ -18,7 +18,7 @@ export function buildProviderWebhookUrl(provider: string, meta: Required<Pick<Pr
   const webhookSecret = process.env.ZAP_PROVIDER_WEBHOOK_SECRET;
   if (!webhookSecret && process.env.NODE_ENV === "production") return undefined;
 
-  const url = new URL(`/api/providers/${provider}/webhook`, baseUrl);
+  const url = new URL(`/providers/${provider}/webhook`, baseUrl);
   url.searchParams.set("runId", meta.runId);
   url.searchParams.set("stepId", meta.stepId);
   if (meta.capability) url.searchParams.set("capability", meta.capability);

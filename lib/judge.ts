@@ -1,9 +1,10 @@
 import { createHash } from "node:crypto";
-import { generateObject, gateway, type ModelMessage } from "ai";
+import { generateObject, type ModelMessage } from "ai";
 import { z } from "zod";
 import { addFeedbackLedger, getAssetSnapshot, type LedgerFeedback } from "./run-ledger";
 import { ZapRunError } from "./zap-errors";
 import type { ZapStep } from "./zap-schema";
+import { createLlmModel, resolveLlmRoute } from "./llm-route";
 
 export type JudgeAssetInput = {
   assetId: string;
@@ -233,11 +234,11 @@ async function scoreAsset(input: JudgeAssetInput & { assetUrl: string; criteria:
   rationale?: string;
   scores: Record<string, number>;
 }> {
-  const model = process.env.ZAP_JUDGE_MODEL ?? "google/gemini-2.5-flash";
-  if (shouldUseGatewayJudge(input.assetUrl)) {
+  const selection = resolveLlmRoute(process.env, process.env.ZAP_JUDGE_MODEL ?? "google/gemini-2.5-flash");
+  if (shouldUseLlmJudge(input.assetUrl, selection.route)) {
     try {
-      const judged = await scoreWithGateway(input, model);
-      return { ...judged, mode: "gateway", model };
+      const judged = await scoreWithLlm(input, selection);
+      return { ...judged, mode: "gateway", model: selection.modelId };
     } catch (error) {
       const heuristic = scoreWithHeuristic(input);
       return {
@@ -259,11 +260,11 @@ async function scoreAuraAsset(input: JudgeAssetInput & { assetUrl: string; crite
   scores: Record<string, number>;
   verdict?: "rerun" | "review" | "ship";
 }> {
-  const model = process.env.ZAP_AURA_MODEL ?? "google/gemini-3.5-flash";
-  if (shouldUseGatewayJudge(input.assetUrl)) {
+  const selection = resolveLlmRoute(process.env, process.env.ZAP_AURA_MODEL ?? "google/gemini-3.5-flash");
+  if (shouldUseLlmJudge(input.assetUrl, selection.route)) {
     try {
-      const scored = await scoreAuraWithGateway(input, model);
-      return { ...scored, mode: "gateway", model };
+      const scored = await scoreAuraWithLlm(input, selection);
+      return { ...scored, mode: "gateway", model: selection.modelId };
     } catch (error) {
       const heuristic = scoreWithHeuristic(input);
       return {
@@ -276,7 +277,10 @@ async function scoreAuraAsset(input: JudgeAssetInput & { assetUrl: string; crite
   return scoreWithHeuristic(input);
 }
 
-async function scoreAuraWithGateway(input: JudgeAssetInput & { assetUrl: string; criteria: string[] }, model: string) {
+async function scoreAuraWithLlm(
+  input: JudgeAssetInput & { assetUrl: string; criteria: string[] },
+  selection: ReturnType<typeof resolveLlmRoute>,
+) {
   const schema = z.object({
     overall: z.number().min(0).max(1).optional(),
     rationale: z.string().max(1200).optional(),
@@ -309,14 +313,17 @@ async function scoreAuraWithGateway(input: JudgeAssetInput & { assetUrl: string;
   const result = await generateObject({
     instructions: "You are Aura, Zap's strict video quality and virality scorer. Return only the requested object.",
     messages,
-    model: gateway(model),
+    model: await createLlmModel(selection),
     schema,
     temperature: 0,
   });
   return result.object;
 }
 
-async function scoreWithGateway(input: JudgeAssetInput & { assetUrl: string; criteria: string[] }, model: string) {
+async function scoreWithLlm(
+  input: JudgeAssetInput & { assetUrl: string; criteria: string[] },
+  selection: ReturnType<typeof resolveLlmRoute>,
+) {
   const schema = z.object({
     overall: z.number().min(0).max(1).optional(),
     rationale: z.string().max(1200).optional(),
@@ -349,7 +356,7 @@ async function scoreWithGateway(input: JudgeAssetInput & { assetUrl: string; cri
   const result = await generateObject({
     instructions: "You are a concise visual quality judge for generative image and video outputs. Return only the requested object.",
     messages,
-    model: gateway(model),
+    model: await createLlmModel(selection),
     schema,
     temperature: 0,
   });
@@ -373,8 +380,15 @@ function normalizeScores(scores: Record<string, number>, criteria: string[], inp
   }));
 }
 
-function shouldUseGatewayJudge(assetUrl: string) {
-  if (!process.env.AI_GATEWAY_API_KEY || assetUrl.startsWith("mock://") || assetUrl.startsWith("data:application/json")) return false;
+function shouldUseLlmJudge(assetUrl: string, route: ReturnType<typeof resolveLlmRoute>["route"]) {
+  const configured = route === "gateway"
+    ? process.env.AI_GATEWAY_API_KEY
+    : route === "openai"
+      ? process.env.OPENAI_API_KEY
+      : route === "anthropic"
+        ? process.env.ANTHROPIC_API_KEY
+        : process.env.OPENROUTER_API_KEY;
+  if (!configured || assetUrl.startsWith("mock://") || assetUrl.startsWith("data:application/json")) return false;
   try {
     const url = new URL(assetUrl);
     return url.protocol === "http:" || url.protocol === "https:" || url.protocol === "data:";

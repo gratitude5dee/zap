@@ -10,8 +10,8 @@ Production providers for v0.3.0:
 - `prodia`: Prodia async image jobs using `/v2/job`.
 - `runware`: Runware async image jobs using `getResponse` polling.
 - `vertex`: Google Vertex AI Imagen 4 image generation and Veo 3.1 async video generation.
-- Judge scoring uses AI Gateway via `AI_GATEWAY_API_KEY` and optional
-  `ZAP_JUDGE_MODEL`; without a key, Zap records deterministic `heuristic`
+- Agent and judge LLM traffic defaults to Vercel AI Gateway and can switch to OpenAI, Anthropic, or OpenRouter with `ZAP_LLM_ROUTE`. Media provider selection stays orthogonal.
+- Judge scoring uses the selected LLM route and optional `ZAP_JUDGE_MODEL`; without a key, Zap records deterministic `heuristic`
   feedback instead of labeling the score as VLM-backed.
 - Aura scoring uses AI Gateway via `AI_GATEWAY_API_KEY` and optional
   `ZAP_AURA_MODEL`; deterministic fallback is labeled `heuristic`.
@@ -28,7 +28,9 @@ Live runs require explicit approval:
 npx @wzrdtech/zap@0.3.0 run world-cup-entrance --live --input SELFIE=./selfie.png
 ```
 
-Web live runs require wallet auth and user-owned provider keys stored in Supabase:
+Web live runs can use request BYOK or user-owned provider keys stored in Supabase. A signed-in wallet may instead select WZRD Cloud, which first reads the server-only `WZRD_CLOUD_PROVIDER_KEYS` bundle and then falls back to the custom-authenticated Supabase `zap-managed-provider-secrets` function. Both paths atomically reserve and settle spend against `WZRD_CLOUD_DAILY_CAP_USD` in Upstash before provider submission.
+
+User vault secret names:
 
 - `gmi_api_key`
 - `gmi_org_id`
@@ -48,3 +50,5 @@ Web live runs require wallet auth and user-owned provider keys stored in Supabas
 - `ai_gateway_api_key`
 
 Provider adapters must return run-safe metadata: ids, status, URLs, cost, and errors. They should not return large media blobs to the agent context.
+
+Credential material is isolated per call. Zap never combines a user vault credential with a managed WZRD credential, and ledger rows record the credential mode, wallet principal, LLM route, and model.

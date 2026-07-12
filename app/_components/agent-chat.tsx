@@ -62,7 +62,7 @@ export function AgentChat({ className }: { readonly className?: string } = {}) {
   );
 
   return (
-    <section className={cn("zap-metal-field flex h-dvh flex-col overflow-hidden bg-zap-ink text-white", className)}>
+    <section className={cn("zap-metal-field flex h-full min-h-0 flex-col overflow-hidden bg-zap-ink text-white", className)}>
       <Header canReset={!isEmpty} onReset={agent.reset} status={agent.status} />
 
       <AnimatePresence>
@@ -221,6 +221,7 @@ function Header({
         <Link
           className="hidden min-h-10 items-center rounded-md px-3 text-sm text-white/55 transition hover:bg-white/10 hover:text-white sm:inline-flex"
           href={ZAP_DOCS_URL}
+          prefetch={false}
         >
           Docs
         </Link>

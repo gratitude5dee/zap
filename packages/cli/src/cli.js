@@ -23,6 +23,7 @@ const commands = [
   "docs",
   "finalize",
   "gallery",
+  "search",
   "import",
   "skills",
   "doctor",
@@ -103,6 +104,9 @@ async function main(argv) {
       break;
     case "gallery":
       await galleryCommand(args.slice(1), flags);
+      break;
+    case "search":
+      await searchCommand(args.slice(1), flags);
       break;
     case "import":
       await importCommand(args.slice(1), flags);
@@ -540,7 +544,7 @@ async function galleryCommand(args, flags) {
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(payload.error ?? `Gallery request failed with ${response.status}.`);
     if (flags.json) printJson(payload);
-    else (payload.zaps ?? []).forEach((zap) => console.log(`${zap.zap} ${zap.title ?? ""} $${Number(zap.budget?.estimate_usd ?? 0).toFixed(2)}`));
+    else (payload.zaps ?? []).forEach((zap) => console.log(`${registrySlug(zap)} ${zap.title ?? ""} $${Number(zap.budget?.estimate_usd ?? 0).toFixed(2)}`));
     return;
   }
 
@@ -558,6 +562,50 @@ async function galleryCommand(args, flags) {
   }
   if (flags.json) printJson({ zaps });
   else zaps.forEach((zap) => console.log(`${zap.slug} ${zap.steps} step(s) $${zap.estimateUsd.toFixed(2)} ${zap.file}`));
+}
+
+async function searchCommand(args, flags) {
+  const query = args.join(" ").trim();
+  if (!query) throw new Error("Usage: zap search <query> [--remote] [--json]");
+  const auth = await readAuthStore();
+  const apiBase = String(flags.apiUrl ?? auth.apiUrl ?? process.env.ZAP_API_URL ?? "https://zap.wzrd.tech").replace(/\/$/, "");
+  let zaps;
+  let source;
+
+  if (flags.remote) {
+    const url = new URL(`${apiBase}/api/zaps`);
+    url.searchParams.set("query", query);
+    const response = await fetch(url);
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error ?? `Zap search failed with ${response.status}.`);
+    zaps = payload.zaps ?? [];
+    source = "remote";
+  } else {
+    const indexPath = path.join(findResourceRoot(), "registry", "zaps", "index.json");
+    const index = JSON.parse(await fs.readFile(indexPath, "utf8"));
+    zaps = searchRegistryEntries(index.zaps ?? [], query);
+    source = "local";
+  }
+
+  if (flags.json) printJson({ query, source, zaps });
+  else zaps.forEach((zap) => console.log(`${registrySkillName(zap)} ${zap.title ?? ""} $${Number(zap.budget?.estimate_usd ?? 0).toFixed(2)}`));
+}
+
+function searchRegistryEntries(zaps, query) {
+  const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
+  return zaps.filter((zap) => {
+    const haystack = JSON.stringify(zap).toLowerCase();
+    return terms.every((term) => haystack.includes(term));
+  });
+}
+
+function registrySlug(zap) {
+  return zap.slug ?? zap.zap ?? "unknown";
+}
+
+function registrySkillName(zap) {
+  const slug = registrySlug(zap);
+  return slug.startsWith("zap-") ? slug : `zap-${slug}`;
 }
 
 async function finalizeCommand(args, flags) {
@@ -1697,6 +1745,7 @@ Commands:
   run <Zap.md>        Plan a Zap by default; use --live to submit providers
   status [runId]      Show local run status
   gallery             List local recipes; add --remote for hosted gallery
+  search <query>      Search registry templates; add --remote for hosted search
   keys                Manage encrypted BYOK provider keys
   login/logout        Store or remove a Zap API token
   deploy <Zap.md>     Upload a draft Zap to the hosted API

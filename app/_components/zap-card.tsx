@@ -110,7 +110,7 @@ export function ZapCard({
 
     if (href) {
       return (
-        <Link aria-label={`Open ${zap.title}`} className="block h-full" href={href}>
+        <Link aria-label={`Open ${zap.title}`} className="block h-full" href={href} prefetch={false}>
           {card}
         </Link>
       );
@@ -360,7 +360,7 @@ function ZapHeroCard({
                 {live ? "Run live Zap" : "Plan Zap"}
               </button>
             ) : primaryHref ? (
-              <Link className="zap-card-run-button" href={primaryHref}>
+              <Link className="zap-card-run-button" href={primaryHref} prefetch={false}>
                 <Zap className="size-4" />
                 Run Zap
               </Link>

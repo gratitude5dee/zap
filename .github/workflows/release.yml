@@ -28,7 +28,7 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           missing_packages=()
-          for package_name in @wzrdtech/core @wzrdtech/providers; do
+          for package_name in @wzrdtech/core @wzrdtech/providers @wzrdtech/agent @wzrdtech/zap-mcp @wzrdtech/zap; do
             if ! npm view "$package_name" version >/dev/null 2>&1; then
               missing_packages+=("$package_name")
             fi
@@ -51,9 +51,21 @@ jobs:
               echo "A normal login/session token can authenticate npm but will fail publish with EOTP."
             } >&2
           fi
-      - run: npm ci
+      - run: npm ci --legacy-peer-deps
       - run: npm test
       - run: npm run typecheck
+      - run: npm run cli -- validate
+      - run: npm run cli -- lint
+      - run: npm run registry:check
+      - run: npm run evals
+      - run: npm run build
+      - name: Verify package contents
+        run: |
+          npm pack --workspace @wzrdtech/core --dry-run
+          npm pack --workspace @wzrdtech/providers --dry-run
+          npm pack --workspace @wzrdtech/agent --dry-run
+          npm pack --workspace @wzrdtech/zap-mcp --dry-run
+          npm pack --workspace @wzrdtech/zap --dry-run
       - name: Publish npm packages
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -78,4 +90,6 @@ jobs:
 
           publish_workspace @wzrdtech/core packages/core
           publish_workspace @wzrdtech/providers packages/providers
+          publish_workspace @wzrdtech/agent packages/agent
+          publish_workspace @wzrdtech/zap-mcp packages/mcp
           publish_workspace @wzrdtech/zap packages/cli

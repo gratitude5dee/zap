@@ -139,7 +139,7 @@ function readAwsConfig(secrets?: ProviderSecrets): AwsConfig {
 }
 
 function readOptionalSecret(secrets: ProviderSecrets | undefined, name: keyof ProviderSecrets, envName: string) {
-  return secrets?.[name] ?? process.env[envName];
+  return secrets === undefined ? process.env[envName] : secrets[name];
 }
 
 function buildImageBody(req: GenRequest, idemKey: string) {

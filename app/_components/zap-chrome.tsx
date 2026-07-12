@@ -13,7 +13,7 @@ const navItems = [
 
 export function ZapLogo({ className = "", compact = false }: { readonly className?: string; readonly compact?: boolean }) {
   return (
-    <Link className={cn("group inline-flex min-h-11 items-center gap-3", className)} href="/">
+    <Link className={cn("group inline-flex min-h-11 items-center gap-3", className)} href="/" prefetch={false}>
       <span className="relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md border border-white/15 bg-zap-ink shadow-[0_0_24px_rgba(40,138,255,0.22)]">
         <Image
           alt="Zap lightning mark"
@@ -51,6 +51,7 @@ export function SiteNav({ tone = "light" }: { readonly tone?: "light" | "dark" }
             )}
             href={item.href}
             key={item.href}
+            prefetch={false}
           >
             <item.icon className="size-4" />
             {item.label}
@@ -64,6 +65,7 @@ export function SiteNav({ tone = "light" }: { readonly tone?: "light" | "dark" }
               : "bg-zap-ink text-white hover:bg-black",
           )}
           href="/studio"
+          prefetch={false}
         >
           <TerminalSquare className="size-4" />
           Studio
@@ -106,7 +108,7 @@ export function Eyebrow({ children, tone = "blue" }: { readonly children: ReactN
 
 export function TextLink({ children, href }: { readonly children: ReactNode; readonly href: string }) {
   return (
-    <Link className="inline-flex min-h-11 items-center gap-2 rounded-md px-1 font-medium text-sm text-zap-ink underline decoration-zap-blue/35 underline-offset-4 hover:text-zap-blue" href={href}>
+    <Link className="inline-flex min-h-11 items-center gap-2 rounded-md px-1 font-medium text-sm text-zap-ink underline decoration-zap-blue/35 underline-offset-4 hover:text-zap-blue" href={href} prefetch={false}>
       {children}
       <ArrowUpRight className="size-4" />
     </Link>

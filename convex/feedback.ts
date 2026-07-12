@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { requireServiceToken } from "./lib/serviceAuth";
 
 export const add = mutation({
   args: {
@@ -11,20 +12,24 @@ export const add = mutation({
     runId: v.string(),
     scores: v.any(),
     stepId: v.optional(v.string()),
+    serviceToken: v.string(),
   },
   returns: v.string(),
   handler: async (ctx, args) => {
+    requireServiceToken(args.serviceToken);
+    const { serviceToken: _serviceToken, ...record } = args;
     return await ctx.db.insert("feedback", {
-      ...args,
+      ...record,
       createdAt: args.createdAt ?? Date.now(),
     });
   },
 });
 
 export const listByRun = query({
-  args: { runId: v.string() },
+  args: { runId: v.string(), serviceToken: v.string() },
   returns: v.array(v.any()),
   handler: async (ctx, args) => {
+    requireServiceToken(args.serviceToken);
     return await ctx.db
       .query("feedback")
       .withIndex("by_run", (q: any) => q.eq("runId", args.runId))
