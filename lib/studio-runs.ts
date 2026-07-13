@@ -16,6 +16,21 @@ export type StudioRailRun = {
   steps: Array<{ progress: number; status: string; stepId: string }>;
 };
 
+export const STUDIO_RUN_STREAM_FAILURE_LIMIT = 3;
+export const STUDIO_RUN_STREAM_LIFETIME_MS = 4 * 60 * 1000;
+
+export type StudioRunStreamSignal = "open" | "runs" | "error";
+
+export function nextStudioRunStreamFailureCount(current: number, signal: StudioRunStreamSignal): number {
+  if (signal === "runs") return 0;
+  if (signal === "error") return current + 1;
+  return current;
+}
+
+export function shouldFallbackFromStudioRunStream(permanentlyClosed: boolean, consecutiveFailures: number): boolean {
+  return permanentlyClosed || consecutiveFailures >= STUDIO_RUN_STREAM_FAILURE_LIMIT;
+}
+
 export function projectStudioRunRows(rows: readonly unknown[]): StudioRailRun[] {
   return rows.flatMap((row) => {
     if (!isRecord(row) || !isRecord(row.run)) return [];
