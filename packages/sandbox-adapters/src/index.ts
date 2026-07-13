@@ -5,7 +5,6 @@ import { vercel } from "eve/sandbox/vercel";
 import { daytonaBackend } from "./daytona";
 import { e2bBackend } from "./e2b";
 import { resolveManagedSandboxCredential } from "./managed-secrets";
-import { runtimeImport } from "./runtime-import";
 
 export { resolveManagedSandboxCredential } from "./managed-secrets";
 
@@ -31,9 +30,9 @@ export function resolveSandboxBackend<T extends { name: string } = SandboxBacken
     box: () => lazyBackend("ascii-box", async () => {
       const apiKey = env.BOX_API_KEY?.trim()
         || await resolveManagedSandboxCredential("box", "box_api_key", env);
-      const { asciiBox } = await runtimeImport<{
+      const { asciiBox } = await import("@asciidev/eve-box") as unknown as {
         asciiBox(options: { apiKey?: string; noEnv: boolean }): SandboxBackend;
-      }>("@asciidev/eve-box");
+      };
       return withBoxLifecycleCompatibility(asciiBox({ apiKey, noEnv: true }), apiKey);
     }),
     daytona: () => lazyBackend("daytona", () => daytonaBackend({ apiKey: env.DAYTONA_API_KEY })),

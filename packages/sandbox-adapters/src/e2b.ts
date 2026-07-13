@@ -1,12 +1,11 @@
 import type { SandboxBackend } from "eve/sandbox";
 import { createVendorBackend } from "./backend";
-import { runtimeImport } from "./runtime-import";
 import type { SandboxDriver } from "./session";
 
 export async function e2bBackend(options: { apiKey?: string } = {}): Promise<SandboxBackend> {
   const apiKey = options.apiKey ?? process.env.E2B_API_KEY;
   if (!apiKey) throw new Error("E2B_API_KEY is required when ZAP_SANDBOX_BACKEND=e2b.");
-  const { Sandbox: E2BSandbox } = await runtimeImport<E2BModule>("e2b");
+  const { Sandbox: E2BSandbox } = await import("e2b") as unknown as E2BModule;
   return createVendorBackend({
     name: "e2b",
     templateName,
@@ -53,7 +52,7 @@ function e2bDriver(sandbox: E2BSandboxInstance, shutdown: () => Promise<void>): 
     },
     async setNetworkPolicy(policy) {
       if (policy !== "allow-all" && policy !== "deny-all") throw new Error("E2B adapter currently supports allow-all or deny-all network policy only.");
-      const { Sandbox: E2BSandbox } = await runtimeImport<E2BModule>("e2b");
+      const { Sandbox: E2BSandbox } = await import("e2b") as unknown as E2BModule;
       await E2BSandbox.updateNetwork(sandbox.sandboxId, { allowInternetAccess: policy === "allow-all" });
     },
     shutdown,

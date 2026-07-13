@@ -1,12 +1,11 @@
 import type { SandboxBackend } from "eve/sandbox";
 import { createVendorBackend } from "./backend";
-import { runtimeImport } from "./runtime-import";
 import type { SandboxDriver } from "./session";
 
 export async function daytonaBackend(options: { apiKey?: string } = {}): Promise<SandboxBackend> {
   const apiKey = options.apiKey ?? process.env.DAYTONA_API_KEY;
   if (!apiKey) throw new Error("DAYTONA_API_KEY is required when ZAP_SANDBOX_BACKEND=daytona.");
-  const { Daytona: DaytonaClient } = await runtimeImport<DaytonaModule>("@daytonaio/sdk");
+  const { Daytona: DaytonaClient } = await import("@daytonaio/sdk") as unknown as DaytonaModule;
   const client = new DaytonaClient({ apiKey });
   return createVendorBackend({
     name: "daytona",

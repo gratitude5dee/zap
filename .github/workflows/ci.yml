@@ -23,4 +23,5 @@ jobs:
       - run: npm run evals
       - run: npm run docs:validate
       - run: npm run docs:links
+      - run: VERCEL=1 npm run eve:build && npm run eve:runtime-check
       - run: npm run build

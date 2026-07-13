@@ -31,6 +31,7 @@
     "test:cli": "npm run build:packages && node packages/cli/bin/zap.js validate agent/skills/zap-world-cup-entrance/Zap.md && node packages/cli/bin/zap.js run agent/skills/zap-world-cup-entrance/Zap.md --json",
     "eve:info": "node scripts/eve-info.mjs",
     "eve:build": "eve build",
+    "eve:runtime-check": "node scripts/verify-eve-runtime-dependencies.mjs .vercel/output/functions/__server.func",
     "evals": "eve eval --strict --verbose --junit .eve/junit.xml",
     "convex:codegen": "convex codegen"
   },
