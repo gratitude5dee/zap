@@ -1,6 +1,6 @@
 {
   "name": "zap-platform",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "description": "Zap: one-click generative content recipes on Eve, Next.js, Convex, Upstash, Supabase, Vertex AI, Bedrock, GMI Cloud, and fal.",
   "type": "module",
@@ -96,6 +96,7 @@
     "@types/react": "19.2.15",
     "@types/react-dom": "19.2.3",
     "@typescript/native-preview": "7.0.0-dev.20260523.1",
+    "jsdom": "^29.1.1",
     "microsandbox": "^0.5.7",
     "typescript": "^5.7.2",
     "vitest": "^4.1.0"

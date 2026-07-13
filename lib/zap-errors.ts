@@ -45,6 +45,17 @@ export class ZapRunError extends Error {
   }
 }
 
+export function toZapErrorMessage(error: unknown, fallback = "Zap run failed."): string {
+  if (typeof error === "string") return error.trim() || fallback;
+  if (typeof error !== "object" || error === null || Array.isArray(error)) return fallback;
+
+  const payload = error as { message?: unknown; remediation?: unknown };
+  const message = typeof payload.message === "string" ? payload.message.trim() : "";
+  const remediation = typeof payload.remediation === "string" ? payload.remediation.trim() : "";
+  if (message && remediation && remediation !== message) return `${message} ${remediation}`;
+  return message || remediation || fallback;
+}
+
 export function toZapErrorPayload(error: unknown): ZapErrorPayload {
   if (error instanceof ZapRunError) return error.toJSON();
   return {

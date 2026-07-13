@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createThirdwebClient } from "thirdweb";
 import { ConnectButton } from "thirdweb/react";
 import { sanitizeNextPath } from "@/lib/zap-run-auth";
@@ -16,11 +16,13 @@ export function WalletSignInButton({
   readonly resumePath?: string;
 }) {
   const client = useMemo(() => clientId ? createThirdwebClient({ clientId }) : null, [clientId]);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   if (!client) {
     return (
       <Link
-        className="inline-flex min-h-10 items-center justify-center rounded-md border border-white/15 px-3 text-sm text-white/70 hover:border-zap-cyan hover:text-white"
+        className="inline-flex h-[50px] w-[165px] shrink-0 items-center justify-center rounded-md border border-white/15 px-3 text-sm text-white/70 hover:border-zap-cyan hover:text-white"
         href="/settings#thirdweb-setup"
         prefetch={false}
         title="Set NEXT_PUBLIC_THIRDWEB_CLIENT_ID to enable wallet sign-in"
@@ -28,6 +30,12 @@ export function WalletSignInButton({
         {label}
       </Link>
     );
+  }
+
+  // thirdweb reads browser wallet state during render. Keep the server and the
+  // first client render identical, then mount its interactive button.
+  if (!mounted) {
+    return <WalletSignInPlaceholder label={label} />;
   }
 
   return (
@@ -68,7 +76,20 @@ export function WalletSignInButton({
       connectButton={{ label }}
       connectModal={{ showThirdwebBranding: false, title: "Sign in to Zap" }}
       detailsButton={{ displayBalanceToken: {} }}
+      signInButton={{ label }}
       theme="dark"
     />
+  );
+}
+
+export function WalletSignInPlaceholder({ label = "Sign In" }: { readonly label?: string }) {
+  return (
+    <button
+      className="inline-flex h-[50px] w-[165px] shrink-0 items-center justify-center rounded-md border border-white/15 bg-white px-3 text-sm text-black disabled:cursor-wait disabled:opacity-90"
+      disabled
+      type="button"
+    >
+      {label}
+    </button>
   );
 }

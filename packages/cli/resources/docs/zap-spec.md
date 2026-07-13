@@ -67,6 +67,6 @@ Rules agents must preserve:
 Validate after every recipe edit:
 
 ```bash
-npx @wzrdtech/zap@0.3.0 validate
-npx @wzrdtech/zap@0.3.0 lint
+npx @wzrdtech/zap@0.3.1 validate
+npx @wzrdtech/zap@0.3.1 lint
 ```

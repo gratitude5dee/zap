@@ -4,7 +4,7 @@ import { WalletSignInButton } from "@/app/_components/wallet-sign-in-button";
 
 export function StudioSignInGate({ clientId }: { readonly clientId?: string }) {
   return (
-    <main className="flex min-h-[calc(100dvh-4rem)] items-center justify-center bg-zap-ink px-5 py-16 text-white">
+    <main className="zap-studio-min-height flex items-center justify-center bg-zap-ink px-5 py-16 text-white">
       <section className="w-full max-w-2xl overflow-hidden rounded-xl border border-white/10 bg-[#0b0f15] shadow-2xl">
         <div className="border-white/10 border-b bg-[radial-gradient(circle_at_top_left,rgba(0,229,255,0.14),transparent_48%)] p-7 sm:p-10">
           <span className="inline-flex size-12 items-center justify-center rounded-lg border border-zap-cyan/30 bg-zap-cyan/10 text-zap-cyan">

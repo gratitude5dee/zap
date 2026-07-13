@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.3.1 — 2026-07-13
+
+### Fixed
+
+- Traced `@asciidev/eve-box` and the alternate sandbox SDKs into the Eve Vercel function so Box-backed Studio turns can import their runtime in production.
+- Deferred thirdweb's wallet-aware button until after hydration, eliminating React mismatch errors while keeping a stable header footprint.
+- Rendered structured Zap API failures as actionable text instead of `[object Object]`.
+- Made the signed-out header and signed-in Studio workspace responsive without clipped rails or horizontal overflow.
+
+### Changed
+
+- Published the CLI help and bundled troubleshooting guidance as `@wzrdtech/zap@0.3.1`; Node 24 remains required, project-local installs use `npm exec -- zap`, and a bare `zap` command requires a global install.
+
 ## 0.3.0 — 2026-07-10
 
 ### Added
@@ -11,7 +24,7 @@
 - Slack and Telegram through Vercel Chat SDK plus an HMAC/replay-protected iMessage bridge; one-use wallet links keep unlinked channels plan-only.
 - ascii.dev Box is the default sandbox, with swappable Vercel, Daytona, E2B, Docker, and Eve-auto backends plus deterministic and opt-in hosted contract tests.
 - Vercel AI Gateway default plus direct OpenAI, Anthropic, and OpenRouter routes; run ledgers record route and model.
-- Eve evals, `/.agent`, `/.well-known/agent.json`, public plan and webhook URLs, and an empty protocols block reserved for v0.3.1 commerce work.
+- Eve evals, `/.agent`, `/.well-known/agent.json`, public plan and webhook URLs, and an empty protocols block reserved for the future Agent Commerce release.
 - `@wzrdtech/zap-mcp` and compiled `@wzrdtech/agent` packages in the release graph.
 
 ### Security

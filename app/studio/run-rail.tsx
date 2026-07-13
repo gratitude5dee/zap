@@ -80,7 +80,7 @@ function RunRailQuery() {
   }, []);
 
   return (
-    <aside className="hidden overflow-y-auto border-white/10 border-l bg-black/35 p-4 text-white xl:block">
+    <aside className="zap-run-rail overflow-y-auto border-white/10 border-l bg-black/35 p-4 text-white">
       <RailHeader />
       {error ? <div className="mt-4 rounded-md border border-red-400/20 bg-red-400/10 p-3 text-red-100 text-sm">{error}</div> : null}
       {runs === undefined ? <div className="mt-4 rounded-md border border-white/10 bg-white/[0.04] p-3 text-sm text-white/50">Loading run ledger...</div> : null}

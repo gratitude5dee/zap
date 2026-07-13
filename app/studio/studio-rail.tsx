@@ -135,7 +135,7 @@ export function StudioRail({ templates }: { readonly templates: ZapRegistryEntry
   }
 
   return (
-    <aside className="relative overflow-y-auto border-white/10 border-r bg-black/45 p-4 text-white">
+    <aside className="zap-studio-rail relative overflow-y-auto bg-black/45 p-4 text-white">
       <div className="flex items-center justify-between gap-2">
         <div><h2 className="font-semibold text-sm">Creator catalog</h2><p className="text-white/45 text-xs">Private until curated.</p></div>
         <div className="flex gap-2">

@@ -19,13 +19,13 @@ Production providers for v0.3.0:
 Provider keys are never required for plan-only runs:
 
 ```bash
-npx @wzrdtech/zap@0.3.0 run world-cup-entrance --json
+npx @wzrdtech/zap@0.3.1 run world-cup-entrance --json
 ```
 
 Live runs require explicit approval:
 
 ```bash
-npx @wzrdtech/zap@0.3.0 run world-cup-entrance --live --input SELFIE=./selfie.png
+npx @wzrdtech/zap@0.3.1 run world-cup-entrance --live --input SELFIE=./selfie.png
 ```
 
 Web live runs can use request BYOK or user-owned provider keys stored in Supabase. A signed-in wallet may instead select WZRD Cloud, which first reads the server-only `WZRD_CLOUD_PROVIDER_KEYS` bundle and then falls back to the custom-authenticated Supabase `zap-managed-provider-secrets` function. Both paths atomically reserve and settle spend against `WZRD_CLOUD_DAILY_CAP_USD` in Upstash before provider submission.

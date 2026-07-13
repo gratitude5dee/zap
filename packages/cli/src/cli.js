@@ -9,7 +9,7 @@ import { parseZapMarkdown, validateZapPromptTemplates } from "@wzrdtech/core/sch
 import { defaultModelFor, getProviderAdapter, listProviderAdapters } from "@wzrdtech/providers";
 import { parseDocument, stringify } from "yaml";
 
-const version = "0.3.0";
+const version = "0.3.1";
 const commands = [
   "init",
   "new",
@@ -1773,5 +1773,10 @@ Common flags:
   --budget-cap-usd N  Override the recipe spend cap for this run
   --force             Overwrite generated recipe files
   --version           Print version
+
+Install / invoke (Node 24.x):
+  npx --yes @wzrdtech/zap@${version} <command>
+  npm exec -- zap <command>              # project-local install
+  npm install --global @wzrdtech/zap@${version}  # enables the bare zap command
 `);
 }

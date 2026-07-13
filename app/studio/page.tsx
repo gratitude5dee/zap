@@ -11,7 +11,7 @@ export default async function StudioPage() {
   const principal = await resolveWalletPrincipal(token);
   if (!principal) return <StudioSignInGate clientId={process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID} />;
   return (
-    <main className="grid h-[calc(100dvh-4rem)] overflow-hidden bg-zap-ink xl:grid-cols-[280px_minmax(0,1fr)_360px]">
+    <main className="zap-studio-height zap-studio-layout grid overflow-hidden bg-zap-ink">
       <StudioRail templates={canonicalZapRegistryIndex.zaps} />
       <AgentChat />
       <RunRail />

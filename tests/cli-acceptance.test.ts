@@ -5,7 +5,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const cli = path.resolve("packages/cli/bin/zap.js");
-const cliVersion = "0.3.0";
+const cliVersion = "0.3.1";
 
 function runZap(cwd: string, args: string[]) {
   return execFileSync(process.execPath, [cli, ...args], {
@@ -51,6 +51,10 @@ describe("zap CLI acceptance", () => {
 
       const docs = runZap(project, ["docs", "quickstart"]);
       expect(docs).toContain(`npx @wzrdtech/zap@${cliVersion} init demo --non-interactive`);
+
+      const help = runZap(project, ["help"]);
+      expect(help).toContain("npm exec -- zap <command>");
+      expect(help).toContain("Node 24.x");
 
       expect(runZap(project, ["docs", "zap-spec"])).toContain("# Zap Spec");
       expect(runZap(project, ["docs", "steps"])).toContain("# Steps");

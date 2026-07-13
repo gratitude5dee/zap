@@ -2,6 +2,29 @@
 
 The publishable package is `@wzrdtech/zap`; it exposes the `zap` binary.
 
+## Install and invoke
+
+Use Node 24.x. For one-off commands:
+
+```bash
+npx --yes @wzrdtech/zap@0.3.1 --version
+```
+
+After a project-local install, invoke the binary with `npm exec` (or from an npm
+script). npm does not add `node_modules/.bin` to zsh's global `PATH`:
+
+```bash
+npm install --save-dev @wzrdtech/zap@0.3.1
+npm exec -- zap --version
+```
+
+If you want to type `zap` directly in any directory, install globally:
+
+```bash
+npm install --global @wzrdtech/zap@0.3.1
+zap --version
+```
+
 ## Commands
 
 - `zap init <dir>` creates a lightweight Zap project.

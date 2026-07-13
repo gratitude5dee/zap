@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { toZapErrorMessage } from "@/lib/zap-errors";
 import { ZAP_DOCS_URL } from "@/lib/zap-urls";
 import type { PublicZapSpec } from "@/lib/zap-schema";
 
@@ -54,14 +55,14 @@ export function ZapRunner({ zap }: { readonly zap: PublicZapSpec }) {
         headers: { "content-type": "application/json" },
         method: "POST",
       });
-      const payload = (await response.json()) as RunResponse & { error?: string };
+      const payload = (await response.json()) as RunResponse & { error?: unknown };
       if (!response.ok) {
         if (response.status === 401 && credentialMode === "wzrd-cloud") {
           const next = `${window.location.pathname}${window.location.search}`;
           window.location.assign(`/?signin=1&next=${encodeURIComponent(next)}`);
           return;
         }
-        throw new Error(payload.error ?? "Zap run failed");
+        throw new Error(toZapErrorMessage(payload.error));
       }
       setRun(payload);
     } catch (caught) {

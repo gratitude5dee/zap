@@ -1,12 +1,33 @@
 # Troubleshooting
 
+## zsh Says `command not found: zap`
+
+`npm install @wzrdtech/zap` installs a project-local binary; it does not add
+that binary to zsh's global `PATH`. With Node 24.x active, use one of these
+supported forms:
+
+```bash
+# no installation
+npx --yes @wzrdtech/zap@0.3.1 --version
+
+# after a project-local install
+npm exec -- zap --version
+
+# direct `zap` command everywhere
+npm install --global @wzrdtech/zap@0.3.1
+zap --version
+```
+
+Node 23 is not supported and produces `EBADENGINE`; switch to Node 24 before
+installing or running Zap.
+
 ## Node Fails With `simdjson`
 
 Use a working Node 24 runtime. This repo expects Node `24.x`.
 
 ```bash
 node --version
-npx @wzrdtech/zap@0.3.0 doctor --json
+npx @wzrdtech/zap@0.3.1 doctor --json
 ```
 
 ## `zap validate` Finds No Recipes
@@ -20,7 +41,7 @@ agent/skills/zap-*/Zap.md
 Or pass a recipe directly:
 
 ```bash
-npx @wzrdtech/zap@0.3.0 validate agent/skills/zap-world-cup-entrance/Zap.md
+npx @wzrdtech/zap@0.3.1 validate agent/skills/zap-world-cup-entrance/Zap.md
 ```
 
 ## Live Run Refuses To Start

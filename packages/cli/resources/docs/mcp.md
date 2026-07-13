@@ -5,7 +5,7 @@ Zap ships an MCP stdio server so agents can validate, plan, deploy, import, and 
 ## Start the server
 
 ```bash
-npx @wzrdtech/zap@0.3.0 mcp
+npx @wzrdtech/zap@0.3.1 mcp
 ```
 
 Standalone usage is also available:
@@ -23,7 +23,7 @@ When run from `zap mcp`, the server uses the same local CLI binary and local aut
   "mcpServers": {
     "zap": {
       "command": "npx",
-      "args": ["@wzrdtech/zap@0.3.0", "mcp"]
+      "args": ["@wzrdtech/zap@0.3.1", "mcp"]
     }
   }
 }

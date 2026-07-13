@@ -32,6 +32,29 @@ Provider webhook callbacks are public so hosted providers can report completion;
 poll drain uses `ZAP_POLL_DRAIN_SECRET`, and Eve operational endpoints accept
 Supabase sessions, Vercel OIDC, local dev, or `ZAP_AGENT_TOKEN`.
 
+## CLI Installation
+
+Zap requires Node 24.x. For a one-off command, use the scoped package directly:
+
+```bash
+npx --yes @wzrdtech/zap@0.3.1 --version
+```
+
+A project-local install exposes the binary to npm scripts and `npm exec`, not to
+zsh's global command lookup:
+
+```bash
+npm install --save-dev @wzrdtech/zap@0.3.1
+npm exec -- zap --version
+```
+
+To use `zap` directly from any directory, install it globally:
+
+```bash
+npm install --global @wzrdtech/zap@0.3.1
+zap --version
+```
+
 ## Local Development
 
 Eve expects Node 24.x. This repository records that in `package.json`; install or
