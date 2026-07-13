@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { enforceDaytonaResources } from "../packages/sandbox-adapters/src/daytona";
-import { ensureE2BResourceBaseTemplate } from "../packages/sandbox-adapters/src/e2b";
+import {
+  createSizedE2BSandbox,
+  ensureE2BResourceBaseTemplate,
+} from "../packages/sandbox-adapters/src/e2b";
 import {
   resolveBoxSandboxOptions,
   resolveDaytonaSandboxOptions,
@@ -89,6 +92,20 @@ describe("sandbox preset resources", () => {
       name: "zap-eve-base-2-4096",
     });
     expect(build).toHaveBeenCalledOnce();
+  });
+
+  it("starts E2B prewarm work from the sized base template", async () => {
+    const create = vi.fn(async () => ({ sandboxId: "sbx-prewarm" }));
+    const ensureTemplate = vi.fn(async () => "zap-eve-base-2-4096");
+    await expect(createSizedE2BSandbox(create, ensureTemplate, {
+      apiKey: "test-key",
+      timeoutMs: 900_000,
+    })).resolves.toEqual({ sandboxId: "sbx-prewarm" });
+    expect(ensureTemplate).toHaveBeenCalledOnce();
+    expect(create).toHaveBeenCalledWith("zap-eve-base-2-4096", {
+      apiKey: "test-key",
+      timeoutMs: 900_000,
+    });
   });
 
   it("hot-resizes a Daytona sandbox when the preset only increases resources", async () => {

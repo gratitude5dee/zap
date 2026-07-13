@@ -34,11 +34,15 @@ export async function e2bBackend(options: {
     name: "e2b",
     templateName,
     async prewarmDriver(name) {
-      const sandbox = await E2BSandbox.create({
-        apiKey,
-        metadata: { runtime: "eve", template: name },
-        ...resourceOptions.create,
-      });
+      const sandbox = await createSizedE2BSandbox(
+        (template, createOptions) => E2BSandbox.create(template, createOptions),
+        ensureResourceBaseTemplate,
+        {
+          apiKey,
+          metadata: { runtime: "eve", template: name },
+          ...resourceOptions.create,
+        },
+      );
       return e2bDriver(sandbox, async () => {
         try {
           const snapshot = await E2BSandbox.createSnapshot(sandbox.sandboxId, { apiKey });
@@ -74,6 +78,14 @@ export async function ensureE2BResourceBaseTemplate(input: {
 }) {
   if (!await input.exists()) await input.build();
   return input.name;
+}
+
+export async function createSizedE2BSandbox<T, O>(
+  create: (template: string, options: O) => Promise<T>,
+  ensureTemplate: () => Promise<string>,
+  options: O,
+) {
+  return create(await ensureTemplate(), options);
 }
 
 function e2bDriver(sandbox: E2BSandboxInstance, shutdown: () => Promise<void>): SandboxDriver {
