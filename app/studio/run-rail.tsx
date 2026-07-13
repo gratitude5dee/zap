@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { parseStudioRunsPayload, type StudioRailRun } from "@/lib/studio-runs";
+import {
+  nextStudioRunStreamFailureCount,
+  parseStudioRunsPayload,
+  shouldFallbackFromStudioRunStream,
+  type StudioRailRun,
+} from "@/lib/studio-runs";
 
 export function RunRail() {
   return <RunRailQuery />;
@@ -15,6 +20,7 @@ function RunRailQuery() {
     let active = true;
     let eventSource: EventSource | undefined;
     let fallbackTimer: number | undefined;
+    let consecutiveStreamFailures = 0;
 
     async function refresh() {
       try {
@@ -47,13 +53,23 @@ function RunRailQuery() {
         if (!active || !(event instanceof MessageEvent)) return;
         try {
           setRuns(parseStudioRunsPayload(JSON.parse(event.data)));
+          consecutiveStreamFailures = nextStudioRunStreamFailureCount(consecutiveStreamFailures, "runs");
           setError(undefined);
         } catch {
           startFallback();
         }
       });
       eventSource.addEventListener("stream-error", () => startFallback());
-      eventSource.onerror = () => startFallback();
+      eventSource.onopen = () => {
+        consecutiveStreamFailures = nextStudioRunStreamFailureCount(consecutiveStreamFailures, "open");
+      };
+      eventSource.onerror = () => {
+        consecutiveStreamFailures = nextStudioRunStreamFailureCount(consecutiveStreamFailures, "error");
+        const permanentlyClosed = eventSource?.readyState === window.EventSource.CLOSED;
+        // One transient error is expected when the bounded server stream rolls
+        // over. EventSource reconnects natively; repeated failures use polling.
+        if (shouldFallbackFromStudioRunStream(permanentlyClosed, consecutiveStreamFailures)) startFallback();
+      };
     }
 
     return () => {

@@ -2,7 +2,7 @@ import { ConvexClient } from "convex/browser";
 import { makeFunctionReference } from "convex/server";
 import { NextResponse } from "next/server";
 import { convexServiceToken } from "@/lib/convex-service";
-import { encodeStudioRunsEvent } from "@/lib/studio-runs";
+import { encodeStudioRunsEvent, STUDIO_RUN_STREAM_LIFETIME_MS } from "@/lib/studio-runs";
 import { getRequestAccessToken, resolveWalletPrincipal } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +13,7 @@ const listRecentRuns = makeFunctionReference<"query">("runs:listRecent");
 const encoder = new TextEncoder();
 
 export async function GET(request: Request) {
+  const streamDeadline = Date.now() + STUDIO_RUN_STREAM_LIFETIME_MS;
   const principal = await resolveWalletPrincipal(getRequestAccessToken(request));
   if (!principal) return NextResponse.json({ error: "Wallet sign-in required." }, { status: 401 });
   const url = process.env.CONVEX_URL ?? process.env.NEXT_PUBLIC_CONVEX_URL;
@@ -54,11 +55,13 @@ export async function GET(request: Request) {
       };
       const abort = () => closeStream();
       const heartbeat = setInterval(() => write(": keep-alive\n\n"), 15_000);
+      const lifetime = setTimeout(closeStream, Math.max(0, streamDeadline - Date.now()));
 
       release = () => {
         if (released) return;
         released = true;
         clearInterval(heartbeat);
+        clearTimeout(lifetime);
         request.signal.removeEventListener("abort", abort);
         unsubscribe();
         void client.close().catch(() => undefined);
