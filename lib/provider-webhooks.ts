@@ -37,12 +37,15 @@ export function buildProviderWebhookUrl(provider: string, meta: Required<Pick<Pr
 }
 
 export async function recordProviderWebhook(provider: ProviderWebhookProvider, payload: unknown, source: ProviderWebhookSource = {}) {
+  const parsed = getProviderAdapter(provider).parseWebhook?.(payload, source.url) ?? parseProviderWebhook(payload, source.url);
   const redis = getRedis();
   if (redis) {
-    await redis.lpush(`zap:webhook:${provider}`, JSON.stringify({ payload, sourceUrl: source.url, ts: Date.now() }));
+    // Do not turn this diagnostic queue into a second copy of provider input.
+    // Webhook bodies and source URLs may carry prompts, signed media URLs, or
+    // our callback secret. The execution path uses `parsed` in memory below;
+    // Redis receives only an allowlisted audit summary.
+    await redis.lpush(`zap:webhook:${provider}`, JSON.stringify(providerWebhookAuditRecord(provider, parsed)));
   }
-
-  const parsed = getProviderAdapter(provider).parseWebhook?.(payload, source.url) ?? parseProviderWebhook(payload, source.url);
   return recordProviderProgress(provider, parsed, parsed);
 }
 
@@ -119,12 +122,14 @@ export async function recordProviderProgress(provider: ProviderWebhookProvider |
   }
   const status = effectiveResult.status === "failed" ? "failed" : effectiveResult.status === "done" ? "done" : effectiveResult.status === "queued" ? "queued" : "running";
   const progress = effectiveResult.progress ?? (status === "done" || status === "failed" ? 1 : status === "queued" ? 0 : 0.5);
+  // Provider errors are untrusted text. Persisting it in Convex can retain a
+  // prompt or signed first-frame URL long after the provider request expires.
+  const ledgerError = status === "failed" ? persistedProviderFailureCode(effectiveResult.error) : undefined;
 
-  // Only the private Air record needs a compact, stable failure contract. The
-  // generic ledger may retain provider diagnostics for authenticated operators,
-  // but Air's GET endpoint must never relay arbitrary provider text.
+  // Air also mirrors terminal state in its private Redis record, so feed that
+  // contract the same categorized value that reaches the generic ledger.
   if (isAirVideoRun && status === "failed") {
-    await recordAirVideoFailure(meta.runId, effectiveResult.error);
+    await recordAirVideoFailure(meta.runId, ledgerError);
   }
 
   let assetId: string | undefined;
@@ -148,7 +153,7 @@ export async function recordProviderProgress(provider: ProviderWebhookProvider |
 
   await upsertStepLedger({
     actualUsd: effectiveResult.actualUsd ?? existingStep?.actualUsd,
-    error: effectiveResult.error ?? existingStep?.error,
+    error: ledgerError,
     kind: existingStep?.kind ?? meta.capability ?? "unknown",
     model: existingStep?.model,
     priceQuoteUsd: existingStep?.priceQuoteUsd ?? 0,
@@ -166,7 +171,7 @@ export async function recordProviderProgress(provider: ProviderWebhookProvider |
   const runStatus = status === "failed" ? "failed" : allStepsTerminal ? "done" : "running";
   await updateRunLedger({
     costUsd,
-    error: status === "failed" ? effectiveResult.error : nextSnapshot.run?.error,
+    error: ledgerError,
     runId: meta.runId,
     stage: status === "failed" ? `${meta.stepId}:failed` : allStepsTerminal ? "complete" : `${meta.stepId}:webhook_${status}`,
     status: runStatus,
@@ -188,6 +193,68 @@ export async function recordProviderProgress(provider: ProviderWebhookProvider |
     stepId: meta.stepId,
   };
 }
+
+/**
+ * A bounded webhook audit record. Keep raw payloads/source URLs out of Redis:
+ * both can contain user prompts, first-frame capabilities, or callback
+ * secrets. This queue is observational only; it is not used to replay work.
+ */
+function providerWebhookAuditRecord(provider: ProviderWebhookProvider, parsed: ProviderPollResult & ProviderProgressMeta) {
+  const errorCode = parsed.status === "failed" ? persistedProviderFailureCode(parsed.error) : undefined;
+  return {
+    event: "provider_progress",
+    hasOutput: Boolean(parsed.outputUrl),
+    ...(typeof parsed.actualUsd === "number" && Number.isFinite(parsed.actualUsd) ? { actualUsd: parsed.actualUsd } : {}),
+    ...(safeCapability(parsed.capability) ? { capability: parsed.capability } : {}),
+    ...(errorCode ? { errorCode } : {}),
+    ...(safeRunId(parsed.runId) ? { runId: parsed.runId } : {}),
+    ...(safeStepId(parsed.stepId) ? { stepId: parsed.stepId } : {}),
+    provider,
+    status: parsed.status,
+    ts: Date.now(),
+  };
+}
+
+function safeCapability(value?: string) {
+  return Boolean(value && /^(?:audio|image|video)\.[a-z_]+$/.test(value));
+}
+
+function safeRunId(value?: string) {
+  return Boolean(value && /^(?:air_[a-f0-9]{24}|run_[A-Za-z0-9_-]{1,128})$/.test(value));
+}
+
+function safeStepId(value?: string) {
+  return Boolean(value && /^[A-Za-z0-9:_-]{1,128}$/.test(value));
+}
+
+// This boundary must not trust a provider adapter to have already normalized
+// diagnostics. Preserve only codes deliberately used by Zap; everything else
+// becomes the generic category rather than durable provider text.
+function persistedProviderFailureCode(value: unknown) {
+  const normalized = typeof value === "string" ? value.trim().toUpperCase() : "";
+  return persistedProviderFailureCodes.has(normalized) ? normalized : "PROVIDER_FAILED";
+}
+
+const persistedProviderFailureCodes = new Set([
+  "ADMISSION_UNAVAILABLE",
+  "CONCURRENCY_LIMIT",
+  "DAILY_SPEND_CAP",
+  "OUTPUT_MISSING",
+  "OUTPUT_VALIDATION_FAILED",
+  "PER_RUN_SPEND_CAP",
+  "POLL_DEADLINE_EXCEEDED",
+  "POLL_UNAVAILABLE",
+  "PROVIDER_AUTH_FAILED",
+  "PROVIDER_FAILED",
+  "PROVIDER_RATE_LIMITED",
+  "PROVIDER_REJECTED",
+  "PROVIDER_UNAVAILABLE",
+  "SERVICE_CONFIGURATION",
+  "SUBMISSION_PRECONDITION_FAILED",
+  "SUBMISSION_UNAVAILABLE",
+  "SUBMISSION_UNKNOWN",
+  "VIDEO_EXPIRED",
+]);
 
 function parseProviderWebhook(payload: unknown, sourceUrl?: string): ProviderPollResult & ProviderProgressMeta {
   const query = readQuery(sourceUrl);

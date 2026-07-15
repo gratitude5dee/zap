@@ -33,13 +33,6 @@ steps:
     duration_s: 5
     inputs: [user.IMAGE]
     prompt: prompts/generate.md
-  - id: finalize
-    kind: stitch
-    inputs: [seedance]
-    stitch:
-      engine: auto
-      format: mp4
-      quality: standard
 output: Air.mp4
 ---
 

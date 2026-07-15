@@ -24,18 +24,24 @@ describe("Air iMessage video recipe", () => {
       IMAGE: { required: false, type: "image" },
       PROMPT: { required: true, type: "textarea" },
     });
+    expect(spec.output).toBe("Air.mp4");
+    expect(spec.steps).toHaveLength(1);
     expect(spec.steps).toMatchObject([
       {
         duration_s: 5,
         id: "seedance",
+        inputs: ["user.IMAGE"],
         kind: "video.gen",
         model: "seedance-2-0-fast-260128",
         provider: "gmi",
       },
-      { id: "finalize", kind: "stitch" },
     ]);
 
     vi.stubEnv("GMI_SEEDANCE_FAST_USD_PER_SECOND", "0.2");
-    expect(planZapRun(spec, 0)).toMatchObject({ estimateUsd: 1, zap: "air-imessage-video" });
+    expect(planZapRun(spec, 0)).toMatchObject({
+      estimateUsd: 1,
+      steps: [{ id: "seedance", kind: "video.gen" }],
+      zap: "air-imessage-video",
+    });
   });
 });

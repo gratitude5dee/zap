@@ -1,7 +1,7 @@
 import { Buffer } from "node:buffer";
 import { copyFile, mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
-import { del, put } from "@vercel/blob";
+import { BlobNotFoundError, del, put } from "@vercel/blob";
 
 const DEFAULT_AIR_VIDEO_MAX_BYTES = 25 * 1024 * 1024;
 const AIR_VIDEO_FETCH_TIMEOUT_MS = 30_000;
@@ -141,7 +141,15 @@ export async function persistAirVideoOutput(url: string, key: string, options: A
 export async function deletePersistedAsset(storageKey: string) {
   const auth = resolveAirBlobAuth();
   if (!auth) throw new Error("BLOB_READ_WRITE_TOKEN or BLOB_STORE_ID is required for Air video cleanup.");
-  await del(storageKey, airBlobCommandOptions(auth));
+  try {
+    await del(storageKey, airBlobCommandOptions(auth));
+  } catch (error) {
+    // A worker can die after Blob accepted the delete but before it durably
+    // acknowledges the cleanup schedule. Retrying that entry must converge,
+    // not leave a permanently retrying "not found" tombstone.
+    if (error instanceof BlobNotFoundError) return;
+    throw error;
+  }
 }
 
 export async function persistDataUrlAsset(dataUrl: string, key: string) {

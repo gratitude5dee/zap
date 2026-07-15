@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const blob = vi.hoisted(() => ({
+  BlobNotFoundError: class BlobNotFoundError extends Error {},
   del: vi.fn(),
   put: vi.fn(),
 }));
@@ -123,6 +124,14 @@ describe("Air Blob video persistence", () => {
       .rejects.toThrow(/BLOB_READ_WRITE_TOKEN or BLOB_STORE_ID/);
     expect(blob.put).not.toHaveBeenCalled();
     expect(blob.del).not.toHaveBeenCalled();
+  });
+
+  it("treats an already-deleted Blob as a successful cleanup retry", async () => {
+    blob.del.mockRejectedValueOnce(new blob.BlobNotFoundError());
+
+    await expect(deletePersistedAsset("air/run/seedance.mp4")).resolves.toBeUndefined();
+
+    expect(blob.del).toHaveBeenCalledWith("air/run/seedance.mp4", { token: "blob-test-token" });
   });
 
   it("does not create a Blob when durable cleanup scheduling fails", async () => {

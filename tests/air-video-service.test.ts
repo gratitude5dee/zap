@@ -1,12 +1,16 @@
+import { createHash } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
   active: new Map<string, number>(),
   assets: new Map<string, Array<Record<string, unknown>>>(),
+  cleanup: new Map<string, number>(),
   daily: new Map<string, number>(),
+  deletePersistedAsset: vi.fn(),
   expire: vi.fn(async () => 1),
   forceUploadPending: false,
   persist: vi.fn(async () => 1),
+  redact: vi.fn(),
   records: new Map<string, unknown>(),
   runs: new Map<string, Record<string, unknown>>(),
   steps: new Map<string, Array<Record<string, unknown>>>(),
@@ -40,6 +44,21 @@ vi.mock("../lib/redis", () => ({
           state.active.delete(args[0]!);
           return 1 as T;
         }
+        if (source.includes("redis.call('ZREM', KEYS[1], ARGV[2])")) {
+          const [, leaseKey] = keys;
+          const [leaseToken, storageKey] = args;
+          if (state.records.get(leaseKey!) !== leaseToken) return 0 as T;
+          state.cleanup.delete(storageKey!);
+          state.records.delete(leaseKey!);
+          return 1 as T;
+        }
+        if (source.includes("redis.call('GET', KEYS[1]) ~= ARGV[1]")) {
+          const [leaseKey] = keys;
+          const [leaseToken] = args;
+          if (state.records.get(leaseKey!) !== leaseToken) return 0 as T;
+          state.records.delete(leaseKey!);
+          return 1 as T;
+        }
         if (source.includes("current = tonumber")) {
           const key = keys[0]!;
           const next = (state.daily.get(key) ?? 0) + Number(args[0]);
@@ -47,7 +66,6 @@ vi.mock("../lib/redis", () => ({
           state.daily.set(key, next);
           return 1 as T;
         }
-        if (source.includes("ZRANGEBYSCORE")) return [] as T;
         throw new Error("Unexpected Redis script");
       },
     }),
@@ -61,11 +79,25 @@ vi.mock("../lib/redis", () => ({
       state.records.set(key, value);
       return "OK";
     },
-    zadd: async (_key: string, value: { member: string; score: number }) => {
+    zadd: async (key: string, value: { member: string; score: number }) => {
+      if (key.endsWith(":asset-cleanup")) {
+        state.cleanup.set(value.member, value.score);
+        return 1;
+      }
       state.active.set(value.member, value.score);
       return 1;
     },
-    zrem: async (_key: string, member: string) => Number(state.active.delete(member)),
+    zrange: async (key: string, _min: number | string, max: number, options: { count: number; offset: number }) => {
+      if (!key.endsWith(":asset-cleanup")) return [];
+      return [...state.cleanup.entries()]
+        .filter(([, score]) => score <= max)
+        .sort(([, left], [, right]) => left - right)
+        .slice(options.offset, options.offset + options.count)
+        .map(([member]) => member);
+    },
+    zrem: async (key: string, member: string) => key.endsWith(":asset-cleanup")
+      ? Number(state.cleanup.delete(member))
+      : Number(state.active.delete(member)),
   }),
 }));
 
@@ -89,6 +121,7 @@ vi.mock("../lib/run-ledger", () => ({
     statusUrl: `/runs/${runId}`,
     steps: state.steps.get(runId) ?? [],
   }),
+  redactAirVideoAsset: (...args: unknown[]) => state.redact(...args),
   updateRunLedger: async (input: Record<string, unknown>) => {
     const current = state.runs.get(String(input.runId)) ?? {};
     state.runs.set(String(input.runId), { ...current, ...input });
@@ -105,7 +138,7 @@ vi.mock("../lib/run-ledger", () => ({
 }));
 
 vi.mock("../lib/blob-store", () => ({
-  deletePersistedAsset: vi.fn(),
+  deletePersistedAsset: (...args: unknown[]) => state.deletePersistedAsset(...args),
   hasAirBlobCredentials: () => Boolean(
     process.env.BLOB_READ_WRITE_TOKEN?.trim() || process.env.BLOB_STORE_ID?.trim(),
   ),
@@ -113,6 +146,7 @@ vi.mock("../lib/blob-store", () => ({
 
 import {
   createAirUploadTicket,
+  cleanupExpiredAirVideoAssets,
   getAirVideoRun,
   isAirServiceAuthorized,
   parseAirUploadInput,
@@ -127,10 +161,15 @@ describe("Air video service", () => {
   beforeEach(() => {
     state.active.clear();
     state.assets.clear();
+    state.cleanup.clear();
     state.daily.clear();
+    state.deletePersistedAsset.mockReset();
+    state.deletePersistedAsset.mockResolvedValue(undefined);
     state.expire.mockClear();
     state.forceUploadPending = false;
     state.persist.mockClear();
+    state.redact.mockReset();
+    state.redact.mockResolvedValue(undefined);
     state.records.clear();
     state.runs.clear();
     state.steps.clear();
@@ -297,6 +336,49 @@ describe("Air video service", () => {
 
     expect(state.expire).not.toHaveBeenCalled();
     expect(state.persist).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps a due cleanup entry until Blob deletion has succeeded", async () => {
+    const storageKey = "air/air_abcdef012345abcdef012345/seedance.mp4";
+    state.cleanup.set(storageKey, Date.now() - 1);
+    state.deletePersistedAsset.mockImplementationOnce(async () => {
+      // The schedule is the durable source of truth while Blob deletion is in
+      // flight; removing it first would make a process crash orphan the file.
+      expect(state.cleanup.has(storageKey)).toBe(true);
+    });
+
+    await expect(cleanupExpiredAirVideoAssets()).resolves.toBe(1);
+
+    expect(state.deletePersistedAsset).toHaveBeenCalledWith(storageKey);
+    expect(state.cleanup.has(storageKey)).toBe(false);
+  });
+
+  it("keeps failed deletion work scheduled and recovers after a crashed worker lease", async () => {
+    const storageKey = "air/air_abcdef012345abcdef012345/seedance.mp4";
+    const leaseKey = `zap:service:air:v1:asset-cleanup-lease:${createHash("sha256").update(storageKey).digest("hex")}`;
+    state.cleanup.set(storageKey, Date.now() - 1);
+    state.deletePersistedAsset.mockRejectedValueOnce(new Error("Blob temporarily unavailable"));
+
+    await expect(cleanupExpiredAirVideoAssets()).resolves.toBe(1);
+
+    // A failed delete cannot discard the source-of-truth entry.
+    expect(state.cleanup.has(storageKey)).toBe(true);
+    expect(state.records.has(leaseKey)).toBe(false);
+
+    // Simulate a function crash after leasing but before deletion. The primary
+    // schedule still exists, so once the visibility lease expires another cron
+    // can complete it.
+    state.records.set(leaseKey, "abandoned-worker");
+    state.cleanup.set(storageKey, Date.now() - 1);
+    await expect(cleanupExpiredAirVideoAssets()).resolves.toBe(1);
+    expect(state.deletePersistedAsset).toHaveBeenCalledTimes(1);
+    expect(state.cleanup.has(storageKey)).toBe(true);
+
+    state.records.delete(leaseKey);
+    await expect(cleanupExpiredAirVideoAssets()).resolves.toBe(1);
+
+    expect(state.deletePersistedAsset).toHaveBeenCalledTimes(2);
+    expect(state.cleanup.has(storageKey)).toBe(false);
   });
 
   it("submits once, redacts prompt storage, and replays the durable run", async () => {

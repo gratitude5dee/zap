@@ -26,6 +26,12 @@ const AIR_ACTIVE_KEY = `${AIR_REDIS_PREFIX}:active`;
 const AIR_SUBMISSION_LEASE_TTL_MS = 90_000;
 const AIR_ASSET_CLEANUP_KEY = `${AIR_REDIS_PREFIX}:asset-cleanup`;
 const AIR_ASSET_TTL_MS = 24 * 60 * 60 * 1000;
+// Cleanup is intentionally lease-based rather than a destructive queue pop.
+// The scheduled ZSET remains the source of truth until Blob confirms deletion,
+// so a process dying between selection and deletion cannot orphan an MP4.
+const AIR_ASSET_CLEANUP_LEASE_PREFIX = `${AIR_REDIS_PREFIX}:asset-cleanup-lease`;
+const AIR_ASSET_CLEANUP_LEASE_MS = 5 * 60 * 1000;
+const AIR_ASSET_CLEANUP_RETRY_DELAY_MS = 10 * 60 * 1000;
 const AIR_UPLOAD_TICKET_TTL_MS = 15 * 60 * 1000;
 const AIR_UPLOAD_TICKET_PENDING_TTL_MS = 30 * 1000;
 const AIR_UPLOAD_TICKET_FETCH_TIMEOUT_MS = 20 * 1000;
@@ -465,13 +471,15 @@ export async function recordAirVideoAssetExpiry(runId: string, expiresAtMs: numb
 export async function cleanupExpiredAirVideoAssets(limit = 10) {
   const redis = getRedis();
   if (!redis) return 0;
-  const script = redis.createScript<string[]>([
-    "local members = redis.call('ZRANGEBYSCORE', KEYS[1], '-inf', ARGV[1], 'LIMIT', '0', ARGV[2])",
-    "for _, member in ipairs(members) do redis.call('ZREM', KEYS[1], member) end",
-    "return members",
-  ].join("\n"));
-  const storageKeys = await script.eval([AIR_ASSET_CLEANUP_KEY], [String(Date.now()), String(Math.max(1, Math.min(limit, 50)))]);
+  const storageKeys = await redis.zrange<string[]>(
+    AIR_ASSET_CLEANUP_KEY,
+    "-inf",
+    Date.now(),
+    { byScore: true, count: Math.max(1, Math.min(limit, 50)), offset: 0 },
+  );
   for (const storageKey of storageKeys) {
+    const leaseToken = randomBytes(18).toString("base64url");
+    if (!(await acquireAirVideoCleanupLease(redis, storageKey, leaseToken))) continue;
     try {
       await deletePersistedAsset(storageKey);
       const runId = airRunIdFromStorageKey(storageKey);
@@ -487,12 +495,68 @@ export async function cleanupExpiredAirVideoAssets(limit = 10) {
           });
         }
       }
+      // A deletion is acknowledged only if this worker still owns the lease.
+      // If its lease expired while Blob was slow, leave the schedule in place:
+      // another worker can safely repeat an idempotent delete and acknowledge.
+      await acknowledgeAirVideoCleanup(redis, storageKey, leaseToken);
     } catch {
-      // Keep cleanup retryable without making a failed deletion permanent.
-      await redis.zadd(AIR_ASSET_CLEANUP_KEY, { member: storageKey, score: Date.now() + 10 * 60 * 1000 });
+      // Preserve the primary schedule before releasing the per-object lease.
+      // If either operation is interrupted, the untouched due member and the
+      // expiring lease still make the work recoverable on a later cron pass.
+      await redis.zadd(AIR_ASSET_CLEANUP_KEY, {
+        member: storageKey,
+        score: Date.now() + AIR_ASSET_CLEANUP_RETRY_DELAY_MS,
+      });
+      await releaseAirVideoCleanupLease(redis, storageKey, leaseToken);
     }
   }
   return storageKeys.length;
+}
+
+async function acquireAirVideoCleanupLease(
+  redis: NonNullable<ReturnType<typeof getRedis>>,
+  storageKey: string,
+  leaseToken: string,
+) {
+  const claimed = await redis.set(airVideoCleanupLeaseKey(storageKey), leaseToken, {
+    nx: true,
+    px: AIR_ASSET_CLEANUP_LEASE_MS,
+  });
+  return claimed === "OK";
+}
+
+/** Remove the schedule only after Blob confirms deletion and only for its owner. */
+async function acknowledgeAirVideoCleanup(
+  redis: NonNullable<ReturnType<typeof getRedis>>,
+  storageKey: string,
+  leaseToken: string,
+) {
+  const script = redis.createScript<number>([
+    "if redis.call('GET', KEYS[2]) ~= ARGV[1] then return 0 end",
+    "redis.call('ZREM', KEYS[1], ARGV[2])",
+    "return redis.call('DEL', KEYS[2])",
+  ].join("\n"));
+  return (await script.eval(
+    [AIR_ASSET_CLEANUP_KEY, airVideoCleanupLeaseKey(storageKey)],
+    [leaseToken, storageKey],
+  )) === 1;
+}
+
+/** Never clear a successor's lease when an earlier attempt fails. */
+async function releaseAirVideoCleanupLease(
+  redis: NonNullable<ReturnType<typeof getRedis>>,
+  storageKey: string,
+  leaseToken: string,
+) {
+  const script = redis.createScript<number>([
+    "if redis.call('GET', KEYS[1]) ~= ARGV[1] then return 0 end",
+    "return redis.call('DEL', KEYS[1])",
+  ].join("\n"));
+  return (await script.eval([airVideoCleanupLeaseKey(storageKey)], [leaseToken])) === 1;
+}
+
+function airVideoCleanupLeaseKey(storageKey: string) {
+  return `${AIR_ASSET_CLEANUP_LEASE_PREFIX}:${createHash("sha256").update(storageKey).digest("hex")}`;
 }
 
 function airRunIdFromStorageKey(storageKey: string) {

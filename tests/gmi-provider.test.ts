@@ -52,6 +52,7 @@ describe("GMI Seedance provider", () => {
       authorization: "Bearer gmi-test-key",
       "content-type": "application/json",
     });
+    expect((init as RequestInit).signal).toBeDefined();
     expect(JSON.parse(String((init as RequestInit).body))).toEqual({
       model: "seedance-2-0-fast-260128",
       payload: {
@@ -81,9 +82,12 @@ describe("GMI Seedance provider", () => {
       status: "done",
     });
 
-    expect(fetchMock).toHaveBeenCalledWith(`${gmiRequestsUrl}/gmi%20request%2F123`, {
+    const [url, init] = fetchMock.mock.calls[0] ?? [];
+    expect(url).toBe(`${gmiRequestsUrl}/gmi%20request%2F123`);
+    expect(init).toMatchObject({
       headers: { authorization: "Bearer gmi-test-key" },
     });
+    expect((init as RequestInit).signal).toBeDefined();
   });
 
   it("maps processing, media_urls, failed, and cancelled responses safely", async () => {
@@ -102,12 +106,33 @@ describe("GMI Seedance provider", () => {
       status: "done",
     });
     await expect(gmiAdapter.poll("failed", { gmi_api_key: "gmi-test-key" })).resolves.toMatchObject({
-      error: "generation failed",
+      error: "PROVIDER_FAILED",
       status: "failed",
     });
     await expect(gmiAdapter.poll("cancelled", { gmi_api_key: "gmi-test-key" })).resolves.toMatchObject({
-      error: "cancelled by provider",
+      error: "PROVIDER_REJECTED",
       status: "failed",
     });
+  });
+
+  it("does not expose provider response bodies or transport diagnostics", async () => {
+    const sensitivePrompt = "an unreleased family photo in a secret room";
+    const sensitiveUrl = "https://storage.googleapis.com/gmi/first-frame.jpg?signature=private";
+    const fetchMock = vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(new Response(JSON.stringify({ error: `${sensitivePrompt} ${sensitiveUrl}` }), { status: 400 }))
+      .mockRejectedValueOnce(new Error(`${sensitivePrompt} ${sensitiveUrl}`));
+
+    const httpError = await gmiAdapter.submit(videoRequest({ prompt: sensitivePrompt }), "zap:idem:ignored")
+      .then(() => undefined, (error: unknown) => error);
+    const transportError = await gmiAdapter.poll("transport", { gmi_api_key: "gmi-test-key" })
+      .then(() => undefined, (error: unknown) => error);
+
+    expect(httpError).toMatchObject({ code: "PROVIDER_ERROR", message: "gmi request failed with HTTP 400." });
+    expect(transportError).toMatchObject({ code: "PROVIDER_ERROR", message: "gmi request unavailable.", retryable: true });
+    const messages = [httpError, transportError]
+      .map((error) => error instanceof Error ? error.message : String(error))
+      .join("\n");
+    expect(messages).not.toContain(sensitivePrompt);
+    expect(messages).not.toContain(sensitiveUrl);
   });
 });

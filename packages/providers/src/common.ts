@@ -16,10 +16,10 @@ export async function readJsonResponse<T>(response: Response, provider: string):
   const text = await response.text();
   const body = text ? tryJson(text) : {};
   if (!response.ok) {
-    const message = typeof body === "object" && body && "error" in body
-      ? String((body as { error?: unknown }).error)
-      : text || `${provider} request failed with ${response.status}.`;
-    throw new ProviderError(`${provider} request failed: ${message}`, {
+    // Provider response bodies can echo prompts, signed media URLs, or other
+    // user input. Keep those bodies in-process only; callers persist the
+    // stable ProviderError code and safe HTTP status instead.
+    throw new ProviderError(`${provider} request failed with HTTP ${response.status}.`, {
       code: response.status === 401 || response.status === 403 ? "KEY_INVALID" : response.status === 429 ? "RATE_LIMITED" : "PROVIDER_ERROR",
       retryable: response.status === 429 || response.status >= 500,
       status: response.status,
@@ -27,6 +27,51 @@ export async function readJsonResponse<T>(response: Response, provider: string):
   }
   return body as T;
 }
+
+/**
+ * Convert untrusted provider diagnostics into a small, persistence-safe
+ * category. Never return the provider supplied text: APIs often echo prompts
+ * and signed input/output URLs in their failure messages.
+ */
+export function providerFailureCode(value: unknown): string | undefined {
+  const detail = typeof value === "string" ? value.trim() : "";
+  if (!detail) return undefined;
+
+  const normalized = detail.toUpperCase();
+  if (knownProviderFailureCodes.has(normalized)) return normalized;
+  if (/\b(401|403|api[ _-]?key|auth(?:entication|orization)?|credential|forbidden|unauthori[sz]ed)\b/i.test(detail)) {
+    return "PROVIDER_AUTH_FAILED";
+  }
+  if (/\b(429|rate[ _-]?limit|quota|too many requests)\b/i.test(detail)) return "PROVIDER_RATE_LIMITED";
+  if (/\b(408|5\d\d|connection|network|temporar(?:y|ily)|timeout|timed out|unavailable)\b/i.test(detail)) {
+    return "PROVIDER_UNAVAILABLE";
+  }
+  if (/\b(400|404|409|422|cancel(?:led|ed)|canceled|invalid|moderation|policy|reject(?:ed|ion)?|unsupported)\b/i.test(detail)) {
+    return "PROVIDER_REJECTED";
+  }
+  return "PROVIDER_FAILED";
+}
+
+const knownProviderFailureCodes = new Set([
+  "ADMISSION_UNAVAILABLE",
+  "CONCURRENCY_LIMIT",
+  "DAILY_SPEND_CAP",
+  "OUTPUT_MISSING",
+  "OUTPUT_VALIDATION_FAILED",
+  "PER_RUN_SPEND_CAP",
+  "POLL_DEADLINE_EXCEEDED",
+  "POLL_UNAVAILABLE",
+  "PROVIDER_AUTH_FAILED",
+  "PROVIDER_FAILED",
+  "PROVIDER_RATE_LIMITED",
+  "PROVIDER_REJECTED",
+  "PROVIDER_UNAVAILABLE",
+  "SERVICE_CONFIGURATION",
+  "SUBMISSION_PRECONDITION_FAILED",
+  "SUBMISSION_UNAVAILABLE",
+  "SUBMISSION_UNKNOWN",
+  "VIDEO_EXPIRED",
+]);
 
 export function normalizeStatus(status?: string | null): ProviderPollResult["status"] {
   const normalized = status?.toLowerCase();
@@ -87,7 +132,7 @@ export function parseGenericWebhook(payload: unknown, sourceUrl?: string): Provi
   return {
     actualUsd: pickNumber(payload, [["actualUsd"], ["actual_usd"], ["costUsd"], ["cost_usd"], ["data", "cost_usd"]]),
     capability: query.get("capability") ?? pickString(payload, [["capability"], ["kind"], ["metadata", "capability"]]),
-    error: pickString(payload, [["error"], ["error", "message"], ["data", "error"], ["payload", "error"]]),
+    error: providerFailureCode(pickString(payload, [["error"], ["error", "message"], ["data", "error"], ["payload", "error"]])),
     outputUrl: extractUrl(payload),
     progress: normalizeProgress(pickNumber(payload, [["progress"], ["percentage"], ["percent"], ["data", "progress"], ["payload", "progress"]])),
     requestId: query.get("requestId") ?? pickString(payload, [

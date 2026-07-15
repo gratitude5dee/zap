@@ -1,4 +1,4 @@
-import { extractUrl, normalizeProgress, normalizeStatus, parseGenericWebhook, pickString, readJsonResponse, requireSecret } from "./common.ts";
+import { extractUrl, normalizeProgress, normalizeStatus, parseGenericWebhook, pickString, providerFailureCode, readJsonResponse, requireSecret } from "./common.ts";
 import { ProviderError } from "./errors.ts";
 import { priceGeneration } from "./pricing.ts";
 import type { ProviderAdapter } from "./types.ts";
@@ -6,6 +6,10 @@ import type { ProviderAdapter } from "./types.ts";
 const GMI_QUEUE_URL = "https://console.gmicloud.ai/api/v1/ie/requestqueue/apikey";
 const GMI_REQUESTS_URL = `${GMI_QUEUE_URL}/requests`;
 const AIR_SEEDANCE_FAST_MODEL = "seedance-2-0-fast-260128";
+// Queue submit/poll are short control-plane calls; video rendering happens
+// asynchronously. Bound them so a stalled provider connection cannot pin a
+// Vercel function or an Air admission slot indefinitely.
+const GMI_REQUEST_TIMEOUT_MS = 30_000;
 
 type GmiResponseData = {
   data?: GmiResponseData;
@@ -46,7 +50,7 @@ export const gmiAdapter: ProviderAdapter = {
   async submit(req, _idemKey) {
     const apiKey = requireSecret(req.secrets, "gmi_api_key", "GMI_API_KEY");
     const model = req.model || gmiAdapter.defaultModel(req.capability);
-    const response = await fetch(GMI_REQUESTS_URL, {
+    const response = await fetchGmi(GMI_REQUESTS_URL, {
       body: JSON.stringify({
         model,
         payload: buildGmiPayload(req, model),
@@ -70,7 +74,7 @@ export const gmiAdapter: ProviderAdapter = {
   },
   async poll(requestId, secrets) {
     const apiKey = requireSecret(secrets, "gmi_api_key", "GMI_API_KEY");
-    const response = await fetch(`${GMI_REQUESTS_URL}/${encodeURIComponent(requestId)}`, {
+    const response = await fetchGmi(`${GMI_REQUESTS_URL}/${encodeURIComponent(requestId)}`, {
       headers: {
         authorization: `Bearer ${apiKey}`,
       },
@@ -80,7 +84,10 @@ export const gmiAdapter: ProviderAdapter = {
     const status = normalizeStatus(stringValue(data.status) ?? stringValue(body.status));
     const providerProgress = numberValue(data.progress) ?? numberValue(body.progress);
     return {
-      error: readError(data) ?? readError(body),
+      // GMI can include the submitted prompt or signed media URLs in a
+      // terminal error. Return only a stable category because this value is
+      // later written into durable run state.
+      error: providerFailureCode(readError(data) ?? readError(body)),
       outputUrl: extractGmiVideoUrl(data) ?? extractGmiVideoUrl(body),
       progress: normalizeProgress(providerProgress) ?? defaultProgress(status),
       status,
@@ -129,6 +136,19 @@ function readRequestId(value: GmiResponseData) {
 
 function readError(value: GmiResponseData) {
   return pickString(value, [["error", "message"], ["error"], ["message"], ["outcome", "error"]]);
+}
+
+async function fetchGmi(url: string, init: RequestInit) {
+  try {
+    return await fetch(url, { ...init, signal: AbortSignal.timeout(GMI_REQUEST_TIMEOUT_MS) });
+  } catch {
+    // Network/timeout exceptions sometimes include transport diagnostics. Do
+    // not let them escape into a persisted run error.
+    throw new ProviderError("gmi request unavailable.", {
+      code: "PROVIDER_ERROR",
+      retryable: true,
+    });
+  }
 }
 
 function defaultProgress(status: ReturnType<typeof normalizeStatus>) {
