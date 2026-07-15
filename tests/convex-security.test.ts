@@ -47,4 +47,21 @@ describe("Convex service boundary", () => {
     expect(publicSnapshot.steps[0]).not.toHaveProperty("providerRequestId");
     expect(publicSnapshot.feedback[0]).not.toHaveProperty("rater");
   });
+
+  it("makes private Air iMessage video runs entirely unavailable to public queries", () => {
+    const publicSnapshot = publicRunSnapshot({
+      assets: [{ _id: "asset", kind: "mp4", runId: "air_abcdef012345abcdef012345", stepId: "seedance", url: "https://blob.test/video.mp4" }],
+      feedback: [],
+      run: {
+        costUsd: 0.76,
+        runId: "air_abcdef012345abcdef012345",
+        status: "done",
+        zapSlug: "air-imessage-video",
+        zapVersion: 1,
+      },
+      steps: [{ kind: "video.gen", runId: "air_abcdef012345abcdef012345", status: "done", stepId: "seedance" }],
+    });
+
+    expect(publicSnapshot).toEqual({ assets: [], feedback: [], run: null, steps: [] });
+  });
 });

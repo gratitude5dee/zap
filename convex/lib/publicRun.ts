@@ -4,6 +4,11 @@ export function publicRunSnapshot(snapshot: {
   run: any | null;
   steps: any[];
 }) {
+  // Air is a private iMessage service. Its run IDs and temporary Blob URLs
+  // must never become a public capability, even if a caller obtains a run ID.
+  if (snapshot.run?.zapSlug === "air-imessage-video") {
+    return { assets: [], feedback: [], run: null, steps: [] };
+  }
   return {
     assets: snapshot.assets.map((asset) => ({
       _id: asset._id,

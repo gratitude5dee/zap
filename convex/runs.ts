@@ -26,6 +26,11 @@ export const create = mutation({
   handler: async (ctx, args) => {
     requireServiceToken(args.serviceToken);
     const { serviceToken: _serviceToken, ...record } = args;
+    const existing = await ctx.db
+      .query("runs")
+      .withIndex("by_runId", (q: any) => q.eq("runId", record.runId))
+      .unique();
+    if (existing) return record.runId;
     await ctx.db.insert("runs", {
       credentialMode: record.credentialMode,
       costUsd: 0,
@@ -249,5 +254,40 @@ export const addAsset = mutation({
       .first();
     if (existing) return existing._id;
     return await ctx.db.insert("assets", record);
+  },
+});
+
+/** Remove Air's temporary delivery artifact and redact its service run. */
+export const redactAirVideoAsset = mutation({
+  args: {
+    runId: v.string(),
+    storageKey: v.string(),
+    serviceToken: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    requireServiceToken(args.serviceToken);
+    const run = await ctx.db
+      .query("runs")
+      .withIndex("by_runId", (q: any) => q.eq("runId", args.runId))
+      .unique();
+    if (!run || run.zapSlug !== "air-imessage-video") return null;
+
+    const assets = await ctx.db
+      .query("assets")
+      .withIndex("by_run", (q: any) => q.eq("runId", args.runId))
+      .collect();
+    for (const asset of assets) {
+      if (asset.kind === "mp4" && asset.storageKey === args.storageKey) {
+        await ctx.db.delete(asset._id);
+      }
+    }
+    await ctx.db.patch(run._id, {
+      error: "VIDEO_EXPIRED",
+      stage: "asset_expired",
+      status: "failed",
+      zapUrl: undefined,
+    });
+    return null;
   },
 });

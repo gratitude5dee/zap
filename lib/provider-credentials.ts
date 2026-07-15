@@ -17,7 +17,6 @@ const secretNames = new Set<keyof ProviderSecrets>([
   "aws_session_token",
   "fal_key",
   "gmi_api_key",
-  "gmi_org_id",
   "prodia_token",
   "runware_key",
   "vertex_api_key",
@@ -48,7 +47,7 @@ export function isCompleteProviderCredentialSet(provider: string, secrets: Provi
     case "fal":
       return has("fal_key");
     case "gmi":
-      return has("gmi_api_key") && has("gmi_org_id");
+      return has("gmi_api_key");
     case "prodia":
       return has("prodia_token");
     case "runware":

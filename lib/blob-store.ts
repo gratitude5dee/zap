@@ -1,7 +1,18 @@
 import { Buffer } from "node:buffer";
 import { copyFile, mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
-import { put } from "@vercel/blob";
+import { del, put } from "@vercel/blob";
+
+const DEFAULT_AIR_VIDEO_MAX_BYTES = 25 * 1024 * 1024;
+const AIR_VIDEO_FETCH_TIMEOUT_MS = 30_000;
+
+/** Deterministic validation failures may safely terminalize a provider run. */
+export class AirVideoOutputError extends Error {
+  public constructor(message: string, readonly deterministic: boolean) {
+    super(message);
+    this.name = "AirVideoOutputError";
+  }
+}
 
 export async function persistRemoteAsset(url: string, key: string) {
   assertAllowedRemoteAssetUrl(url);
@@ -18,6 +29,74 @@ export async function persistRemoteAsset(url: string, key: string) {
     token: process.env.BLOB_READ_WRITE_TOKEN,
   });
   return { storageKey: stored.pathname, url: stored.url };
+}
+
+/**
+ * Air video output is stricter than the generic Zap artifact path: GMI output
+ * is copied immediately to Blob, must be an MP4 within the iMessage transfer
+ * budget, and never falls back to a provider-owned URL in production.
+ */
+export async function persistAirVideoOutput(url: string, key: string) {
+  try {
+    assertAllowedRemoteAssetUrl(url);
+  } catch (error) {
+    throw new AirVideoOutputError(
+      error instanceof Error ? error.message : "Provider asset URL is invalid.",
+      true,
+    );
+  }
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  if (!token) throw new AirVideoOutputError("BLOB_READ_WRITE_TOKEN is required for Air video output.", false);
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      redirect: "manual",
+      signal: AbortSignal.timeout(AIR_VIDEO_FETCH_TIMEOUT_MS),
+    });
+  } catch {
+    throw new AirVideoOutputError("Provider video could not be fetched.", false);
+  }
+  if (response.status >= 300 && response.status < 400) {
+    throw new AirVideoOutputError("Provider video redirect is not allowed.", true);
+  }
+  if (!response.ok) {
+    throw new AirVideoOutputError(
+      `Failed to fetch provider video: ${response.status}`,
+      response.status >= 400 && response.status < 500 && response.status !== 408 && response.status !== 429,
+    );
+  }
+  const contentType = response.headers.get("content-type")?.split(";", 1)[0]?.trim().toLowerCase();
+  if (contentType !== "video/mp4") {
+    throw new AirVideoOutputError("Provider output was not an MP4 video.", true);
+  }
+  const maxBytes = readMaxAirVideoBytes();
+  const declaredBytes = Number(response.headers.get("content-length"));
+  if (Number.isFinite(declaredBytes) && declaredBytes > maxBytes) {
+    throw new AirVideoOutputError("Provider video exceeds the Air output size limit.", true);
+  }
+  const bytes = await readBoundedVideoBody(response, maxBytes);
+  if (!hasMp4FileTypeBox(bytes)) {
+    throw new AirVideoOutputError("Provider output did not contain an MP4 file type box.", true);
+  }
+
+  // `readBoundedVideoBody` creates a fresh, non-shared Uint8Array. Narrow it
+  // here for TypeScript's DOM Blob overload while preserving the exact bytes.
+  const body = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+  const stored = await put(`${sanitizeStorageKey(key)}.mp4`, new Blob([body], { type: "video/mp4" }), {
+    access: "public",
+    addRandomSuffix: false,
+    allowOverwrite: true,
+    contentType: "video/mp4",
+    token,
+  });
+  return { storageKey: stored.pathname, url: stored.url };
+}
+
+export async function deletePersistedAsset(storageKey: string) {
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  if (!token) throw new Error("BLOB_READ_WRITE_TOKEN is required for Air video cleanup.");
+  await del(storageKey, { token });
 }
 
 export async function persistDataUrlAsset(dataUrl: string, key: string) {
@@ -68,6 +147,55 @@ function extensionForMime(mime: string) {
   return mime.split("/").at(1)?.split("+").at(0) ?? "bin";
 }
 
+function readMaxAirVideoBytes() {
+  const configured = process.env.ZAP_AIR_MAX_OUTPUT_BYTES?.trim();
+  if (!configured) return DEFAULT_AIR_VIDEO_MAX_BYTES;
+  const value = Number(configured);
+  if (!Number.isInteger(value) || value <= 0 || value > DEFAULT_AIR_VIDEO_MAX_BYTES) {
+    throw new Error("ZAP_AIR_MAX_OUTPUT_BYTES must be a positive integer no greater than 25 MiB.");
+  }
+  return value;
+}
+
+async function readBoundedVideoBody(response: Response, maxBytes: number): Promise<Uint8Array> {
+  if (!response.body) {
+    throw new AirVideoOutputError("Provider video response had no body.", false);
+  }
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  try {
+    for (;;) {
+      const part = await reader.read();
+      if (part.done) break;
+      size += part.value.byteLength;
+      if (size > maxBytes) {
+        await reader.cancel().catch(() => undefined);
+        throw new AirVideoOutputError("Provider video exceeds the Air output size limit.", true);
+      }
+      chunks.push(part.value);
+    }
+  } catch (error) {
+    if (error instanceof AirVideoOutputError) throw error;
+    throw new AirVideoOutputError("Provider video stream failed.", false);
+  } finally {
+    reader.releaseLock();
+  }
+
+  const bytes = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return bytes;
+}
+
+function hasMp4FileTypeBox(bytes: Uint8Array) {
+  if (bytes.byteLength < 12) return false;
+  return bytes[4] === 0x66 && bytes[5] === 0x74 && bytes[6] === 0x79 && bytes[7] === 0x70;
+}
+
 function sanitizeStorageKey(key: string) {
   return key
     .split(/[\\/]+/)
@@ -88,6 +216,7 @@ function assertAllowedRemoteAssetUrl(rawUrl: string) {
     "fal.media",
     "fal.run",
     "gmicloud.ai",
+    "storage.googleapis.com",
     "runware.ai",
     "prodia.com",
     "vercel-storage.com",

@@ -44,6 +44,10 @@ export function normalizeProgress(progress?: number) {
 
 export function extractUrl(value: unknown): string | undefined {
   return pickString(value, [
+    ["outcome", "video_url"],
+    ["outcome", "videoUrl"],
+    ["outcome", "media_urls", "0", "url"],
+    ["outcome", "media_urls", "0"],
     ["outputUrl"],
     ["output_url"],
     ["videoUrl"],

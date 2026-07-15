@@ -5,9 +5,9 @@ import {
 } from "../lib/provider-credentials";
 
 describe("provider credential resolution", () => {
-  const request = { gmi_api_key: "request-key", gmi_org_id: "request-org" };
-  const vault = { gmi_api_key: "vault-key", gmi_org_id: "vault-org" };
-  const managed = { gmi_api_key: "cloud-key", gmi_org_id: "cloud-org" };
+  const request = { gmi_api_key: "request-key" };
+  const vault = { gmi_api_key: "vault-key" };
+  const managed = { gmi_api_key: "cloud-key" };
 
   it("uses request BYOK before the user vault and managed cloud", () => {
     expect(selectProviderCredentialSet("gmi", { managed, request, vault })).toEqual({
@@ -16,16 +16,16 @@ describe("provider credential resolution", () => {
     });
   });
 
-  it("never merges a partial source with another source", () => {
+  it("accepts a GMI API key without an organization id and never merges sources", () => {
     expect(selectProviderCredentialSet("gmi", {
       managed,
-      request: { gmi_api_key: "partial-request" },
+      request: { fal_key: "wrong-provider-key" },
       vault,
     })).toEqual({ secrets: vault, source: "user-vault" });
     expect(selectProviderCredentialSet("gmi", {
-      managed: { gmi_org_id: "partial-cloud" },
-      request: { gmi_api_key: "partial-request" },
-      vault: { gmi_org_id: "partial-vault" },
+      managed: { fal_key: "wrong-provider-key" },
+      request: { prodia_token: "wrong-provider-token" },
+      vault: { runware_key: "wrong-provider-key" },
     })).toBeNull();
   });
 

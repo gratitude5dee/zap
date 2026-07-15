@@ -82,6 +82,7 @@ const createRun = makeFunctionReference<"mutation">("runs:create");
 const updateRunMutation = makeFunctionReference<"mutation">("runs:updateRun");
 const upsertStepMutation = makeFunctionReference<"mutation">("runs:upsertStep");
 const addAssetMutation = makeFunctionReference<"mutation">("runs:addAsset");
+const redactAirVideoAssetMutation = makeFunctionReference<"mutation">("runs:redactAirVideoAsset");
 const addFeedbackMutation = makeFunctionReference<"mutation">("feedback:add");
 const getAssetQuery = makeFunctionReference<"query">("runs:getAsset");
 const getRunQuery = makeFunctionReference<"query">("runs:get");
@@ -189,6 +190,25 @@ export async function addAssetLedger(args: {
   return id;
 }
 
+/** Delete the private Air artifact from durable and process-local ledgers. */
+export async function redactAirVideoAsset(args: { runId: string; storageKey: string }) {
+  for (const [id, asset] of memoryAssets) {
+    if (asset.runId === args.runId && asset.storageKey === args.storageKey) {
+      memoryAssets.delete(id);
+    }
+  }
+  const current = memoryRuns.get(args.runId);
+  if (current?.zapSlug === "air-imessage-video") {
+    memoryRuns.set(args.runId, {
+      ...current,
+      error: "VIDEO_EXPIRED",
+      status: "failed",
+      zapUrl: undefined,
+    });
+  }
+  await mutate(redactAirVideoAssetMutation, args);
+}
+
 export async function addFeedbackLedger(args: {
   assetId?: string;
   comment?: string;
@@ -222,9 +242,12 @@ export async function getRunSnapshot(runId: string, budgetCapUsd?: number): Prom
         steps: LedgerStep[];
       };
       return withRemainingBudget({ ...data, feedback: data.feedback ?? [], statusUrl: `/runs/${runId}` }, budgetCapUsd);
-    } catch {
+    } catch (error) {
+      if (isProductionLedger()) throw error;
       // Fall back to process-local state so local plan/live test runs remain observable.
     }
+  } else if (isProductionLedger()) {
+    throw new Error("CONVEX_URL is required for the production run ledger.");
   }
   const run = memoryRuns.get(runId) ?? null;
   const steps = Array.from(memorySteps.values()).filter((step) => step.runId === runId);
@@ -241,9 +264,12 @@ export async function getAssetSnapshot(assetId: string): Promise<LedgerAsset | n
   if (client) {
     try {
       return await client.query(getAssetQuery, { assetId, serviceToken: convexServiceToken() }) as LedgerAsset | null;
-    } catch {
+    } catch (error) {
+      if (isProductionLedger()) throw error;
       return null;
     }
+  } else if (isProductionLedger()) {
+    throw new Error("CONVEX_URL is required for the production run ledger.");
   }
   return null;
 }
@@ -266,14 +292,22 @@ function getConvexClient() {
 
 async function mutate(ref: ReturnType<typeof makeFunctionReference<"mutation">>, args: Record<string, unknown>) {
   const client = getConvexClient();
-  if (!client) return undefined;
+  if (!client) {
+    if (isProductionLedger()) throw new Error("CONVEX_URL is required for the production run ledger.");
+    return undefined;
+  }
   try {
     return await client.mutation(ref, { ...args, serviceToken: convexServiceToken() });
-  } catch {
+  } catch (error) {
+    if (isProductionLedger()) throw error;
     // The in-memory ledger keeps the run observable locally; deployment logs
     // still show Convex failures for operators through the thrown call site.
     return undefined;
   }
+}
+
+function isProductionLedger() {
+  return process.env.NODE_ENV === "production";
 }
 
 function stepKey(runId: string, stepId: string) {

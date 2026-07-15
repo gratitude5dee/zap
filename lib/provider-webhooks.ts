@@ -1,4 +1,11 @@
 import type { ProviderPollResult } from "./provider-types";
+import { AirVideoOutputError, persistAirVideoOutput } from "./blob-store";
+import {
+  recordAirVideoAssetExpiry,
+  releaseAirVideoConcurrency,
+  scheduleAirVideoAssetCleanup,
+  touchAirVideoConcurrency,
+} from "./air-video-service";
 import { getRedis } from "./redis";
 import { addAssetLedger, getRunSnapshot, updateRunLedger, upsertStepLedger } from "./run-ledger";
 import { getProviderAdapter } from "@wzrdtech/providers";
@@ -63,12 +70,71 @@ export async function recordProviderProgress(provider: ProviderWebhookProvider |
   }
 
   const existingStep = snapshot.steps.find((step) => step.stepId === meta.stepId);
-  const status = result.status === "failed" ? "failed" : result.status === "done" ? "done" : result.status === "queued" ? "queued" : "running";
-  const progress = result.progress ?? (status === "done" || status === "failed" ? 1 : status === "queued" ? 0 : 0.5);
+  const isAirVideoRun = /^air_[a-f0-9]{24}$/.test(meta.runId);
+  // Provider webhooks and polling are at-least-once. Never let a stale
+  // queued/running callback regress a terminal artifact or trigger a second
+  // Blob copy.
+  if (existingStep && isTerminalStepStatus(existingStep.status)) {
+    if (isAirVideoRun) await releaseAirVideoConcurrency(meta.runId);
+    return {
+      observed: true,
+      provider,
+      requestId: meta.requestId,
+      runId: meta.runId,
+      status: existingStep.status,
+      stepId: meta.stepId,
+    };
+  }
+
+  let effectiveResult = result;
+  let storageKey: string | undefined;
+  if (isAirVideoRun && result.status === "done") {
+    if (!result.outputUrl) {
+      effectiveResult = { ...result, error: "OUTPUT_MISSING", outputUrl: undefined, status: "failed" };
+    } else if (!(await acquireAirOutputLease(meta.runId))) {
+      // A second poll/webhook should retry after the first copier commits its
+      // ledger record, rather than racing a deterministic Blob pathname.
+      throw new Error("AIR_OUTPUT_PERSISTENCE_BUSY");
+    } else {
+      try {
+        const stored = await persistAirVideoOutput(result.outputUrl, `air/${meta.runId}/${meta.stepId}`);
+        effectiveResult = { ...result, outputUrl: stored.url };
+        storageKey = stored.storageKey;
+      } catch (error) {
+        if (!(error instanceof AirVideoOutputError) || !error.deterministic) throw error;
+        // Air never sends a provider URL directly. Only deterministic media
+        // validation failures become a terminal generation failure.
+        effectiveResult = { ...result, error: "OUTPUT_VALIDATION_FAILED", outputUrl: undefined, status: "failed" };
+      }
+    }
+  }
+  const status = effectiveResult.status === "failed" ? "failed" : effectiveResult.status === "done" ? "done" : effectiveResult.status === "queued" ? "queued" : "running";
+  const progress = effectiveResult.progress ?? (status === "done" || status === "failed" ? 1 : status === "queued" ? 0 : 0.5);
+
+  let assetId: string | undefined;
+  // The asset is durable before the step is marked done. This leaves a retry
+  // path if a process stops between Blob persistence and ledger completion.
+  if (status === "done" && effectiveResult.outputUrl) {
+    assetId = await addAssetLedger({
+      kind: inferAssetKind(effectiveResult.outputUrl),
+      parents: [],
+      runId: meta.runId,
+      stepId: meta.stepId,
+      storageKey,
+      url: effectiveResult.outputUrl,
+    });
+    if (isAirVideoRun && storageKey) {
+      const expiresAtMs = Date.now() + 24 * 60 * 60 * 1000;
+      // Persist this before the step becomes done, so every completed Air run
+      // returns a stable, bounded Blob capability expiry.
+      await scheduleAirVideoAssetCleanup(storageKey, expiresAtMs);
+      await recordAirVideoAssetExpiry(meta.runId, expiresAtMs);
+    }
+  }
 
   await upsertStepLedger({
-    actualUsd: result.actualUsd ?? existingStep?.actualUsd,
-    error: result.error ?? existingStep?.error,
+    actualUsd: effectiveResult.actualUsd ?? existingStep?.actualUsd,
+    error: effectiveResult.error ?? existingStep?.error,
     kind: existingStep?.kind ?? meta.capability ?? "unknown",
     model: existingStep?.model,
     priceQuoteUsd: existingStep?.priceQuoteUsd ?? 0,
@@ -80,29 +146,23 @@ export async function recordProviderProgress(provider: ProviderWebhookProvider |
     stepId: meta.stepId,
   });
 
-  let assetId: string | undefined;
-  if (status === "done" && result.outputUrl) {
-    assetId = await addAssetLedger({
-      kind: inferAssetKind(result.outputUrl),
-      parents: [],
-      runId: meta.runId,
-      stepId: meta.stepId,
-      url: result.outputUrl,
-    });
-  }
-
   const nextSnapshot = await getRunSnapshot(meta.runId);
   const costUsd = nextSnapshot.steps.reduce((sum, step) => sum + (step.actualUsd ?? (step.status === "done" ? step.priceQuoteUsd : 0)), 0);
   const allStepsTerminal = nextSnapshot.steps.length > 0 && nextSnapshot.steps.every((step) => step.status === "done" || step.status === "skipped");
   const runStatus = status === "failed" ? "failed" : allStepsTerminal ? "done" : "running";
   await updateRunLedger({
     costUsd,
-    error: status === "failed" ? result.error : nextSnapshot.run?.error,
+    error: status === "failed" ? effectiveResult.error : nextSnapshot.run?.error,
     runId: meta.runId,
     stage: status === "failed" ? `${meta.stepId}:failed` : allStepsTerminal ? "complete" : `${meta.stepId}:webhook_${status}`,
     status: runStatus,
-    zapUrl: allStepsTerminal ? result.outputUrl ?? nextSnapshot.run?.zapUrl : nextSnapshot.run?.zapUrl,
+    zapUrl: allStepsTerminal ? effectiveResult.outputUrl ?? nextSnapshot.run?.zapUrl : nextSnapshot.run?.zapUrl,
   });
+
+  if (isAirVideoRun) {
+    if (status === "done" || status === "failed") await releaseAirVideoConcurrency(meta.runId);
+    else await touchAirVideoConcurrency(meta.runId);
+  }
 
   return {
     assetId,
@@ -174,6 +234,10 @@ function normalizeProgress(progress?: number) {
 
 function extractOutputUrl(payload: unknown) {
   return pickString(payload, [
+    ["outcome", "video_url"],
+    ["outcome", "videoUrl"],
+    ["outcome", "media_urls", "0", "url"],
+    ["outcome", "media_urls", "0"],
     ["outputUrl"],
     ["output_url"],
     ["videoUrl"],
@@ -229,6 +293,20 @@ function inferAssetKind(url: string) {
   if (lower.startsWith("data:audio/") || /\.(wav|mp3|m4a|aac)$/.test(lower)) return "wav";
   if (lower.endsWith(".json")) return "json";
   return "mp4";
+}
+
+function isTerminalStepStatus(status: string) {
+  return status === "done" || status === "failed" || status === "skipped" || status === "canceled";
+}
+
+async function acquireAirOutputLease(runId: string) {
+  const redis = getRedis();
+  if (!redis) throw new Error("Air output persistence requires Redis.");
+  const result = await redis.set(`zap:service:air:v1:output:${runId}`, "1", {
+    ex: 120,
+    nx: true,
+  });
+  return result === "OK";
 }
 
 function getPublicBaseUrl() {

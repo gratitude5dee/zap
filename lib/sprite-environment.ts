@@ -18,7 +18,6 @@ const inheritedEnvKeys = [
   "E2B_API_KEY",
   "FAL_KEY",
   "GMI_API_KEY",
-  "GMI_ORG_ID",
   "IMESSAGE_BRIDGE_TOKEN",
   "IMESSAGE_BRIDGE_URL",
   "NEXT_PUBLIC_SUPABASE_ANON_KEY",

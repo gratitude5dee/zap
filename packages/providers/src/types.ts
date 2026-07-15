@@ -10,7 +10,6 @@ export type ProviderSecretName =
   | "aws_secret_access_key"
   | "aws_session_token"
   | "gmi_api_key"
-  | "gmi_org_id"
   | "fal_key"
   | "prodia_token"
   | "runware_key"

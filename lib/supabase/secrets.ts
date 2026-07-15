@@ -6,7 +6,6 @@ const secretTypes = [
   "aws_secret_access_key",
   "aws_session_token",
   "gmi_api_key",
-  "gmi_org_id",
   "fal_key",
   "runware_key",
   "prodia_token",
@@ -41,7 +40,7 @@ export function maskSecret(value: string): string {
 export function requiredSecretTypesForProvider(provider: string): ZapSecretType[] {
   switch (provider) {
     case "gmi":
-      return ["gmi_api_key", "gmi_org_id"];
+      return ["gmi_api_key"];
     case "fal":
       return ["fal_key"];
     case "prodia":
