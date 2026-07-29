@@ -15,13 +15,8 @@ export const metadata: Metadata = {
   applicationName: "WZRD",
   manifest: "/manifest.webmanifest",
   icons: {
-    icon: [
-      { url: "/favicon.ico", sizes: "any", type: "image/x-icon" },
-      { url: "/icon-16.png", sizes: "16x16", type: "image/png" },
-      { url: "/icon-32.png", sizes: "32x32", type: "image/png" },
-      { url: "/icon-48.png", sizes: "48x48", type: "image/png" },
-    ],
-    shortcut: "/favicon.ico",
+    icon: [{ url: "/wzrdtechlogo.png", type: "image/png" }],
+    shortcut: [{ url: "/wzrdtechlogo.png", type: "image/png" }],
     apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
   appleWebApp: {
