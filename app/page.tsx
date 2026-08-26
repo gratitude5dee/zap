@@ -3,6 +3,7 @@ import Image from "next/image";
 import type { ReactNode } from "react";
 import {
   ArrowRight,
+  BookOpen,
   Boxes,
   Braces,
   Cpu,
@@ -14,6 +15,7 @@ import {
   Workflow,
 } from "lucide-react";
 import { CodeWindow, Eyebrow, PageShell, SiteNav } from "@/app/_components/zap-chrome";
+import { CopyCommandCta } from "@/app/_components/threeui/copy-command-cta";
 import { CrtBackground } from "@/app/_components/threeui/crt-background";
 import { DataPixelArc } from "@/app/_components/threeui/data-pixel-arc";
 import { GlassCta } from "@/app/_components/threeui/glass-cta";
@@ -60,8 +62,15 @@ export default async function Page() {
         <div className="absolute inset-0">
           <CrtBackground version={ZAP_VERSION} />
         </div>
-        <div className="relative z-10 mx-auto flex min-h-[92svh] max-w-7xl flex-col px-5 py-5 lg:px-8">
+        <div className="relative z-10 mx-auto flex min-h-[92svh] max-w-7xl flex-col justify-between px-5 py-5 lg:px-8">
           <SiteNav tone="dark" />
+          <div className="flex flex-col items-start gap-3 pb-8 sm:flex-row sm:items-center">
+            <CopyCommandCta command={mcpCommand} />
+            <GlassCta href={ZAP_DOCS_URL} tone="sulfur">
+              <BookOpen className="size-4" />
+              Read Docs
+            </GlassCta>
+          </div>
         </div>
       </section>
 

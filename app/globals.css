@@ -136,29 +136,12 @@ select {
   outline-offset: 3px;
 }
 
-.zap-site-header-inner {
-  min-height: 7rem;
-  flex-wrap: wrap;
-}
-
-.zap-site-primary-nav {
-  order: 3;
-  flex: 0 0 100%;
-  width: 100%;
-  justify-content: center;
-}
-
-.zap-site-auth {
-  flex-shrink: 0;
-  margin-left: auto;
-}
-
 .zap-studio-height {
-  height: calc(100dvh - 7rem);
+  height: 100dvh;
 }
 
 .zap-studio-min-height {
-  min-height: calc(100dvh - 7rem);
+  min-height: 100dvh;
 }
 
 .zap-studio-layout {
@@ -173,28 +156,6 @@ select {
 
 .zap-run-rail {
   display: none;
-}
-
-@media (min-width: 40rem) {
-  .zap-site-header-inner {
-    min-height: 4rem;
-    flex-wrap: nowrap;
-  }
-
-  .zap-site-primary-nav {
-    order: 0;
-    flex: 1 1 0%;
-    width: auto;
-    justify-content: flex-start;
-  }
-
-  .zap-studio-height {
-    height: calc(100dvh - 4rem);
-  }
-
-  .zap-studio-min-height {
-    min-height: calc(100dvh - 4rem);
-  }
 }
 
 @media (min-width: 64rem) {
@@ -432,6 +393,11 @@ select {
 
 /* Glassmorphism CTA — adapted from ThreeUI RectangleButtons (glassmorphism-cta). */
 .zap-glass-cta {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  color: inherit;
   position: relative;
   isolation: isolate;
   display: inline-flex;

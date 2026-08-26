@@ -44,17 +44,18 @@ export function SiteNav({ tone = "light" }: { readonly tone?: "light" | "dark" }
         {navItems.map((item) => (
           <Link
             className={cn(
-              "hidden min-h-11 items-center gap-2 rounded-md px-3 text-sm transition sm:inline-flex",
+              "inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-md px-2 text-sm transition sm:justify-start sm:px-3",
               isDark
                 ? "text-white/70 hover:bg-white/10 hover:text-white"
                 : "text-zap-muted hover:bg-zap-fog hover:text-zap-ink",
             )}
+            aria-label={item.label}
             href={item.href}
             key={item.href}
             prefetch={false}
           >
             <item.icon className="size-4" />
-            {item.label}
+            <span className="hidden sm:inline">{item.label}</span>
           </Link>
         ))}
         <Link
