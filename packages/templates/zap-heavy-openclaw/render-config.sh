@@ -19,5 +19,5 @@ node -e '
       baseUrl: `${process.env.ZAP_MANAGED_GATEWAY_URL}/llm/v1`,
     };
   }
-  fs.writeFileSync(file, JSON5.stringify(config, null, 2) + "\n");
+  fs.writeFileSync(file, JSON.stringify(config, null, 2) + "\n");
 '
