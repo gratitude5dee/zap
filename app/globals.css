@@ -111,7 +111,7 @@ html {
 body {
   min-height: 100%;
   margin: 0;
-  background: var(--background);
+  background: #030308;
   color: var(--foreground);
   font-family: var(--font-sans);
   text-rendering: geometricPrecision;
@@ -189,18 +189,10 @@ select {
   background:
     linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
     linear-gradient(180deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    #07090d;
+    rgba(7, 9, 13, 0.78);
   background-size: 42px 42px;
 }
 
-.zap-data-field {
-  background:
-    linear-gradient(90deg, rgba(248, 248, 246, 0.055) 1px, transparent 1px),
-    linear-gradient(180deg, rgba(248, 248, 246, 0.055) 1px, transparent 1px),
-    radial-gradient(80% 70% at 18% 18%, rgba(246, 255, 0, 0.08), transparent 54%),
-    #1a1a1a;
-  background-size: 48px 48px, 48px 48px, auto, auto;
-}
 
 .zap-paper-grid {
   background:

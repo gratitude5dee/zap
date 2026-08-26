@@ -17,7 +17,6 @@ import {
 import { CodeWindow, Eyebrow, PageShell, SiteNav } from "@/app/_components/zap-chrome";
 import { CopyCommandCta } from "@/app/_components/threeui/copy-command-cta";
 import { CrtBackground } from "@/app/_components/threeui/crt-background";
-import { DataPixelArc } from "@/app/_components/threeui/data-pixel-arc";
 import { GlassCta } from "@/app/_components/threeui/glass-cta";
 import { ZapCard } from "@/app/_components/zap-card";
 import { ZAP_DOCS_URL } from "@/lib/zap-urls";
@@ -74,7 +73,7 @@ export default async function Page() {
         </div>
       </section>
 
-      <section className="zap-data-field relative overflow-hidden border-white/10 border-b">
+      <section className="relative overflow-hidden border-white/10 border-b bg-[#05080c]/72">
         <Image
           alt=""
           className="pointer-events-none absolute right-[-7rem] bottom-[-6rem] hidden h-[36rem] w-[36rem] rotate-[-8deg] object-contain opacity-[0.09] lg:block"
@@ -133,8 +132,6 @@ export default async function Page() {
       </section>
 
       <div className="relative">
-        <DataPixelArc brightness={0.55} />
-
       <section className="relative border-white/10 border-b bg-[#05080c]/80 text-white">
         <div className="mx-auto grid max-w-7xl gap-8 px-5 py-14 lg:grid-cols-[380px_1fr] lg:px-8">
           <div>

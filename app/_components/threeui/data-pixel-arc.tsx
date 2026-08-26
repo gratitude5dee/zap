@@ -12,6 +12,7 @@ import { useEffect, useRef } from "react";
 export type DataPixelArcProps = {
   readonly brightness?: number;
   readonly className?: string;
+  readonly fixed?: boolean;
 };
 
 type Renderer = { render: () => void; resize: (width: number, height: number) => void };
@@ -74,7 +75,7 @@ function createDataPixelArcRenderer(canvas: HTMLCanvasElement, brightness: numbe
   return { render, resize };
 }
 
-export function DataPixelArc({ brightness = 1, className = "" }: DataPixelArcProps) {
+export function DataPixelArc({ brightness = 1, className = "", fixed = false }: DataPixelArcProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -127,7 +128,11 @@ export function DataPixelArc({ brightness = 1, className = "" }: DataPixelArcPro
   }, [brightness]);
 
   return (
-    <div aria-hidden className={`pointer-events-none absolute inset-0 overflow-hidden${className ? ` ${className}` : ""}`} ref={hostRef}>
+    <div
+      aria-hidden
+      className={`pointer-events-none ${fixed ? "fixed inset-0 z-[-1]" : "absolute inset-0"} overflow-hidden${className ? ` ${className}` : ""}`}
+      ref={hostRef}
+    >
       <canvas className="absolute inset-0 h-full w-full" ref={canvasRef} />
     </div>
   );
