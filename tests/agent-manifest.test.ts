@@ -13,7 +13,8 @@ describe("static agent discovery manifest", () => {
     const loaded = await import(/* @vite-ignore */ pathToFileURL(manifestModule).href) as typeof import("../lib/agent-manifest");
     const parsed = loaded.agentManifestSchema.safeParse(loaded.agentManifest);
     expect(parsed.success).toBe(true);
-    expect(loaded.agentManifest.version).toBe("0.3.0");
+    const cliVersion = (JSON.parse(readFileSync(path.join(repoRoot, "packages/cli/package.json"), "utf8")) as { version: string }).version;
+    expect(loaded.agentManifest.version).toBe(cliVersion);
     expect(loaded.agentManifest.authModes).toEqual(["byok", "wzrd-cloud"]);
     expect(loaded.agentManifest.endpoints.zapCatalog).toBe("/api/zaps");
     expect(loaded.agentManifest.protocols).toEqual({});

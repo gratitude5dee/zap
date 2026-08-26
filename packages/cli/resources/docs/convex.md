@@ -41,12 +41,12 @@ Mock CLI runs do not require Convex. Web live runs do.
 
 ## Eve-on-Convex execution spike
 
-The v0.3.0 spike evaluates Adam's `world-convex` pattern: compile Eve,
+The v0.3.1 spike evaluates Adam's `world-convex` pattern: compile Eve,
 vendor the workflow bundle, invoke the workflow handler from a `"use node"`
 Convex action, schedule queue delivery with Convex mutations, and expose
 workflow streams through reactive queries.
 
-Decision: **NO-GO for the Zap runtime in v0.3.0. Vercel-hosted Eve remains
+Decision: **NO-GO for the Zap runtime in v0.3.1. Vercel-hosted Eve remains
 the production default.** `ZAP_EXECUTION_MODE=convex` selects the executable
 assessment only; the application deliberately does not dispatch production
 runs to an incomplete backend.
