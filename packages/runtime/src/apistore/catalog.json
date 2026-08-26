@@ -1,0 +1,861 @@
+[
+  {
+    "id": "openrouter",
+    "name": "OpenRouter",
+    "kinds": [
+      "llm",
+      "gateway"
+    ],
+    "via": "first-party"
+  },
+  {
+    "id": "vercel-ai-gateway",
+    "name": "Vercel AI Gateway",
+    "kinds": [
+      "llm",
+      "gateway"
+    ],
+    "via": "first-party"
+  },
+  {
+    "id": "openai",
+    "name": "OpenAI",
+    "kinds": [
+      "llm"
+    ],
+    "via": "first-party"
+  },
+  {
+    "id": "anthropic",
+    "name": "Anthropic",
+    "kinds": [
+      "llm"
+    ],
+    "via": "first-party"
+  },
+  {
+    "id": "xai",
+    "name": "xAI",
+    "kinds": [
+      "llm"
+    ],
+    "via": "first-party"
+  },
+  {
+    "id": "gmi",
+    "name": "GMI Cloud",
+    "kinds": [
+      "llm",
+      "media"
+    ],
+    "via": "first-party"
+  },
+  {
+    "id": "fal",
+    "name": "fal",
+    "kinds": [
+      "media",
+      "image",
+      "video"
+    ],
+    "via": "first-party"
+  },
+  {
+    "id": "prodia",
+    "name": "Prodia",
+    "kinds": [
+      "media",
+      "image"
+    ],
+    "via": "first-party"
+  },
+  {
+    "id": "runware",
+    "name": "Runware",
+    "kinds": [
+      "media",
+      "image"
+    ],
+    "via": "first-party"
+  },
+  {
+    "id": "replicate",
+    "name": "Replicate",
+    "kinds": [
+      "media",
+      "image",
+      "video"
+    ],
+    "via": "first-party"
+  },
+  {
+    "id": "elevenlabs",
+    "name": "ElevenLabs",
+    "kinds": [
+      "media",
+      "audio"
+    ],
+    "via": "first-party"
+  },
+  {
+    "id": "mem0",
+    "name": "Mem0",
+    "kinds": [
+      "memory"
+    ],
+    "via": "first-party"
+  },
+  {
+    "id": "zep",
+    "name": "Zep",
+    "kinds": [
+      "memory"
+    ],
+    "via": "first-party"
+  },
+  {
+    "id": "thirdweb",
+    "name": "Thirdweb",
+    "kinds": [
+      "wallet",
+      "payments"
+    ],
+    "via": "first-party"
+  },
+  {
+    "id": "modal",
+    "name": "Modal",
+    "kinds": [
+      "gpu",
+      "compute"
+    ],
+    "via": "first-party"
+  },
+  {
+    "id": "context7-docs",
+    "name": "Context7 library docs",
+    "kinds": [
+      "docs",
+      "search"
+    ],
+    "via": "context7"
+  },
+  {
+    "id": "http-request",
+    "name": "Generic HTTP request",
+    "kinds": [
+      "connector",
+      "http"
+    ],
+    "via": "open-connector"
+  },
+  {
+    "id": "webhook",
+    "name": "Webhook receiver",
+    "kinds": [
+      "connector",
+      "http"
+    ],
+    "via": "open-connector"
+  },
+  {
+    "id": "rss",
+    "name": "RSS/Atom feeds",
+    "kinds": [
+      "connector",
+      "content"
+    ],
+    "via": "open-connector"
+  },
+  {
+    "id": "smtp-email",
+    "name": "SMTP email send",
+    "kinds": [
+      "connector",
+      "email"
+    ],
+    "via": "open-connector"
+  },
+  {
+    "id": "imap-email",
+    "name": "IMAP email read",
+    "kinds": [
+      "connector",
+      "email"
+    ],
+    "via": "open-connector"
+  },
+  {
+    "id": "ical",
+    "name": "iCal calendars",
+    "kinds": [
+      "connector",
+      "calendar"
+    ],
+    "via": "open-connector"
+  },
+  {
+    "id": "sqlite",
+    "name": "SQLite",
+    "kinds": [
+      "connector",
+      "db"
+    ],
+    "via": "open-connector"
+  },
+  {
+    "id": "postgres",
+    "name": "PostgreSQL",
+    "kinds": [
+      "connector",
+      "db"
+    ],
+    "via": "open-connector"
+  },
+  {
+    "id": "mysql",
+    "name": "MySQL",
+    "kinds": [
+      "connector",
+      "db"
+    ],
+    "via": "open-connector"
+  },
+  {
+    "id": "redis",
+    "name": "Redis",
+    "kinds": [
+      "connector",
+      "db"
+    ],
+    "via": "open-connector"
+  },
+  {
+    "id": "s3-compatible",
+    "name": "S3-compatible storage",
+    "kinds": [
+      "connector",
+      "storage"
+    ],
+    "via": "open-connector"
+  },
+  {
+    "id": "ftp",
+    "name": "FTP/SFTP",
+    "kinds": [
+      "connector",
+      "storage"
+    ],
+    "via": "open-connector"
+  },
+  {
+    "id": "webdav",
+    "name": "WebDAV",
+    "kinds": [
+      "connector",
+      "storage"
+    ],
+    "via": "open-connector"
+  },
+  {
+    "id": "github",
+    "name": "GitHub",
+    "kinds": [
+      "code",
+      "pm"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "gitlab",
+    "name": "GitLab",
+    "kinds": [
+      "code",
+      "pm"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "bitbucket",
+    "name": "Bitbucket",
+    "kinds": [
+      "code"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "linear",
+    "name": "Linear",
+    "kinds": [
+      "pm"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "jira",
+    "name": "Jira",
+    "kinds": [
+      "pm"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "asana",
+    "name": "Asana",
+    "kinds": [
+      "pm"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "trello",
+    "name": "Trello",
+    "kinds": [
+      "pm"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "clickup",
+    "name": "ClickUp",
+    "kinds": [
+      "pm"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "monday",
+    "name": "Monday.com",
+    "kinds": [
+      "pm"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "todoist",
+    "name": "Todoist",
+    "kinds": [
+      "pm"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "notion",
+    "name": "Notion",
+    "kinds": [
+      "docs",
+      "pm"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "confluence",
+    "name": "Confluence",
+    "kinds": [
+      "docs"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "slack",
+    "name": "Slack",
+    "kinds": [
+      "chat"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "discord",
+    "name": "Discord",
+    "kinds": [
+      "chat"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "telegram",
+    "name": "Telegram",
+    "kinds": [
+      "chat"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "whatsapp",
+    "name": "WhatsApp",
+    "kinds": [
+      "chat"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "gmail",
+    "name": "Gmail",
+    "kinds": [
+      "email"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "outlook",
+    "name": "Outlook",
+    "kinds": [
+      "email",
+      "calendar"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "google-calendar",
+    "name": "Google Calendar",
+    "kinds": [
+      "calendar"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "calendly",
+    "name": "Calendly",
+    "kinds": [
+      "calendar"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "zoom",
+    "name": "Zoom",
+    "kinds": [
+      "video",
+      "calendar"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "google-drive",
+    "name": "Google Drive",
+    "kinds": [
+      "storage"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "google-sheets",
+    "name": "Google Sheets",
+    "kinds": [
+      "docs",
+      "data"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "google-docs",
+    "name": "Google Docs",
+    "kinds": [
+      "docs"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "dropbox",
+    "name": "Dropbox",
+    "kinds": [
+      "storage"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "onedrive",
+    "name": "OneDrive",
+    "kinds": [
+      "storage"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "box-com",
+    "name": "Box.com",
+    "kinds": [
+      "storage"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "airtable",
+    "name": "Airtable",
+    "kinds": [
+      "db",
+      "data"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "supabase",
+    "name": "Supabase",
+    "kinds": [
+      "db",
+      "backend"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "hubspot",
+    "name": "HubSpot",
+    "kinds": [
+      "crm"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "salesforce",
+    "name": "Salesforce",
+    "kinds": [
+      "crm"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "zendesk",
+    "name": "Zendesk",
+    "kinds": [
+      "support"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "intercom",
+    "name": "Intercom",
+    "kinds": [
+      "support"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "stripe",
+    "name": "Stripe",
+    "kinds": [
+      "payments"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "shopify",
+    "name": "Shopify",
+    "kinds": [
+      "commerce"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "quickbooks",
+    "name": "QuickBooks",
+    "kinds": [
+      "finance"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "xero",
+    "name": "Xero",
+    "kinds": [
+      "finance"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "docusign",
+    "name": "DocuSign",
+    "kinds": [
+      "docs",
+      "legal"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "twilio",
+    "name": "Twilio",
+    "kinds": [
+      "sms",
+      "voice"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "sendgrid",
+    "name": "SendGrid",
+    "kinds": [
+      "email"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "mailchimp",
+    "name": "Mailchimp",
+    "kinds": [
+      "email",
+      "marketing"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "klaviyo",
+    "name": "Klaviyo",
+    "kinds": [
+      "marketing"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "figma",
+    "name": "Figma",
+    "kinds": [
+      "design"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "miro",
+    "name": "Miro",
+    "kinds": [
+      "design"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "x-twitter",
+    "name": "X (Twitter)",
+    "kinds": [
+      "social"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "linkedin",
+    "name": "LinkedIn",
+    "kinds": [
+      "social"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "reddit",
+    "name": "Reddit",
+    "kinds": [
+      "social"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "youtube",
+    "name": "YouTube",
+    "kinds": [
+      "social",
+      "video"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "instagram",
+    "name": "Instagram",
+    "kinds": [
+      "social"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "facebook",
+    "name": "Facebook",
+    "kinds": [
+      "social"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "tiktok",
+    "name": "TikTok",
+    "kinds": [
+      "social",
+      "video"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "google-maps",
+    "name": "Google Maps",
+    "kinds": [
+      "geo"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "serpapi",
+    "name": "SerpAPI",
+    "kinds": [
+      "search"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "firecrawl",
+    "name": "Firecrawl",
+    "kinds": [
+      "scrape"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "exa",
+    "name": "Exa",
+    "kinds": [
+      "search"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "perplexity",
+    "name": "Perplexity",
+    "kinds": [
+      "search"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "tavily",
+    "name": "Tavily",
+    "kinds": [
+      "search"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "browserbase",
+    "name": "Browserbase",
+    "kinds": [
+      "browser"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "apify",
+    "name": "Apify",
+    "kinds": [
+      "scrape"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "vercel",
+    "name": "Vercel",
+    "kinds": [
+      "deploy"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "netlify",
+    "name": "Netlify",
+    "kinds": [
+      "deploy"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "cloudflare",
+    "name": "Cloudflare",
+    "kinds": [
+      "deploy",
+      "dns"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "pagerduty",
+    "name": "PagerDuty",
+    "kinds": [
+      "ops"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "datadog",
+    "name": "Datadog",
+    "kinds": [
+      "ops",
+      "analytics"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "sentry",
+    "name": "Sentry",
+    "kinds": [
+      "ops"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "posthog",
+    "name": "PostHog",
+    "kinds": [
+      "analytics"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "mixpanel",
+    "name": "Mixpanel",
+    "kinds": [
+      "analytics"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "amplitude",
+    "name": "Amplitude",
+    "kinds": [
+      "analytics"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "snowflake",
+    "name": "Snowflake",
+    "kinds": [
+      "db",
+      "data"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "bigquery",
+    "name": "BigQuery",
+    "kinds": [
+      "db",
+      "data"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "typeform",
+    "name": "Typeform",
+    "kinds": [
+      "forms"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "greenhouse",
+    "name": "Greenhouse",
+    "kinds": [
+      "hr"
+    ],
+    "via": "composio"
+  },
+  {
+    "id": "lever",
+    "name": "Lever",
+    "kinds": [
+      "hr"
+    ],
+    "via": "composio"
+  }
+]
