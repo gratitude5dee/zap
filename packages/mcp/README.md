@@ -1,32 +1,30 @@
 # @wzrdtech/zap-mcp
 
-MCP stdio server for driving Zap from Codex, Claude Code, Cursor, and other agent clients.
+MCP server for driving Zap from Codex, Claude Code, Cursor, and other agent clients.
 
 ## Usage
 
 ```bash
-npx @wzrdtech/zap-mcp@0.3.0
+npx @wzrdtech/zap@5.0.0 mcp          # stdio
+npx @wzrdtech/zap@5.0.0 mcp --http   # HTTP (loopback by default, token-gated otherwise)
 ```
 
-When launched through the CLI, `zap mcp` sets `ZAP_CLI_BIN` so MCP tools call the same local Zap CLI implementation:
+Standalone: `npx @wzrdtech/zap-mcp@5.0.0`. The server looks for `ZAP_CLI_BIN`, then a local `node_modules/.bin/zap`, then `zap` on `PATH`.
 
-```bash
-npx @wzrdtech/zap@0.3.0 mcp
-```
+## Tool domains
 
-Standalone installs look for `ZAP_CLI_BIN`, then a local `node_modules/.bin/zap`, then `zap` on `PATH`.
+Tool modules auto-register from `src/tools/<domain>.js`:
 
-## Tools
+- `compose` — plan and boot runtime profiles
+- `runtime` — runtime status and lifecycle
+- `agents` — render, deploy, and session tools for agents as code
+- `fs` / `media` — sandbox filesystem and media FS
+- `memory` — memory search and retrieval
+- `pay` — payer status and quotes
+- `harness` — named harness templates
+- `doctor` — environment and adapter checks
+- `recipes` — legacy 0.3.1 recipe validate/lint/run
 
-- `zap_validate`
-- `zap_lint`
-- `zap_run`
-- `zap_status`
-- `zap_keys_list`
-- `zap_gallery_list`
-- `zap_deploy`
-- `zap_import_hyperframes`
-- `zap_import_openmontage`
-- `zap_docs`
+Plan-only is the default for every side-effecting tool; secrets and provider keys are redacted from all tool output.
 
-`zap_keys_list` returns masked key metadata only. Live runs and deploys inherit the caller process environment and the local Zap auth/credential stores.
+Docs: https://zap.wzrd.tech · repo: https://github.com/gratitude5dee/Zap
