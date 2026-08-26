@@ -178,6 +178,7 @@ export async function buildProject(options: BuildProjectOptions): Promise<BuildP
       platform: "node",
       target: "node24",
       outfile: bundlePath,
+      external: ["@wzrdtech/*"],
       sourcemap: false,
       logLevel: "silent",
       absWorkingDir: rootDir,

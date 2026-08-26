@@ -34,6 +34,8 @@
     "@wzrdtech/providers": "5.0.0-alpha.0",
     "convex": "^1.28.0",
     "yaml": "^2.8.1",
+    "@wzrdtech/zap-agent": "5.0.0-alpha.0",
+    "@wzrdtech/zap-kernel": "5.0.0-alpha.0",
     "@wzrdtech/zap-runtime": "5.0.0-alpha.0"
   },
   "engines": {

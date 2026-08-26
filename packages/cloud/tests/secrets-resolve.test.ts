@@ -28,11 +28,13 @@ function resolve(
   token: string,
   body: Record<string, unknown>,
 ): Promise<Response> {
-  return cloud.app.request(`/v1/runtimes/${runtimeId}/secrets/resolve`, {
-    method: "POST",
-    headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  return Promise.resolve(
+    cloud.app.request(`/v1/runtimes/${runtimeId}/secrets/resolve`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+  );
 }
 
 const okScope = {

@@ -1,7 +1,6 @@
 // Build-time lint (C15/C16): secret literals, HTTPS-only origins, process.env
 // bans, async agents, and undeclared subagent/MCP references.
 import { promises as fs } from "node:fs";
-import { tmpdir } from "node:os";
 import path from "node:path";
 import { buildProject, loadAgentModulesFromBundle } from "./bundle.ts";
 
@@ -57,7 +56,8 @@ export async function lintProject(options: LintProjectOptions): Promise<{ errors
   }
 
   // value checks: load the built modules (names and shapes only)
-  const outDir = await fs.mkdtemp(path.join(tmpdir(), "zap-lint-"));
+  await fs.mkdir(path.join(rootDir, ".zap"), { recursive: true });
+  const outDir = await fs.mkdtemp(path.join(rootDir, ".zap", "lint-"));
   try {
     const built = await buildProject({ rootDir, outDir, skipLint: true });
     const loaded = await loadAgentModulesFromBundle(rootDir, built.bundlePath);

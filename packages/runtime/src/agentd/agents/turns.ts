@@ -216,7 +216,15 @@ export async function* runTurn(deps: TurnDeps, meta: SessionMeta, input: TurnInp
       }
     } catch (error) {
       const failure = error as { code?: string; remediation?: string; message?: string };
-      deps.log(JSON.stringify({ kind: "turn.failed", session: meta.id, turn, code: failure.code ?? "TURN_FAILED" }));
+      deps.log(
+        JSON.stringify({
+          kind: "turn.failed",
+          session: meta.id,
+          turn,
+          code: failure.code ?? "TURN_FAILED",
+          message: typeof failure.message === "string" ? failure.message : undefined,
+        }),
+      );
       yield {
         type: "turn.failed",
         sessionId: meta.id,
