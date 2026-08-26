@@ -109,6 +109,10 @@ class RuntimeImpl implements Runtime {
       if (unsettled.length > 0 && unsettled.every(({ fiber }) => fiber.state === "PENDING")) {
         stalledTicks += 1;
         if (stalledTicks > 2) {
+          // A recorded plugin failure explains the stall; surface it instead
+          // of reporting a dependency cycle.
+          const earlyFailure = outcomes.find((o) => o.error !== undefined);
+          if (earlyFailure) throw earlyFailure.error;
           const chain = unsettled.map(
             ({ fiber }) =>
               `${fiber.plugin.name} waits on [${(fiber.plugin.inject ?? [])

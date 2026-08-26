@@ -113,6 +113,26 @@ describe("kernel inject", () => {
     });
   });
 
+  it("createRuntime surfaces PLUGIN_FAILED over CYCLE_DETECTED when a provider throws", async () => {
+    const broken = definePlugin<undefined>({
+      name: "broken-provider",
+      apply() {
+        throw new Error("boot exploded");
+      },
+    });
+    const consumer = definePlugin<undefined>({
+      name: "consumer",
+      inject: ["dep"],
+      apply(ctx: Context) {
+        void ctx;
+      },
+    });
+    await expect(createRuntime({ weight: "light", plugins: [broken(), consumer()] })).rejects.toMatchObject({
+      code: "PLUGIN_FAILED",
+      plugin: "broken-provider",
+    });
+  });
+
   it("intercept wraps resolution without changing satisfaction", async () => {
     const ctx = createContext();
     ctx.provide("meter", { calls: 0 });
