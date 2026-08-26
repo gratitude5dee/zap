@@ -1,0 +1,7 @@
+{
+  "command": "zap pay logout --json",
+  "output": {
+    "ok": true,
+    "payer": "missing"
+  }
+}

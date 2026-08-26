@@ -1,0 +1,6 @@
+{
+  "command": "zap pay status --json",
+  "output": {
+    "payer": "missing"
+  }
+}

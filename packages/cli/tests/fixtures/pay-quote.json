@@ -1,0 +1,6 @@
+{
+  "command": "zap pay quote --json",
+  "output": {
+    "usd": 0.05
+  }
+}

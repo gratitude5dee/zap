@@ -1,12 +1,48 @@
-/** Zap cloud control API. Skeleton at Z0; session F lands the Hono app in Z10. */
-export interface RuntimeRow {
-  id: string;
-  tenantId: string;
-  weight: "light" | "med" | "heavy";
-  provider: string;
-  state: "provisioning" | "ready" | "running" | "idle" | "stopped" | "error";
-  createdAt: string;
-}
+/** Zap cloud control API: the Hono app, pay gate, gateway proxy, and sweeper. */
+export { createCloudApp, type CreateCloudAppOptions } from "./app.ts";
+export { createGate, gatePriceUsd, paymentRequiredHeader } from "./gate.ts";
+export { mountGateway } from "./gateway.ts";
+export { sweepRuntimes, type SweepResult } from "./sweep.ts";
+export {
+  memoryCloudMeter,
+  memoryNonceStore,
+  memoryOpsCounters,
+  memoryRateLimiter,
+  memoryReceiptStore,
+  memoryRuntimeStore,
+} from "./memory.ts";
+export { createVercelCloud, vercelFetchHandler, type VercelAdapterOptions } from "./adapters/vercel.ts";
+export { thirdwebFacilitator, type ThirdwebFacilitatorOptions } from "./facilitators/thirdweb.ts";
+export { cdpFacilitator, type CdpFacilitatorOptions } from "./facilitators/cdp.ts";
+export {
+  cloudflareWorker,
+  createCloudflareCloud,
+  type CloudflareAdapterOptions,
+} from "./adapters/cloudflare.ts";
+export type {
+  CloudDeps,
+  CloudHono,
+  CloudMeter,
+  CloudMiddleware,
+  CloudRouteModule,
+  CloudVars,
+  Facilitator,
+  LedgerRow,
+  LlmUpstream,
+  NonceStore,
+  OpsCounters,
+  PayProtocol,
+  RateLimitConfig,
+  RateLimiter,
+  ReceiptRow,
+  ReceiptStore,
+  RuntimeRow,
+  RuntimeState,
+  RuntimeStore,
+  SandboxProvider,
+  SandboxStop,
+  VerifiedPayment,
+} from "./types.ts";
 
 export interface CloudApiInfo {
   name: "zap-cloud";
