@@ -1,0 +1,14 @@
+[Unit]
+Description=Open Interpreter app-server for the Zap interpreter harness
+After=network-online.target zap-agentd.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/interpreter app-server --listen ws://127.0.0.1:9000
+Restart=on-failure
+RestartSec=2
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=multi-user.target

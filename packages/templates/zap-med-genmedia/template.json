@@ -1,0 +1,16 @@
+{
+  "name": "zap-med-genmedia",
+  "weight": "med",
+  "from": "zap-med",
+  "description": "zap-med alias with fal/Runware/Prodia/Replicate/GMI media defaults and stitch presets.",
+  "channel": "ship",
+  "namedSnapshot": false,
+  "alias": true,
+  "units": ["zap-agentd.service"],
+  "mediaDefaults": {
+    "image.gen": { "provider": "fal", "model": "fal-ai/flux/dev" },
+    "video.gen": { "provider": "gmi", "model": "seedance-2-0-260128" },
+    "audio.gen": { "provider": "replicate", "model": "minimax/speech-02-turbo" }
+  },
+  "presets": ["stitch", "overlay", "gen-media-post"]
+}

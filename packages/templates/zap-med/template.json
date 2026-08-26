@@ -1,0 +1,30 @@
+{
+  "name": "zap-med",
+  "weight": "med",
+  "from": "zap-light",
+  "description": "zap-light plus the AI/gen-media gateway, the content-addressed media filesystem, and ffmpeg presets.",
+  "channel": "ship",
+  "namedSnapshot": true,
+  "units": ["zap-agentd.service"],
+  "dirs": ["/zap/media", "/zap/fs", "/zap/skills"],
+  "envAllowlist": [
+    "OPENROUTER_API_KEY",
+    "AI_GATEWAY_API_KEY",
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY",
+    "XAI_API_KEY",
+    "GMI_API_KEY",
+    "FAL_KEY",
+    "PRODIA_API_KEY",
+    "RUNWARE_API_KEY",
+    "REPLICATE_API_TOKEN",
+    "ZAP_LLM_ROUTE",
+    "ZAP_LLM_OPENROUTER_MODEL",
+    "ZAP_LLM_GATEWAY_MODEL",
+    "ZAP_LLM_OPENAI_MODEL",
+    "ZAP_LLM_ANTHROPIC_MODEL",
+    "ZAP_LLM_XAI_MODEL",
+    "ZAP_LLM_GMI_MODEL"
+  ],
+  "presetsManifest": "/zap/ffmpeg-presets.json"
+}

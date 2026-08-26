@@ -1,0 +1,13 @@
+{
+  "name": "zap-med-fx",
+  "weight": "med",
+  "from": "zap-med",
+  "description": "zap-med overlay with the fx harness (fx ask --json, fx acp).",
+  "channel": "ship",
+  "namedSnapshot": false,
+  "overlay": true,
+  "harness": "fx",
+  "units": ["zap-agentd.service"],
+  "stateDirs": ["~/.fx"],
+  "mcpConfig": { "path": "~/.fx/mcp.json", "format": "json" }
+}
