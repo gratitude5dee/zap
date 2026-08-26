@@ -42,7 +42,11 @@
           "sprite",
           "convex",
           "eve",
-          "mcp"
+          "mcp",
+          "memory",
+          "providers/openviking",
+          "providers/mem0",
+          "providers/zep"
         ]
       },
       {

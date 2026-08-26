@@ -1,0 +1,14 @@
+{
+  "name": "zap-med-interpreter",
+  "weight": "med",
+  "from": "zap-med",
+  "description": "zap-med overlay with the Open Interpreter harness (ws-jsonrpc app-server on 127.0.0.1:9000).",
+  "channel": "ship",
+  "namedSnapshot": false,
+  "overlay": true,
+  "harness": "interpreter",
+  "units": ["zap-agentd.service", "zap-interpreter.service"],
+  "ports": [{ "port": 9000, "role": "api", "hostPrivate": true }],
+  "stateDirs": ["~/.openinterpreter"],
+  "mcpConfig": { "path": "~/.openinterpreter/config.toml", "format": "toml" }
+}

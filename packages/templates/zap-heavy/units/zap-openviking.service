@@ -1,0 +1,17 @@
+[Unit]
+Description=Zap OpenViking memory server (loopback :1933)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=user
+WorkingDirectory=/home/user/.zap/memory/openviking
+# ov.conf binds 127.0.0.1 only — memory is content and has no network path
+# off the VM; harnesses reach it at http://127.0.0.1:1933/mcp.
+ExecStart=/home/user/.zap/memory/openviking/venv/bin/openviking-server --config /home/user/.zap/memory/openviking/ov.conf
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

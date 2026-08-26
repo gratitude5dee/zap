@@ -1,0 +1,19 @@
+[Unit]
+Description=Zap agent daemon (zap-med: gateway + media FS + ffmpeg presets)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/zap-agentd
+Restart=on-failure
+RestartSec=2
+Environment=ZAP_MEDIA_ROOT=/zap/media
+Environment=ZAP_FS_ROOT=/zap/fs
+Environment=ZAP_SKILLS_ROOT=/zap/skills
+NoNewPrivileges=yes
+ProtectSystem=full
+ReadWritePaths=/zap
+
+[Install]
+WantedBy=multi-user.target

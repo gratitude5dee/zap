@@ -1,0 +1,11 @@
+{
+  "query": "deploy",
+  "results": [
+    {
+      "uri": "viking://user/self/memories/one",
+      "kind": "memory",
+      "text": "deploy target is us-east-1",
+      "score": 1
+    }
+  ]
+}
