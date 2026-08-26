@@ -93,7 +93,7 @@ ${harnessLines}
 
 ## Legacy 0.3.1 (compatible recipes)
 - Zap 0.3.1 media recipes remain supported on v5 as a compatibility layer.
-- Browse: https://zap.wzrd.tech/gallery · Legacy docs: https://docs.zap.wzrd.tech/legacy/introduction
+- Providers: https://zap.wzrd.tech/providers · Legacy docs: https://docs.zap.wzrd.tech/legacy/introduction
 `;
 
 const target = path.join(repoRoot, "public", "llms.txt");

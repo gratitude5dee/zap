@@ -249,8 +249,8 @@ export default async function Page() {
                 defaults, per-recipe estimates, and hard caps.
               </p>
             </div>
-            <GlassCta href="/gallery">
-              Browse compatible recipes
+            <GlassCta href="/providers">
+              Explore providers
               <ArrowRight className="size-4" />
             </GlassCta>
           </div>

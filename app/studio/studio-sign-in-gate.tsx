@@ -13,7 +13,7 @@ export function StudioSignInGate({ clientId }: { readonly clientId?: string }) {
           <p className="mt-6 font-mono text-xs tracking-[0.18em] text-zap-cyan uppercase">Owner-scoped workspace</p>
           <h1 className="mt-3 text-balance font-semibold text-4xl tracking-tight">Compose, deploy, and operate from one control room.</h1>
           <p className="mt-4 max-w-xl text-pretty leading-7 text-white/65">
-            Build runtimes, author agents, inspect deployments and sessions, manage declared connections, and approve live spend without losing the execution trail. Gallery browsing and plan-only runs stay public.
+            Build runtimes, author agents, inspect deployments and sessions, manage declared connections, and approve live spend without losing the execution trail. Provider browsing and plan-only runs stay public.
           </p>
         </div>
         <div aria-hidden className="zap-hairline" />
@@ -24,8 +24,8 @@ export function StudioSignInGate({ clientId }: { readonly clientId?: string }) {
           </div>
           <div className="flex flex-col gap-3 sm:items-end">
             <WalletSignInButton clientId={clientId} label="Continue with wallet" resumePath="/studio" />
-            <Link className="text-sm text-white/45 underline-offset-4 hover:text-white hover:underline" href="/gallery" prefetch={false}>
-              Browse the gallery instead
+            <Link className="text-sm text-white/45 underline-offset-4 hover:text-white hover:underline" href="/providers" prefetch={false}>
+              Browse providers instead
             </Link>
           </div>
         </div>

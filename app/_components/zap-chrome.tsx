@@ -1,13 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ArrowUpRight, BookOpen, Images, Settings, TerminalSquare } from "lucide-react";
+import { ArrowUpRight, BookOpen, Plug, Settings, TerminalSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ZAP_DOCS_URL } from "@/lib/zap-urls";
 
 const navItems = [
   { href: ZAP_DOCS_URL, icon: BookOpen, label: "Docs" },
-  { href: "/gallery", icon: Images, label: "Gallery" },
+  { href: "/providers", icon: Plug, label: "Providers" },
   { href: "/settings", icon: Settings, label: "Settings" },
 ];
 
