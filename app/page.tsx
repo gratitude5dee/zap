@@ -56,6 +56,15 @@ export default async function Page() {
 
   return (
     <PageShell tone="dark">
+      <section className="relative overflow-hidden border-white/10 border-b bg-[#03100a]">
+        <div className="absolute inset-0">
+          <CrtBackground version={ZAP_VERSION} />
+        </div>
+        <div className="relative z-10 mx-auto flex min-h-[92svh] max-w-7xl flex-col px-5 py-5 lg:px-8">
+          <SiteNav tone="dark" />
+        </div>
+      </section>
+
       <section className="zap-data-field relative overflow-hidden border-white/10 border-b">
         <Image
           alt=""
@@ -65,39 +74,32 @@ export default async function Page() {
           src="/zaplogo.png"
           width={720}
         />
-        <div className="mx-auto grid min-h-[86svh] max-w-7xl content-between px-5 py-5 lg:px-8">
-          <SiteNav tone="dark" />
-
-          <div className="relative z-10 grid items-center gap-10 py-10 lg:grid-cols-[minmax(0,1fr)_460px] lg:py-12">
-            <div>
-              <p className="font-mono text-[12px] tracking-[0.24em] text-[#f6ff00] uppercase">
-                @wzrdtech/zap · v{ZAP_VERSION} · node 24.x
-              </p>
-              <h1 className="mt-5 text-balance font-semibold text-[clamp(3rem,8vw,5.75rem)] leading-[0.9] text-white tracking-normal">
-                Agents need a computer.
-              </h1>
-              <p className="mt-6 max-w-3xl text-pretty text-xl leading-8 text-white/72">
-                Zap composes a CPU runtime on an isolated Zap sandbox VM by default, renders agents as
-                code, and plans side-effecting tools before live execution.
-              </p>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <GlassCta href={`${ZAP_DOCS_URL}/quickstart`} tone="sulfur">
-                  <ArrowRight className="size-4" />
-                  Open the v5 quickstart
-                </GlassCta>
-                <GlassCta href="/quickstart">
-                  <Plug className="size-4" />
-                  Connect your agent
-                </GlassCta>
-              </div>
-              <div className="mt-10 max-w-3xl">
-                <CodeWindow label="safe first run — no sandbox acquired, nothing spends" status="plan-safe">
-                  {doctorCommand}
-                </CodeWindow>
-              </div>
+        <div className="mx-auto grid max-w-7xl content-between px-5 pb-10 lg:px-8">
+          <div className="relative z-10 max-w-5xl py-14 lg:py-16">
+            <p className="font-mono text-[12px] tracking-[0.24em] text-[#f6ff00] uppercase">
+              @wzrdtech/zap · v{ZAP_VERSION} · node 24.x
+            </p>
+            <h1 className="mt-5 text-balance font-semibold text-[clamp(3rem,8vw,5.75rem)] leading-[0.9] text-white tracking-normal">
+              Agents need a computer.
+            </h1>
+            <p className="mt-6 max-w-3xl text-pretty text-xl leading-8 text-white/72">
+              Zap composes a CPU runtime on an isolated Zap sandbox VM by default, renders agents as
+              code, and plans side-effecting tools before live execution.
+            </p>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <GlassCta href={`${ZAP_DOCS_URL}/quickstart`} tone="sulfur">
+                <ArrowRight className="size-4" />
+                Open the v5 quickstart
+              </GlassCta>
+              <GlassCta href="/quickstart">
+                <Plug className="size-4" />
+                Connect your agent
+              </GlassCta>
             </div>
-            <div className="relative hidden aspect-[4/3] overflow-hidden rounded-lg border border-white/12 shadow-[0_30px_120px_rgba(28,236,132,0.12)] lg:block">
-              <CrtBackground version={ZAP_VERSION} />
+            <div className="mt-10 max-w-3xl">
+              <CodeWindow label="safe first run — no sandbox acquired, nothing spends" status="plan-safe">
+                {doctorCommand}
+              </CodeWindow>
             </div>
           </div>
 
