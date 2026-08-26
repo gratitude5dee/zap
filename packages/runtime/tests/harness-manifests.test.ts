@@ -1,6 +1,8 @@
 // Z10 acceptance: every manifest's run adapter matches the §5.6 table; port
 // and privacy rules hold; managed mode is declared for every heavy harness
 // that is neither in-process nor pull-only; pins are recorded (C30).
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import type { HarnessManifest } from "../src/harness/zap.ts";
 import { allHarnessManifests, heavyHarnessIds, managedGatewayUrl } from "../src/harness/manifests.ts";
@@ -109,8 +111,16 @@ describe("harness manifests (§5.6 table)", () => {
   it("deepseek exposes only the supported presets and never the fourth (C3)", () => {
     const deepseek = manifests.find((m) => m.id === "deepseek");
     expect(deepseek).toBeDefined();
-    const serialized = JSON.stringify(deepseek);
-    expect(serialized).not.toMatch(/cordis/i);
+    const serialized = JSON.stringify(deepseek).toLowerCase();
+    const { deny } = JSON.parse(
+      readFileSync(
+        path.resolve(import.meta.dirname, "../../../tests/fixtures/platform-name-denylist.json"),
+        "utf8",
+      ),
+    ) as { deny: string[] };
+    for (const name of deny) {
+      expect(serialized).not.toContain(name.toLowerCase());
+    }
     expect(deepseek?.pins["@deepseek-ai/dsh"]).toBeTruthy();
   });
 

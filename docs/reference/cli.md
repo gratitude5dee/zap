@@ -43,6 +43,7 @@ The list below is generated from the discovered command set by
 - `zap finalize <slug> [--token ...] [--api-url ...] [--json]` — Finalize a deployed draft into the gallery.
 - `zap fs <ls|read|write|rm> <runtime-id> <path> [content] [--json]` — Runtime filesystem operations (ls, read, write, rm).
 - `zap gallery [--remote] [--json]` — List local recipes; add --remote for hosted gallery.
+- `zap harness <ls|bake <template>|doctor <id|template>|run <template> --prompt <p>> [--live] [--json]` — List, bake, doctor, and run zap-heavy harness templates.
 - `zap import <hyperframes|openmontage> [--source path] [--limit n] [--force] [--json]` — Import hyperframes or openmontage templates.
 - `zap improve <slug|Zap.md> [--json] [--write]` — Propose a version bump from run and feedback evidence.
 - `zap info [--json]` — Print environment info.
@@ -52,7 +53,7 @@ The list below is generated from the discovered command set by
 - `zap lint [Zap.md ...] [--json]` — Run recipe policy checks.
 - `zap login --token <token> [--api-url ...] | zap login --provider <id> [--json]` — Store a Zap API token, or device-auth via --provider.
 - `zap logout [--json]` — Remove the stored Zap API token.
-- `zap mcp [--http [--port 3910]] [--json]` — Start the Zap MCP server (stdio by default, --http for HTTP).
+- `zap mcp [--http [--host 127.0.0.1] [--port 3910]] [--json]` — Start the Zap MCP server (stdio by default, --http for HTTP).
 - `zap media <ls|info> [path] [--json]` — Inspect local media outputs under .zap/runs.
 - `zap memory <subcommand>` — Run `zap memory \<subcommand>`.
 - `zap new <slug> [--force] [--json]` — Scaffold agent/skills/zap-\<slug>.
