@@ -8,7 +8,7 @@
  * plug in without editing this file.
  */
 import { parseArgs } from "./lib/args.js";
-import { exitCodeFor } from "./lib/errors.js";
+import { exitCodeFor, usageError } from "./lib/errors.js";
 import { printCommandError } from "./lib/output.js";
 import { loadDotEnv, version } from "./lib/project.js";
 import { discoverCommands } from "./lib/registry.js";
@@ -32,7 +32,7 @@ async function main(argv) {
 
   const command = registry.get(commandName);
   if (!command) {
-    throw new Error(`Unknown command "${commandName}". Run zap help.`);
+    throw usageError(`Unknown command "${commandName}". Run zap help.`);
   }
   if (flags.help) {
     console.log(command.usage);
@@ -74,6 +74,11 @@ Install / invoke (Node 24.x):
   npm install --global @wzrdtech/zap@${version}  # enables the bare zap command
 `);
 }
+
+process.stdout.on("error", (error) => {
+  if (error.code === "EPIPE") process.exit(0);
+  throw error;
+});
 
 main(process.argv.slice(2)).catch((error) => {
   const { flags } = parseArgs(process.argv.slice(2));

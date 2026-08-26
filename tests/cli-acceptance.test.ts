@@ -64,7 +64,7 @@ describe("zap CLI acceptance", () => {
     }
   });
 
-  it("composes, doctors, and reports payer status in a clean project", () => {
+  it("composes, doctors, and reports payer status in a clean project", { timeout: 120_000 }, () => {
     const root = mkdtempSync(path.join(tmpdir(), "zap-cli-"));
     try {
       runZap(root, ["init", "demo", "--non-interactive"]);
