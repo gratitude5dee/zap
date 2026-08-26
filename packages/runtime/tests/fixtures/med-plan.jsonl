@@ -1,0 +1,4 @@
+{"type":"run.started","live":false,"payer":"byok"}
+{"type":"text.delta","text":"Planning the transcode."}
+{"type":"tool.planned","tool":"ffmpeg.preset","input":{"preset":"transcode-h264","inputs":["/zap/fs/in.mp4"]},"estimate":[{"unit":"sandbox_second","qty":3.5,"sku":"ffmpeg.transcode-h264"}]}
+{"type":"run.completed","usage":{"tokens":{"inputTokens":42,"outputTokens":7,"usd":0},"lines":[]}}

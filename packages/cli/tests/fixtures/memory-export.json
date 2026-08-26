@@ -1,0 +1,14 @@
+{
+  "items": [
+    {
+      "uri": "viking://user/self/memories/one",
+      "kind": "memory",
+      "text": "deploy target is us-east-1"
+    },
+    {
+      "uri": "viking://user/self/resources/notes",
+      "kind": "resource",
+      "text": "golden path notes"
+    }
+  ]
+}

@@ -63,6 +63,10 @@
       "types": "./dist/prodia.d.ts",
       "import": "./dist/prodia.js"
     },
+    "./replicate": {
+      "types": "./dist/replicate.d.ts",
+      "import": "./dist/replicate.js"
+    },
     "./registry": {
       "types": "./dist/registry.d.ts",
       "import": "./dist/registry.js"

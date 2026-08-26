@@ -1,0 +1,7 @@
+{
+  "healthy": true,
+  "items": 2,
+  "bytes": 43,
+  "provider": "openviking",
+  "locality": "on-vm"
+}
