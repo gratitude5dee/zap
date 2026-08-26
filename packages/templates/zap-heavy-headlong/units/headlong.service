@@ -1,0 +1,14 @@
+[Unit]
+Description=headlong compose stack (VM loopback only)
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=%h/.headlong/.env
+ExecStart=/usr/local/bin/headlong up --foreground
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

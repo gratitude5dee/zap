@@ -1,0 +1,13 @@
+{
+  "name": "zap-heavy-openclaw",
+  "weight": "heavy",
+  "from": "zap-heavy",
+  "description": "zap-heavy with the OpenClaw harness: gateway on 18789 (lan bind, per-box auth token, chat-completions endpoint on, channels off) behind a --private hosted route.",
+  "channel": "ship",
+  "namedSnapshot": true,
+  "harness": "openclaw",
+  "units": ["zap-agentd.service", "openclaw-gateway.service"],
+  "ports": [{ "port": 18789, "role": "api", "hostPrivate": true }],
+  "stateDirs": ["~/.openclaw"],
+  "mcpConfig": { "path": "~/.openclaw/openclaw.json", "format": "json5" }
+}

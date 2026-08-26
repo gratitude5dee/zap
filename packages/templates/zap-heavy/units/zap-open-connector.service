@@ -1,0 +1,13 @@
+[Unit]
+Description=Zap API store open-connector (loopback only)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/zap-open-connector --host 127.0.0.1 --port 1934
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

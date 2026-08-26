@@ -1,0 +1,16 @@
+[Unit]
+Description=Hermes host: re-register --private routes for 8642/9119
+# Open ports are not captured by snapshots; hosted URLs and tokens are sticky
+# but the route binds the machine's current address, so re-run host on every
+# boot and resume.
+After=hermes-gateway.service
+Wants=hermes-gateway.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/host 8642 --private
+ExecStart=/usr/local/bin/host 9119 --private
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

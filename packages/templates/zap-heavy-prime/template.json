@@ -1,0 +1,22 @@
+{
+  "name": "zap-heavy-prime",
+  "weight": "heavy",
+  "from": "zap-heavy",
+  "description": "zap-heavy overlay with prime-agent (rpc-jsonl, no hosted port).",
+  "channel": "ship",
+  "namedSnapshot": false,
+  "overlay": true,
+  "optIn": true,
+  "harness": "prime",
+  "units": [
+    "zap-agentd.service"
+  ],
+  "ports": [],
+  "stateDirs": [
+    "~/.prime/agent"
+  ],
+  "mcpConfig": {
+    "path": "~/.prime/agent/settings.json",
+    "format": "json"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "zap-heavy-pi",
+  "weight": "heavy",
+  "from": "zap-heavy",
+  "description": "zap-heavy overlay with the pi coding agent (rpc-jsonl, no hosted port).",
+  "channel": "ship",
+  "namedSnapshot": false,
+  "overlay": true,
+  "optIn": true,
+  "harness": "pi",
+  "units": [
+    "zap-agentd.service"
+  ],
+  "ports": [],
+  "stateDirs": [
+    "~/.pi/agent"
+  ],
+  "mcpConfig": {
+    "path": "~/.pi/agent/settings.json",
+    "format": "json"
+  }
+}

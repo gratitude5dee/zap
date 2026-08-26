@@ -1,0 +1,22 @@
+{
+  "name": "zap-heavy-frontier",
+  "weight": "heavy",
+  "from": "zap-heavy",
+  "description": "zap-heavy overlay with frontier-agent (uv-managed Python 3.12; headless cli-exec).",
+  "channel": "ship",
+  "namedSnapshot": false,
+  "overlay": true,
+  "optIn": true,
+  "harness": "frontier",
+  "units": [
+    "zap-agentd.service"
+  ],
+  "ports": [],
+  "stateDirs": [
+    "~/.frontier"
+  ],
+  "mcpConfig": {
+    "path": "~/.frontier/mcp.json",
+    "format": "json"
+  }
+}

@@ -1,0 +1,15 @@
+[Unit]
+Description=OpenCode server (0.0.0.0:4096, per-box password)
+After=network-online.target zap-openviking.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStartPre=/usr/local/bin/opencode-render-env
+EnvironmentFile=%h/.config/opencode/.env
+ExecStart=/usr/local/bin/opencode serve --port 4096 --hostname 0.0.0.0
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

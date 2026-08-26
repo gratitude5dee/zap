@@ -1,0 +1,14 @@
+[Unit]
+Description=omg computer (ws-jsonrpc on 127.0.0.1:8766)
+After=network-online.target zap-openviking.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=%h/.omg/.env
+ExecStart=/usr/local/bin/omg computer serve
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,15 @@
+[Unit]
+Description=Hermes gateway (api_server on 0.0.0.0:8642, per-box key)
+After=network-online.target zap-openviking.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStartPre=/usr/local/bin/hermes-render-env
+EnvironmentFile=%h/.hermes/.env
+ExecStart=%h/.hermes/venv/bin/hermes gateway
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

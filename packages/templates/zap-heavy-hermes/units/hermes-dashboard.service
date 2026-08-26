@@ -1,0 +1,14 @@
+[Unit]
+Description=Hermes dashboard (FastAPI + SPA on 9119, in-box)
+After=hermes-gateway.service
+Wants=hermes-gateway.service
+
+[Service]
+Type=simple
+EnvironmentFile=%h/.hermes/.env
+ExecStart=%h/.hermes/venv/bin/hermes dashboard
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

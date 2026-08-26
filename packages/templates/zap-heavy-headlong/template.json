@@ -1,0 +1,23 @@
+{
+  "name": "zap-heavy-headlong",
+  "weight": "heavy",
+  "from": "zap-heavy",
+  "description": "zap-heavy overlay with headlong (Docker-in-VM required; compose stack on the VM loopback; cli-exec).",
+  "channel": "ship",
+  "namedSnapshot": false,
+  "overlay": true,
+  "optIn": true,
+  "harness": "headlong",
+  "units": [
+    "zap-agentd.service",
+    "headlong.service"
+  ],
+  "ports": [],
+  "stateDirs": [
+    "~/.headlong"
+  ],
+  "mcpConfig": {
+    "path": "~/.headlong/mcp.json",
+    "format": "json"
+  }
+}
