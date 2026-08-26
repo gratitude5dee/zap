@@ -12,8 +12,8 @@ export function checkSecretScope(entry: AgentManifestEntry | undefined, scope: S
     });
   };
 
-  if (!entry) deny(`agent ${scope.agentId} is not in the deployment manifest.`);
-  const connection = entry?.connections.find((candidate) => candidate.id === scope.connectionId);
+  if (!entry) return deny(`agent ${scope.agentId} is not in the deployment manifest.`);
+  const connection = entry.connections.find((candidate) => candidate.id === scope.connectionId);
   if (!connection) return deny(`connection ${scope.connectionId} is not declared by agent ${scope.agentId}.`);
   if (connection.origin !== scope.origin) return deny(`origin ${scope.origin} is not the declared origin.`);
   if (!connection.methods.includes(scope.method.toUpperCase())) {
