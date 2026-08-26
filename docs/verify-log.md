@@ -44,3 +44,11 @@ Provider facts assumed on 2026-08-26 (Z7, pending live verification — no live 
 - Modal: GPU lane target only (`purpose:"lane"`); `gpu_second` per-class USD rates in `adapters/modal/pricing.json` seeded from the public pricing page (`verified:false` in the file); SDK pinned as `modal@0.3.14`. Not exercised live.
 - Runpod and Baseten have no sandbox product (verified from vendor product pages) — documented as GPU/inference targets only; catalog stubs `catalog:runpod` / `catalog:baseten`.
 - Blaxel, Freestyle, Orgo, Tensorlake: catalog stubs only; contract mappings unverified (`verified:false` manifests in `adapters/catalog/`).
+
+| 2026-08-26 | zap-v5-session-g (Z8: MCP + skills + API store) | `npm run typecheck`, `npm run build:packages`, `npm test` (95 files, 566 passed / 7 skipped), `npm run test:regression` (16 passed, 5 skipped), `npm run cli -- validate`, `npm run cli -- lint`, `npx vitest run tests/mcp-server.test.ts packages/mcp/tests/http.test.ts tests/zap-skills.test.ts tests/agent-plugin-snippets.test.ts` | All green; no live provider calls (payer gating tested with `ZAP_TEST_PAYER`). |
+
+Provider facts assumed on 2026-08-26 (Z8, pending live verification — no live calls were made):
+
+- Context7: hosted MCP endpoint `https://mcp.context7.com/mcp` (Streamable HTTP) authenticating with a `CONTEXT7_API_KEY` header. Evidence: Context7 docs read; fragment renders an env reference only, never a value.
+- open-connector (oomol-lab): pinned to `v0.1.0` of `https://github.com/oomol-lab/open-connector.git`; serves MCP at `/mcp` on the configured host/port and reads `OOMOL_CONNECT_ENCRYPTION_KEY` / `OOMOL_CONNECT_RUNTIME_TOKEN` / `OOMOL_CONNECT_ADMIN_TOKEN` from the environment. Baked loopback-only (`127.0.0.1:3000`); `bake.d/50-apistore.sh` verifies the pinned tag exists at bake time (C30) and does not start the service (secrets arrive per-box at boot).
+- Composio: hosted MCP sessions are minted by the control plane per tenant entity and reached over an HTTPS session URL; the runtime plugin validates `https://` and renders headers as env references only.

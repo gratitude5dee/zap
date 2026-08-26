@@ -10,7 +10,8 @@
   },
   "exports": {
     ".": "./src/server.js",
-    "./server": "./src/server.js"
+    "./server": "./src/server.js",
+    "./http": "./src/http.js"
   },
   "publishConfig": {
     "access": "public"
