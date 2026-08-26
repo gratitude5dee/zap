@@ -171,14 +171,16 @@ export function createZepMemory(options: ZepMemoryOptions): MemoryService {
     async read(scope, uri) {
       const graphMatch = uri.match(/^zep:\/\/graph\/(.+)$/);
       if (graphMatch?.[1] !== undefined) {
-        const { ok, data } = await call<{ content?: string }>(
+        const { ok, data } = await call<{ content?: string; user_id?: string }>(
           `/api/v2/graph/episodes/${encodeURIComponent(graphMatch[1])}`,
         );
         if (!ok || data?.content === undefined) return null;
+        if (data.user_id !== scope.tenantId) return null;
         return decode(data.content).text;
       }
       const threadMatch = uri.match(/^zep:\/\/thread\/([^/]+)\/(.+)$/);
       if (threadMatch?.[1] !== undefined && threadMatch[2] !== undefined) {
+        if (threadMatch[1] !== threadIdOf(scope)) return null;
         const { data } = await call<{ messages?: Array<{ uuid: string; content: string }> }>(
           `/api/v2/threads/${encodeURIComponent(threadMatch[1])}/messages`,
         );

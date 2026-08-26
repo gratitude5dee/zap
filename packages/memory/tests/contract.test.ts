@@ -74,6 +74,15 @@ describe.each(cases)("memory contract: $name", ({ name, make }) => {
     expect(hits).toEqual([]);
   });
 
+  it("read does not leak to a tenant whose id is a prefix of the owner's", async () => {
+    const memory = make();
+    const owner: MemoryScope = { tenantId: "tenant-12", runtimeId: "rt-1", sessionId: "sess-1" };
+    const item = await memory.remember(owner, { text: "prefix isolation secret", durable: true });
+    const prefixTenant: MemoryScope = { tenantId: "tenant-1", runtimeId: "rt-1" };
+    await expect(memory.read(prefixTenant, item.uri)).resolves.toBeNull();
+    await expect(memory.read(owner, item.uri)).resolves.toContain("prefix isolation secret");
+  });
+
   it("addResource ingests a file and read returns its content", async () => {
     const memory = make({ "/tmp/notes.md": "resource body: golden path" });
     const item = await memory.addResource(scope, { path: "/tmp/notes.md" });
