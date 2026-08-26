@@ -46,6 +46,8 @@ export interface ReceiptStore {
 /** Replay authority: `SET NX zap:gate:nonce:<id>` semantics. */
 export interface NonceStore {
   setNX(id: string): Promise<boolean>;
+  /** release a reservation so an unsettled credential can be retried. */
+  del(id: string): Promise<void>;
 }
 
 export interface LedgerRow extends MeterLine {

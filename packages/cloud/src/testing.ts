@@ -39,7 +39,8 @@ export function mppCredential(input: { challengeId: string; amountUsd: number; p
   return encode({ kind: "mpp", nonce: input.challengeId, amountUsd: input.amountUsd, payer: input.payer ?? "0xalice" });
 }
 
-function fakeFacilitator(fails: boolean): Facilitator {
+function fakeFacilitator(fails: boolean, settleFailsOnce: boolean): Facilitator {
+  let settleFailures = settleFailsOnce ? 1 : 0;
   return {
     async verify(payload) {
       if (fails) throw new Error("facilitator unavailable");
@@ -52,6 +53,10 @@ function fakeFacilitator(fails: boolean): Facilitator {
     },
     async settle() {
       if (fails) throw new Error("facilitator unavailable");
+      if (settleFailures > 0) {
+        settleFailures -= 1;
+        throw new Error("settlement unavailable");
+      }
       return { txHash: `0xtx${Math.random().toString(16).slice(2, 10)}` };
     },
   };
@@ -129,6 +134,7 @@ export interface CreateTestCloudOptions {
   adapter: "vercel" | "cloudflare";
   env?: Record<string, string>;
   facilitatorFails?: boolean;
+  settleFailsOnce?: boolean;
   limits?: RateLimitConfig;
   modules?: CloudRouteModule[];
 }
@@ -161,7 +167,7 @@ export function createTestCloud(options: CreateTestCloudOptions): TestCloud {
     nonces: memoryNonceStore(),
     meter: memoryCloudMeter(trace, (line) => meterLines.push(line)),
     sandbox,
-    facilitator: fakeFacilitator(options.facilitatorFails === true),
+    facilitator: fakeFacilitator(options.facilitatorFails === true, options.settleFailsOnce === true),
     limiter: memoryRateLimiter(),
     counters: memoryOpsCounters(),
     upstream: fakeUpstream(),

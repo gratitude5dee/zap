@@ -137,6 +137,20 @@ describe.each(ADAPTERS)("pay gate (%s adapter)", (adapter) => {
     expect(cloud.events.filter((e) => e === "meter.reserve")).toHaveLength(0);
   });
 
+  it("settlement failure releases the nonce so the same credential can retry", async () => {
+    const cloud = createTestCloud({ adapter, settleFailsOnce: true });
+    const id = await makeRuntime(cloud);
+    const cred = x402Credential({ nonce: "nonce-retry", amountUsd: 1 });
+    const first = await execPrompt(cloud, id, { "PAYMENT-SIGNATURE": cred });
+    expect(first.status).toBe(402);
+    const body = (await first.json()) as { error: { message: string } };
+    expect(body.error.message).toMatch(/settlement failed/i);
+    expect(await cloud.deps.receipts.list()).toHaveLength(0);
+    const retry = await execPrompt(cloud, id, { "PAYMENT-SIGNATURE": cred });
+    expect(retry.status).toBe(200);
+    expect(await cloud.deps.receipts.list()).toHaveLength(1);
+  });
+
   it("payTo is always the treasury, never derived from request data", async () => {
     const cloud = createTestCloud({ adapter });
     const id = await makeRuntime(cloud);

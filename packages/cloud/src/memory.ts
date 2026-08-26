@@ -60,6 +60,9 @@ export function memoryNonceStore(): NonceStore {
       seen.add(id);
       return true;
     },
+    async del(id) {
+      seen.delete(id);
+    },
   };
 }
 

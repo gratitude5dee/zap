@@ -119,7 +119,8 @@ export function createGate(deps: CloudDeps): CloudMiddleware {
         `Underpayment: $${verified.amountUsd} is below the $${gatePriceUsd(deps)} price.`,
       );
     }
-    const fresh = await deps.nonces.setNX(`zap:gate:nonce:${verified.nonce}`);
+    const nonceKey = `zap:gate:nonce:${verified.nonce}`;
+    const fresh = await deps.nonces.setNX(nonceKey);
     if (!fresh) {
       return reject(c as CloudContext, deps, "This payment was already redeemed.");
     }
@@ -128,6 +129,7 @@ export function createGate(deps: CloudDeps): CloudMiddleware {
     try {
       settled = await deps.facilitator.settle(credential.payload);
     } catch {
+      await deps.nonces.del(nonceKey);
       return reject(c as CloudContext, deps, "Payment settlement failed.");
     }
 
