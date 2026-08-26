@@ -103,25 +103,31 @@ type AnthropicContentBlock =
   | { type: "tool_result"; tool_use_id: string; content: string };
 
 function toAnthropicMessages(messages: LlmMessage[]): Array<{ role: "user" | "assistant"; content: string | AnthropicContentBlock[] }> {
-  return messages
-    .filter((m) => m.role !== "system")
-    .map((m) => {
-      if (m.role === "tool") {
-        return {
-          role: "user" as const,
-          content: [{ type: "tool_result" as const, tool_use_id: m.toolCallId ?? "", content: m.content }],
-        };
+  const out: Array<{ role: "user" | "assistant"; content: string | AnthropicContentBlock[] }> = [];
+  for (const m of messages) {
+    if (m.role === "system") continue;
+    if (m.role === "tool") {
+      const block: AnthropicContentBlock = { type: "tool_result", tool_use_id: m.toolCallId ?? "", content: m.content };
+      const prev = out[out.length - 1];
+      if (prev && prev.role === "user" && Array.isArray(prev.content) && prev.content.every((b) => b.type === "tool_result")) {
+        prev.content.push(block);
+      } else {
+        out.push({ role: "user", content: [block] });
       }
-      if (m.role === "assistant" && m.toolCalls && m.toolCalls.length > 0) {
-        const blocks: AnthropicContentBlock[] = [];
-        if (m.content) blocks.push({ type: "text", text: m.content });
-        for (const call of m.toolCalls) {
-          blocks.push({ type: "tool_use", id: call.id, name: call.name, input: call.input ?? {} });
-        }
-        return { role: "assistant" as const, content: blocks };
+      continue;
+    }
+    if (m.role === "assistant" && m.toolCalls && m.toolCalls.length > 0) {
+      const blocks: AnthropicContentBlock[] = [];
+      if (m.content) blocks.push({ type: "text", text: m.content });
+      for (const call of m.toolCalls) {
+        blocks.push({ type: "tool_use", id: call.id, name: call.name, input: call.input ?? {} });
       }
-      return { role: m.role as "user" | "assistant", content: m.content };
-    });
+      out.push({ role: "assistant", content: blocks });
+      continue;
+    }
+    out.push({ role: m.role, content: m.content });
+  }
+  return out;
 }
 
 function toolCallsFromChoice(message: {
