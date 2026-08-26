@@ -86,7 +86,7 @@ export function PageShell({
   readonly tone?: "light" | "dark";
 }) {
   return (
-    <main className={cn(tone === "dark" ? "min-h-dvh bg-zap-ink text-white" : "min-h-dvh bg-zap-paper text-zap-ink", className)}>
+    <main className={cn(tone === "dark" ? "min-h-dvh bg-zap-ink/75 text-white" : "min-h-dvh bg-zap-paper text-zap-ink", className)}>
       {children}
     </main>
   );
