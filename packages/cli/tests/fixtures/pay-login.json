@@ -1,0 +1,9 @@
+{
+  "command": "zap pay login --managed --json",
+  "output": {
+    "payer": "managed",
+    "wallet": "0x1111111111111111111111111111111111111111",
+    "maxValueUsd": 5,
+    "expiresAt": "2026-01-02T00:00:00.000Z"
+  }
+}
