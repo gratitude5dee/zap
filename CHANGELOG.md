@@ -18,6 +18,11 @@
 - Canonical agents-as-code files under `agents/` plus `project.ts`, and the north-star compose fixture.
 - Regression harness: `npm run test:regression` with frozen 0.3.1 CLI fixtures, output normalization, docs-snippet checks, and the platform-name denylist test.
 - CLI (Z3): dispatcher split into auto-discovered `packages/cli/src/commands/<domain>/` modules with a documented registration API; new `zap compose`, `zap runtime` (up/down/ps/logs/exec/snapshot/fork/stop/resume/desktop/import-sprite), `zap fs`, `zap media`, `zap ffmpeg`, and `zap template` commands; `zap doctor --json` reports payer status; `zap mcp --http`; `zap login --provider`; structured `--json` errors with exit codes and payer gates (`PAYER_MISSING`) on every live/spending path; `.zap/auth.json` namespaced so `zap logout` clears only the API token.
+- Sandbox (Z2): `sandboxCore` provider registry (Box default) with fake, local, docker, and Box adapters behind the shared conformance suite; Box client maps the reference methods 1:1 with `noEnv:true` on every create/fork, `Idempotency-Key` + SET-NX replay guard, `SandboxStartLimit` on 429, stop without force, post-resume hosted-token re-read, and confirmed-delete headers.
+- Runtime (Z2): `zap-agentd` HTTP daemon (`0.0.0.0:8722`, bearer auth, `/v1/health|capabilities|exec|lane|files`), execution lanes with argv-only allowlists (exit 126 before spawn), Hyperlight wasm-lane docs and probes, and the redacting log sink (`packages/runtime/src/redact.ts`).
+- Providers (Z4): namespace, selfhost, and microsandbox (pinned 0.6.15) adapters; environment profiles (`ubuntu`, `omarchy`, `macos`) in `packages/runtime/src/environments.ts`.
+- Eve bridge: v5 provider ids (`box`, `docker`, `namespace`, `selfhost`, `microsandbox`, `fake`) route through `@wzrdtech/zap-sandbox`; `box-legacy` keeps the previous SDK path.
+- Templates and infra: `packages/templates/zap-light` (bake/doctor/systemd units), `env-omarchy` and `env-macos` (coming soon), `infra/box` build/verify scripts, `infra/namespace` (bridge, create-instance, zap-heavy image), `infra/self-host/setup.sh`, provider/template docs, and `docs/verify-log.md` with live Box evidence.
 
 ### Changed
 

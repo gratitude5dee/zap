@@ -6,6 +6,10 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "dependencies": {
+    "@wzrdtech/zap-kernel": "5.0.0-alpha.0",
+    "@wzrdtech/zap-sandbox": "5.0.0-alpha.0"
+  },
   "peerDependencies": {
     "eve": "0.22.4"
   }

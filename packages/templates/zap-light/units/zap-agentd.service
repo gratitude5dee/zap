@@ -1,0 +1,19 @@
+[Unit]
+Description=zap-agentd (lane executor daemon on 0.0.0.0:8722)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=user
+ExecStart=/usr/bin/env zap-agentd serve
+Restart=always
+RestartSec=2
+# Confinement: lanes run under systemd-run from this daemon; the daemon itself
+# writes only under /zap and ~/.zap.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/zap /home/user/.zap
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,15 @@
+[Unit]
+Description=Bind the host into the Arch userland (/opt/arch)
+# The Arch root shares /home/user, /tmp, /dev, /run and /zap with the host, so
+# it is the same machine seen through Arch tooling — not a second one.
+After=local-fs.target
+Before=omarchy-desktop.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+Environment=ARCH_ROOT=/opt/arch
+ExecStart=/usr/local/bin/arch-mount
+
+[Install]
+WantedBy=multi-user.target

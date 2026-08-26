@@ -1,0 +1,84 @@
+# Packages for the Arch userland at /opt/arch, installed with pacman inside it
+# (setup.sh) the way Omarchy's bin/omarchy-pkg-install does.
+#
+# Sourced from the Omarchy repo's install/omarchy-base.packages. Dropped from
+# that manifest: hardware and host-only packages (bluez*, cups*, bolt,
+# brightnessctl, ddcutil, asdcontrol, gpu-screen-recorder, kernel-modules-hook,
+# docker*, snapper, power-profiles-daemon, printer/scanner stacks, sddm) and
+# the OPR/AUR desktop apps that have no meaning without a human at the
+# keyboard (aether, herdr, cliamp, localsend, …). Add AUR packages with
+# `arch-run 'yay -S --noconfirm <pkg>'` (the helper
+# bin/omarchy-pkg-aur-install uses) if a future skill needs one, then add them
+# here.
+#
+# The Zap runtime itself runs on the host side of the box, from the shared
+# baseline, so this list is the desktop and Arch tooling — not a second runtime.
+
+# ── desktop: the Omarchy Hyprland session the agent drives ──────────────
+hyprland
+hyprland-guiutils
+hyprpicker
+xorg-xwayland
+uwsm
+wl-clipboard
+foot
+grim
+slurp
+libnotify
+mako
+swaybg
+waybar
+polkit-gnome
+gnome-keyring
+libsecret
+xdg-desktop-portal-hyprland
+xdg-desktop-portal-gtk
+qt5-wayland
+qt6-wayland
+gtk3
+gtk4
+adwaita-icon-theme
+ttf-jetbrains-mono-nerd
+noto-fonts
+noto-fonts-emoji
+noto-fonts-cjk
+
+# ── browser: the agent's own browser (browser lane) ─────────────────────
+chromium
+nss
+alsa-lib
+libxss
+mesa
+
+# ── base runtime inside the Arch root ───────────────────────────────────
+python
+python-pip
+python-yaml
+git
+curl
+wget
+jq
+openssl
+unzip
+zip
+rsync
+sudo
+which
+inetutils
+
+# ── desktop automation on this display ──────────────────────────────────
+xdotool
+xorg-xrandr
+
+# ── Arch-side tooling the agent reaches through `arch-run` ──────────────
+ripgrep
+fd
+fzf
+bat
+eza
+ffmpeg
+imagemagick
+libvips
+poppler
+tesseract
+tesseract-data-eng
