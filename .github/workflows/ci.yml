@@ -15,11 +15,13 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci --legacy-peer-deps
+      - run: npm run typecheck
+      - run: npm run test:regression
       - run: npm test
       - run: npm run test:world-convex
-      - run: npm run typecheck
       - run: npm run cli -- validate
       - run: npm run cli -- lint
+      - run: npm run cli -- doctor --json
       - run: npm run registry:check
       - run: npm run evals
       - run: npm run docs:validate

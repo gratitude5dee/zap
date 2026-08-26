@@ -1,0 +1,49 @@
+{
+  "budget": {
+    "cap_usd": 15,
+    "estimate_usd": 7.5
+  },
+  "defaults": {
+    "aspect": "16:9",
+    "models": {},
+    "provider": "gmi"
+  },
+  "file": "<repo>/agent/skills/zap-world-cup-entrance/Zap.md",
+  "quoteUsd": 1.1,
+  "steps": [
+    {
+      "kind": "image.edit",
+      "model": "fal-ai/flux/dev",
+      "provider": "fal",
+      "quoteUsd": 0.025,
+      "status": "planned",
+      "stepId": "sketch"
+    },
+    {
+      "kind": "image.edit",
+      "model": "fal-ai/flux/dev",
+      "provider": "fal",
+      "quoteUsd": 0.025,
+      "status": "planned",
+      "stepId": "character_sheet"
+    },
+    {
+      "kind": "video.gen",
+      "model": "seedance-2-0-260128",
+      "provider": "gmi",
+      "quoteUsd": 1.05,
+      "status": "planned",
+      "stepId": "initial_gen"
+    },
+    {
+      "kind": "stitch",
+      "model": "local",
+      "provider": "local",
+      "quoteUsd": 0,
+      "status": "planned",
+      "stepId": "finalize"
+    }
+  ],
+  "version": 2,
+  "zap": "world-cup-entrance"
+}

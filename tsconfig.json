@@ -26,6 +26,18 @@
       "@wzrdtech/agent/*": ["./packages/agent/src/*"],
       "@wzrdtech/core": ["./packages/core/src/index.ts"],
       "@wzrdtech/core/*": ["./packages/core/src/*"],
+      "@wzrdtech/zap-kernel": ["./packages/kernel/src/index.ts"],
+      "@wzrdtech/zap-kernel/*": ["./packages/kernel/src/*"],
+      "@wzrdtech/zap-sandbox": ["./packages/sandbox/src/index.ts"],
+      "@wzrdtech/zap-sandbox/*": ["./packages/sandbox/src/*"],
+      "@wzrdtech/zap-memory": ["./packages/memory/src/index.ts"],
+      "@wzrdtech/zap-memory/*": ["./packages/memory/src/*"],
+      "@wzrdtech/zap-agent": ["./packages/agent-code/src/index.ts"],
+      "@wzrdtech/zap-agent/*": ["./packages/agent-code/src/*"],
+      "@wzrdtech/zap-runtime": ["./packages/runtime/src/index.ts"],
+      "@wzrdtech/zap-runtime/*": ["./packages/runtime/src/*"],
+      "@wzrdtech/zap-templates": ["./packages/templates/src/index.ts"],
+      "@wzrdtech/zap-cloud": ["./packages/cloud/src/index.ts"],
       "@wzrdtech/providers": ["./packages/providers/src/index.ts"],
       "@wzrdtech/providers/*": ["./packages/providers/src/*"]
     }

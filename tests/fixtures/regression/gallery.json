@@ -1,0 +1,25 @@
+{
+  "zaps": [
+    {
+      "estimateUsd": 0,
+      "file": "<repo>/agent/skills/zap-air-imessage-video/Zap.md",
+      "slug": "air-imessage-video",
+      "steps": 1,
+      "title": "Air Imessage Video"
+    },
+    {
+      "estimateUsd": 4.5,
+      "file": "<repo>/agent/skills/zap-caught-by-the-cam/Zap.md",
+      "slug": "caught-by-the-cam",
+      "steps": 3,
+      "title": "Caught By The Cam"
+    },
+    {
+      "estimateUsd": 7.5,
+      "file": "<repo>/agent/skills/zap-world-cup-entrance/Zap.md",
+      "slug": "world-cup-entrance",
+      "steps": 5,
+      "title": "World Cup Entrance"
+    }
+  ]
+}

@@ -1,0 +1,3 @@
+{
+  "deny": ["cordis", "cordiverse", "opencomputer", "open-computer", "diggerhq"]
+}

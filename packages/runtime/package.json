@@ -1,0 +1,87 @@
+{
+  "name": "@wzrdtech/zap-runtime",
+  "version": "5.0.0-alpha.0",
+  "private": false,
+  "description": "Zap runtime: compose profiles, lanes, gateway, media FS, harnesses, meter, pay, and the zap-agentd contract daemon.",
+  "license": "MIT",
+  "type": "module",
+  "types": "./dist/index.d.ts",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && node ../../scripts/rewrite-dts-imports.mjs dist",
+    "prepack": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gratitude5dee/Zap.git",
+    "directory": "packages/runtime"
+  },
+  "bugs": {
+    "url": "https://github.com/gratitude5dee/Zap/issues"
+  },
+  "homepage": "https://zap.wzrd.tech",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./sandbox/*": {
+      "types": "./dist/sandbox/*.d.ts",
+      "import": "./dist/sandbox/*.js"
+    },
+    "./memory/*": {
+      "types": "./dist/memory/*.d.ts",
+      "import": "./dist/memory/*.js"
+    },
+    "./harness/*": {
+      "types": "./dist/harness/*.d.ts",
+      "import": "./dist/harness/*.js"
+    },
+    "./pay/*": {
+      "types": "./dist/pay/*.d.ts",
+      "import": "./dist/pay/*.js"
+    },
+    "./meter/*": {
+      "types": "./dist/meter/*.d.ts",
+      "import": "./dist/meter/*.js"
+    },
+    "./gateway/*": {
+      "types": "./dist/gateway/*.d.ts",
+      "import": "./dist/gateway/*.js"
+    },
+    "./mediafs/*": {
+      "types": "./dist/mediafs/*.d.ts",
+      "import": "./dist/mediafs/*.js"
+    },
+    "./lanes": {
+      "types": "./dist/lanes/index.d.ts",
+      "import": "./dist/lanes/index.js"
+    },
+    "./agentd/*": {
+      "types": "./dist/agentd/*.d.ts",
+      "import": "./dist/agentd/*.js"
+    },
+    "./testing": {
+      "types": "./dist/testing.d.ts",
+      "import": "./dist/testing.js"
+    }
+  },
+  "dependencies": {
+    "@wzrdtech/core": "5.0.0-alpha.0",
+    "@wzrdtech/zap-kernel": "5.0.0-alpha.0",
+    "@wzrdtech/zap-sandbox": "5.0.0-alpha.0",
+    "@wzrdtech/zap-memory": "5.0.0-alpha.0",
+    "@wzrdtech/zap-agent": "5.0.0-alpha.0",
+    "@wzrdtech/providers": "5.0.0-alpha.0",
+    "zod": "4.4.3"
+  },
+  "engines": {
+    "node": "24.x"
+  }
+}
