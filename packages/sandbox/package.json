@@ -33,7 +33,19 @@
     }
   },
   "dependencies": {
-    "@wzrdtech/zap-kernel": "5.0.0-alpha.0"
+    "@wzrdtech/zap-kernel": "5.0.0-alpha.0",
+    "zod": "4.4.3"
+  },
+  "optionalDependencies": {
+    "dockerode": "4.0.9"
+  },
+  "peerDependencies": {
+    "@asciidev/eve-box": "^0.1.6"
+  },
+  "peerDependenciesMeta": {
+    "@asciidev/eve-box": {
+      "optional": true
+    }
   },
   "engines": {
     "node": "24.x"
