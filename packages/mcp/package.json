@@ -1,6 +1,6 @@
 {
   "name": "@wzrdtech/zap-mcp",
-  "version": "5.0.0",
+  "version": "5.0.1",
   "private": false,
   "description": "MCP stdio server for driving Zap recipes from agents.",
   "license": "MIT",
@@ -32,8 +32,8 @@
   ],
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "@wzrdtech/core": "5.0.0",
-    "@wzrdtech/providers": "5.0.0"
+    "@wzrdtech/core": "5.0.1",
+    "@wzrdtech/providers": "5.0.1"
   },
   "engines": {
     "node": "24.x"

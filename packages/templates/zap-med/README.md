@@ -1,7 +1,7 @@
 # zap-med
 
 Med-weight Zap runtime template: `zap-light` + gateway + media FS + ffmpeg
-presets. Built as a named Box snapshot (base 2/10) with `noEnv: true`; the
+presets. Built as a named Zap sandbox snapshot (base 2/10) with `noEnv: true`; the
 `zap-med-genmedia` alias and the `zap-med-interpreter` / `zap-med-fx` overlays
 layer on top of it at create-from-snapshot time.
 

@@ -1,6 +1,6 @@
 {
   "name": "@wzrdtech/zap-sandbox",
-  "version": "5.0.0",
+  "version": "5.0.1",
   "private": false,
   "description": "Zap sandbox contract and adapters for CPU-first agent runtimes.",
   "license": "MIT",
@@ -33,7 +33,7 @@
     }
   },
   "dependencies": {
-    "@wzrdtech/zap-kernel": "5.0.0",
+    "@wzrdtech/zap-kernel": "5.0.1",
     "zod": "4.4.3"
   },
   "optionalDependencies": {
