@@ -43,6 +43,10 @@
       "types": "./dist/harness/*.d.ts",
       "import": "./dist/harness/*.js"
     },
+    "./auth/*": {
+      "types": "./dist/auth/*.d.ts",
+      "import": "./dist/auth/*.js"
+    },
     "./pay/*": {
       "types": "./dist/pay/*.d.ts",
       "import": "./dist/pay/*.js"

@@ -29,11 +29,33 @@ export interface ManagedLoginDeps {
   now?: () => Date;
 }
 
+/** `.zap/auth.json` is namespaced: legacy `zap logout` clears `apiToken`,
+ * `zap pay logout` clears only `managed`. */
+export interface AuthFile {
+  apiToken?: string;
+  apiUrl?: string;
+  managed?: SessionKeyRecord;
+}
+
 const DEFAULT_MAX_VALUE_USD = 5;
 const SESSION_TTL_MS = 24 * 60 * 60 * 1000;
 
 function authFile(zapDir?: string): string {
   return path.join(zapDir ?? path.join(os.homedir(), ".zap"), "auth.json");
+}
+
+async function readAuthFile(file: string): Promise<AuthFile> {
+  try {
+    return JSON.parse(await fs.readFile(file, "utf8")) as AuthFile;
+  } catch {
+    return {};
+  }
+}
+
+async function writeAuthFile(file: string, data: AuthFile): Promise<void> {
+  await fs.mkdir(path.dirname(file), { recursive: true });
+  await fs.writeFile(file, JSON.stringify(data, null, 2), { mode: 0o600 });
+  await fs.chmod(file, 0o600);
 }
 
 /**
@@ -62,18 +84,18 @@ export async function payLoginManaged(deps: ManagedLoginDeps): Promise<SessionKe
     expiresAt: issued.expiresAt,
   };
   const file = authFile(deps.zapDir);
-  await fs.mkdir(path.dirname(file), { recursive: true });
-  await fs.writeFile(file, JSON.stringify(record, null, 2), { mode: 0o600 });
-  await fs.chmod(file, 0o600);
+  const existing = await readAuthFile(file);
+  await writeAuthFile(file, { ...existing, managed: record });
   return record;
 }
 
+/** Clears only the `managed` namespace; `apiToken`/`apiUrl` survive. */
 export async function payLogout(deps?: { zapDir?: string }): Promise<void> {
-  try {
-    await fs.rm(authFile(deps?.zapDir));
-  } catch {
-    // already logged out
-  }
+  const file = authFile(deps?.zapDir);
+  const existing = await readAuthFile(file);
+  if (existing.managed === undefined) return;
+  delete existing.managed;
+  await writeAuthFile(file, existing);
 }
 
 /** Load the stored session key; refuses group/world-readable files. */
@@ -93,7 +115,8 @@ export async function loadSessionKey(deps?: { zapDir?: string }): Promise<Sessio
       `Run: chmod 600 ${file}`,
     );
   }
-  const record = JSON.parse(raw) as SessionKeyRecord;
+  const record = (JSON.parse(raw) as AuthFile).managed;
+  if (!record) return null;
   registerSecret(record.sessionKey);
   return record;
 }

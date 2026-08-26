@@ -46,6 +46,16 @@
         ]
       },
       {
+        "group": "Auth & Pay",
+        "pages": [
+          "auth",
+          "pay",
+          "providers/thirdweb",
+          "providers/cdp",
+          "providers/mpp"
+        ]
+      },
+      {
         "group": "Deploy",
         "pages": [
           "deploy",
