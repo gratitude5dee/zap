@@ -996,10 +996,10 @@ Tasks
 
 Acceptance
 
-- [ ] `npm run build:packages` succeeds with the seven new typed packages; `npm run typecheck` green; the §5.2 north-star file compiles as `packages/runtime/tests/fixtures/north-star.ts` and the §4.12 canonical agent compiles at `agents/transcode/agent.ts`, both against the stubs.
-- [ ] `npm run test:regression` green; `tests/fixtures/regression/*.json` committed and identical to normalized 0.3.1 outputs.
-- [ ] `npm pack` of every workspace + install into a clean Node 24 container → `zap --help` runs and all 28 existing commands still run (the printed version is aligned in Z3).
-- [ ] CI runs regression before anything else and fails the job on drift.
+- [x] `npm run build:packages` succeeds with the seven new typed packages; `npm run typecheck` green; the §5.2 north-star file compiles as `packages/runtime/tests/fixtures/north-star.ts` and the §4.12 canonical agent compiles at `agents/transcode/agent.ts`, both against the stubs.
+- [x] `npm run test:regression` green; `tests/fixtures/regression/*.json` committed and identical to normalized 0.3.1 outputs.
+- [x] `npm pack` of every workspace + install into a clean Node 24 container → `zap --help` runs and all 28 existing commands still run (the printed version is aligned in Z3).
+- [x] CI runs regression before anything else and fails the job on drift.
 
 ### Z1 — Kernel (`@wzrdtech/zap-kernel`)
 
@@ -1012,14 +1012,14 @@ Tasks
 
 Acceptance (all in `packages/kernel/tests/`)
 
-- [ ] `effect.test.ts`: disposers run in reverse registration order; async disposers awaited; a throwing disposer does not skip the rest and is reported.
-- [ ] `fork.test.ts`: fork isolates effects from parent; disposing the child leaves parent services ACTIVE; disposing the parent disposes children first.
-- [ ] `dispose.test.ts`: dispose is idempotent; operations after dispose throw `DISPOSED`.
-- [ ] `inject.test.ts`: inject waits; missing service fails closed on dispose with `SERVICE_MISSING`; provider replacement cycles consumers UNLOADING→LOADING with the committed view.
-- [ ] `reconcile.test.ts`: config reconcile mounts/unmounts only the delta; plugin order permutations yield identical fiber trees.
-- [ ] `leak.test.ts`: 1 000 fork/dispose cycles; `process.getActiveResourcesInfo()` identical before/after; heap delta < 5 %.
-- [ ] `events.test.ts`: emit/parallel/serial/waterfall semantics, including waterfall short-circuit.
-- [ ] `createRuntime` + `definePlugin` exported; typecheck + vitest green with zero network.
+- [x] `effect.test.ts`: disposers run in reverse registration order; async disposers awaited; a throwing disposer does not skip the rest and is reported.
+- [x] `fork.test.ts`: fork isolates effects from parent; disposing the child leaves parent services ACTIVE; disposing the parent disposes children first.
+- [x] `dispose.test.ts`: dispose is idempotent; operations after dispose throw `DISPOSED`.
+- [x] `inject.test.ts`: inject waits; missing service fails closed on dispose with `SERVICE_MISSING`; provider replacement cycles consumers UNLOADING→LOADING with the committed view.
+- [x] `reconcile.test.ts`: config reconcile mounts/unmounts only the delta; plugin order permutations yield identical fiber trees.
+- [x] `leak.test.ts`: 1 000 fork/dispose cycles; `process.getActiveResourcesInfo()` identical before/after; heap delta < 5 %.
+- [x] `events.test.ts`: emit/parallel/serial/waterfall semantics, including waterfall short-circuit.
+- [x] `createRuntime` + `definePlugin` exported; typecheck + vitest green with zero network.
 
 ### Z2 — Sandbox contract, Box adapter, fake adapter, Eve bridge, `zap-light`
 
@@ -1037,13 +1037,13 @@ Tasks
 
 Acceptance
 
-- [ ] `packages/sandbox/tests/contract.test.ts` green on `fake`, `local` (`ZAP_ALLOW_LOCAL_SANDBOX=1`, `/zap/fs` remapped to a `tmpdir`, a fake `lanes` service for the lane cases, real `bash -lc` for lane-less exec) and `docker` in CI; on `box` under `RUN_HOSTED_SANDBOX_TESTS=1 BOX_API_KEY=…` (manual workflow), including snapshot → fork → read-back, stop → resume persistence, private host URL, and the C24 log assertion.
-- [ ] `packages/sandbox/tests/box.test.ts` (recorded HTTP fixtures with secrets stripped): `noEnv:true` on every create/fork body; per-box env keys ⊆ the §7 per-runtime list; missing `RUNTIME_TOKEN` in env throws before any request; `stop` never sends `force`; both 429 codes → `SandboxStartLimit`; create/fork replay (three calls, same `idempotencyKey`) → one request (Upstash `SET NX` memory mode) + `Idempotency-Key` header present; after `resume()` the adapter re-reads every hosted port and the new token never appears in the log buffer.
-- [ ] `packages/runtime/tests/redact.test.ts` green for every canary class; `packages/sandbox/tests/eve-bridge.test.ts` proves `resolveSandboxBackend` parity for `box`, `docker`, `fake`.
-- [ ] `tests/sandbox-selector.test.ts` and `tests/sandbox-contract.test.ts` (0.3.1) green with superset-only edits; `"mystery"` still throws with the full backend list.
+- [x] `packages/sandbox/tests/contract.test.ts` green on `fake`, `local` (`ZAP_ALLOW_LOCAL_SANDBOX=1`, `/zap/fs` remapped to a `tmpdir`, a fake `lanes` service for the lane cases, real `bash -lc` for lane-less exec) and `docker` in CI; on `box` under `RUN_HOSTED_SANDBOX_TESTS=1 BOX_API_KEY=…` (manual workflow), including snapshot → fork → read-back, stop → resume persistence, private host URL, and the C24 log assertion.
+- [x] `packages/sandbox/tests/box.test.ts` (recorded HTTP fixtures with secrets stripped): `noEnv:true` on every create/fork body; per-box env keys ⊆ the §7 per-runtime list; missing `RUNTIME_TOKEN` in env throws before any request; `stop` never sends `force`; both 429 codes → `SandboxStartLimit`; create/fork replay (three calls, same `idempotencyKey`) → one request (Upstash `SET NX` memory mode) + `Idempotency-Key` header present; after `resume()` the adapter re-reads every hosted port and the new token never appears in the log buffer.
+- [x] `packages/runtime/tests/redact.test.ts` green for every canary class; `packages/sandbox/tests/eve-bridge.test.ts` proves `resolveSandboxBackend` parity for `box`, `docker`, `fake`.
+- [x] `tests/sandbox-selector.test.ts` and `tests/sandbox-contract.test.ts` (0.3.1) green with superset-only edits; `"mystery"` still throws with the full backend list.
 - [ ] `zap-light` snapshot exists on the Box account; `infra/box/verify-template.sh zap-light` passes; `docs/verify-log.md` has verify items 1–3, 9 (`@asciidev/eve-box` fork/snapshot support — decides whether the bridge wraps the SDK directly), and 13–15 (deletion/webhooks, idempotency header + 429 codes, hosted-route API) answered with evidence.
 - [ ] `zap-agentd` lane run: `{ lane:"ffmpeg", cmd:["ffprobe","-v","error","-show_format","in.mp4"] }` succeeds under `systemd-run` on Box and records `isolation:"process"`; a disallowed binary returns exit 126 without executing.
-- [ ] `doctor --json` lists `box` first-party with the capability row above; `airv2 lib/box` method names map 1:1 (table in `docs/providers/box.md`).
+- [x] `doctor --json` lists `box` first-party with the capability row above; `airv2 lib/box` method names map 1:1 (table in `docs/providers/box.md`).
 
 ### Z3 — CLI
 
@@ -1058,11 +1058,11 @@ Tasks
 
 Acceptance
 
-- [ ] `tests/cli-acceptance.test.ts` extended (superset): init → validate → new → run (plan) → status → `compose --dry-run --json` → `doctor --json` (exit 0, `payer:"missing"`) → `pay status --json` (`missing`) in a clean project with no network; `packages/cli/tests/disposal.test.ts` green.
-- [ ] `packages/cli/tests/compose.test.ts`: `Runtime.md` and `zap.config.ts` produce identical trees; invalid weight/provider rejected with structured errors; `--dry-run` never calls `acquire` (spy).
-- [ ] `packages/cli/tests/live-refused.test.ts` (uses A's `testing.ts` fake payer, no dependency on H): `zap run <Zap.md> --live` with the fake payer in `missing` mode → exit 1, JSON `code:"PAYER_MISSING"`; with the fake payer in `byok` mode → passes the gate (provider call mocked); once H merges the same test runs against the real `pay.byok` with `FAL_KEY` set.
-- [ ] `npx @wzrdtech/zap compose --help` output is stable and committed as a fixture; `zap help` lists new commands without removing old ones.
-- [ ] `npm run docs:sync && npm test` — `docs-sync` green.
+- [x] `tests/cli-acceptance.test.ts` extended (superset): init → validate → new → run (plan) → status → `compose --dry-run --json` → `doctor --json` (exit 0, `payer:"missing"`) → `pay status --json` (`missing`) in a clean project with no network; `packages/cli/tests/disposal.test.ts` green.
+- [x] `packages/cli/tests/compose.test.ts`: `Runtime.md` and `zap.config.ts` produce identical trees; invalid weight/provider rejected with structured errors; `--dry-run` never calls `acquire` (spy).
+- [x] `packages/cli/tests/live-refused.test.ts` (uses A's `testing.ts` fake payer, no dependency on H): `zap run <Zap.md> --live` with the fake payer in `missing` mode → exit 1, JSON `code:"PAYER_MISSING"`; with the fake payer in `byok` mode → passes the gate (provider call mocked); once H merges the same test runs against the real `pay.byok` with `FAL_KEY` set.
+- [x] `npx @wzrdtech/zap compose --help` output is stable and committed as a fixture; `zap help` lists new commands without removing old ones.
+- [x] `npm run docs:sync && npm test` — `docs-sync` green.
 
 ### Z4 — Namespace, self-host zap-VM, host environments
 
@@ -1077,10 +1077,10 @@ Tasks
 Acceptance
 
 - [ ] Conformance suite green on `selfhost` (against a real KVM VPS, manual workflow) and on `namespace` Linux (manual) with `kvm:true`; `packages/runtime/tests/lanes.test.ts` (against the VPS, manual) records `isolation:"microvm"` for the ffmpeg lane and `"hyperlight-wasm"` for a WASM `hello` lane.
-- [ ] `packages/sandbox/tests/namespace.test.ts` (recorded): per-instance env asserts `TENANT_ID`/`RUNTIME_ID`/`RUNTIME_TOKEN`; bridge requests carry both `x-nsc-ingress-auth` and `X-Zap-Bridge-Token`; `IssueIngressAccessToken` goes to `NAMESPACE_IAM_API`; RPCs not yet confirmed by verify item 5 are feature-flagged and reported in `doctor` as `unverified`.
+- [x] `packages/sandbox/tests/namespace.test.ts` (recorded): per-instance env asserts `TENANT_ID`/`RUNTIME_ID`/`RUNTIME_TOKEN`; bridge requests carry both `x-nsc-ingress-auth` and `X-Zap-Bridge-Token`; `IssueIngressAccessToken` goes to `NAMESPACE_IAM_API`; RPCs not yet confirmed by verify item 5 are feature-flagged and reported in `doctor` as `unverified`.
 - [ ] A dry-run ffmpeg lane request submitted directly to `zap-agentd` on the VPS (`POST /v1/lane {dryRun:true}`) returns the argv + estimate without executing; a live one executes under `msb` and stops the microVM (no `zap runtime up` dependency here — that end-to-end lands in Z6).
 - [ ] `env-omarchy` applied over `zap-light` boots the headless Hyprland unit and its `doctor.sh` passes (manual); `env-macos` bootstrap reaches `bridge /v1/health ready:true` (manual, Namespace early access — marked `comingSoon` in `doctor` if quota is absent, never silently skipped). Their use over `zap-heavy-*` is verified in Z10.
-- [ ] Verify items 5–7 answered with evidence; `docs/providers/hyperlight.md` states plainly what Hyperlight does and does not run.
+- [x] Verify items 5–7 answered with evidence; `docs/providers/hyperlight.md` states plainly what Hyperlight does and does not run.
 
 ### Z5 — Memory
 
@@ -1094,11 +1094,11 @@ Tasks
 
 Acceptance
 
-- [ ] `packages/memory/tests/contract.test.ts` green on `fake`; opt-in on `openviking` (docker-compose service in `packages/memory/tests/docker/`), `mem0`, `zep` with keys.
-- [ ] `dispose.test.ts`: `wipeSession` removes session-scoped items and keeps durable tenant memory; `export` streams every item (I6).
-- [ ] OpenViking is bound to `127.0.0.1:1933` only (test greps `ov.conf` and asserts no `0.0.0.0`); memory bytes never appear in control-plane logs (`redact` test with a canary string).
-- [ ] `memory.openviking` is default-on in the `heavy` profile and absent from `light` unless `Runtime.md` asks; Mem0/Zep refuse to mount without `consent: true`; a `MemoryService` instantiated in `packages/cloud` throws `MEMORY_CONTENT_OFF_VM` for content methods.
-- [ ] The MCP-registration helper produces a correct config fragment for every harness `mcpConfig` format (unit test with fixtures per format); the in-template check `mcp-openviking` is ticked in Z10 when the templates exist.
+- [x] `packages/memory/tests/contract.test.ts` green on `fake`; opt-in on `openviking` (docker-compose service in `packages/memory/tests/docker/`), `mem0`, `zep` with keys.
+- [x] `dispose.test.ts`: `wipeSession` removes session-scoped items and keeps durable tenant memory; `export` streams every item (I6).
+- [x] OpenViking is bound to `127.0.0.1:1933` only (test greps `ov.conf` and asserts no `0.0.0.0`); memory bytes never appear in control-plane logs (`redact` test with a canary string).
+- [x] `memory.openviking` is default-on in the `heavy` profile and absent from `light` unless `Runtime.md` asks; Mem0/Zep refuse to mount without `consent: true`; a `MemoryService` instantiated in `packages/cloud` throws `MEMORY_CONTENT_OFF_VM` for content methods.
+- [x] The MCP-registration helper produces a correct config fragment for every harness `mcpConfig` format (unit test with fixtures per format); the in-template check `mcp-openviking` is ticked in Z10 when the templates exist.
 
 ### Z6 — Gateway, media FS, ffmpeg presets (`zap-med`)
 
@@ -1114,12 +1114,12 @@ Tasks
 
 Acceptance
 
-- [ ] `packages/runtime/tests/gateway-dry-run.test.ts`: plan-only never calls a provider (fetch spy = 0 calls across every route/provider); `quote()` totals equal the 0.3.1 `planZapRun` estimate for the golden recipes (bit-for-bit).
-- [ ] `packages/runtime/tests/router.test.ts`: deterministic router preserved — same inputs → same provider/model as `tests/provider-router.test.ts` fixtures; `PRICE_UNKNOWN` thrown in live, `usd:0`+warning in plan.
-- [ ] `packages/runtime/tests/mediafs.test.ts`: content-addressed (same bytes → same path, `put` idempotent); sidecar JSON schema snapshot; `list` filters; `link` hardlinks into `/zap/fs`.
-- [ ] `packages/runtime/tests/ffmpeg-presets.test.ts`: every preset dry-runs to a stable argv fixture; `estimateCpuSeconds` monotonic in duration; execution path only via the lane with `isolation` recorded.
+- [x] `packages/runtime/tests/gateway-dry-run.test.ts`: plan-only never calls a provider (fetch spy = 0 calls across every route/provider); `quote()` totals equal the 0.3.1 `planZapRun` estimate for the golden recipes (bit-for-bit).
+- [x] `packages/runtime/tests/router.test.ts`: deterministic router preserved — same inputs → same provider/model as `tests/provider-router.test.ts` fixtures; `PRICE_UNKNOWN` thrown in live, `usd:0`+warning in plan.
+- [x] `packages/runtime/tests/mediafs.test.ts`: content-addressed (same bytes → same path, `put` idempotent); sidecar JSON schema snapshot; `list` filters; `link` hardlinks into `/zap/fs`.
+- [x] `packages/runtime/tests/ffmpeg-presets.test.ts`: every preset dry-runs to a stable argv fixture; `estimateCpuSeconds` monotonic in duration; execution path only via the lane with `isolation` recorded.
 - [ ] `zap-med` snapshot built + verified; `zap-med-interpreter` and `zap-med-fx` overlays pass `doctor.sh` (`interpreter --version`, `fx doctor`, MCP config contains OpenViking when memory is enabled).
-- [ ] `packages/runtime/tests/harness-zap.test.ts` — (1) executor, in-process with fakes: `executeStep(ctx, caps, opts)` with a recorded LLM fixture, `fakeSandboxService`, and `pay.delegated` pinned from a test `{ live, payer }`: payer `byok`, `live:false` → the plan is returned with LLM token usage reported and the ffmpeg lane **quoted not executed** (`tool.planned` emitted, `usage.lanesExecuted === 0`); payer `missing` → `PAYER_MISSING` before any model call in **both** modes; payer `byok`, `live:true` → the lane executes (fake sandbox); a `readOnly` tool executes in both modes; an MCP tool from `opts.mcp` is listed and called; (2) route, `agentd/runs.ts` mounted on a test agentd (`testing.ts` `fakeAgentd()`): `POST /v1/runs` streams `run.started → … → run.completed` with the same fixture; (3) driver: `createRuntime({ weight: "med", plugins: [fakeSandboxService, fakePayService({ mode: "byok" }), harnessZapDriver()] })` + `RunSession.run({ prompt })` reserves through the fake meter, reaches the test agentd's `/v1/runs` (mounting `harnessZapExecutor()`) over the fake handle, relays the events unchanged and settles from `run.completed.usage`. Recorded as `packages/runtime/tests/fixtures/med-plan.jsonl` for J's eval. The CLI-driven form (`zap runtime up --from Runtime.md` → `zap runtime exec <id> --prompt …`) is ticked after C merges.
+- [x] `packages/runtime/tests/harness-zap.test.ts` — (1) executor, in-process with fakes: `executeStep(ctx, caps, opts)` with a recorded LLM fixture, `fakeSandboxService`, and `pay.delegated` pinned from a test `{ live, payer }`: payer `byok`, `live:false` → the plan is returned with LLM token usage reported and the ffmpeg lane **quoted not executed** (`tool.planned` emitted, `usage.lanesExecuted === 0`); payer `missing` → `PAYER_MISSING` before any model call in **both** modes; payer `byok`, `live:true` → the lane executes (fake sandbox); a `readOnly` tool executes in both modes; an MCP tool from `opts.mcp` is listed and called; (2) route, `agentd/runs.ts` mounted on a test agentd (`testing.ts` `fakeAgentd()`): `POST /v1/runs` streams `run.started → … → run.completed` with the same fixture; (3) driver: `createRuntime({ weight: "med", plugins: [fakeSandboxService, fakePayService({ mode: "byok" }), harnessZapDriver()] })` + `RunSession.run({ prompt })` reserves through the fake meter, reaches the test agentd's `/v1/runs` (mounting `harnessZapExecutor()`) over the fake handle, relays the events unchanged and settles from `run.completed.usage`. Recorded as `packages/runtime/tests/fixtures/med-plan.jsonl` for J's eval. The CLI-driven form (`zap runtime up --from Runtime.md` → `zap runtime exec <id> --prompt …`) is ticked after C merges.
 
 ### Z7 — Remaining first-party sandboxes, GPU plugins, catalog stubs
 
@@ -1133,10 +1133,10 @@ Tasks
 
 Acceptance
 
-- [ ] Each first-party adapter passes `contract.test.ts` (fake-backed unit variant in CI; live variant opt-in with its key, skipping individually when absent).
-- [ ] `doctor --json` lists every adapter with `tier: first-party | catalog`, `verified`, and the capability row; stubs are visibly `catalog-stub`.
-- [ ] `packages/runtime/tests/lanes-gpu.test.ts`: a `Runtime.md` with `lanes: [gpu:L40S]` on the `heavy` profile routes exactly one lane to `modal` (spy) and everything else to the CPU sandbox; without the lane declaration `modal` never mounts.
-- [ ] `scripts/generate-capability-matrix.mjs --check` is part of `npm test` (drift fails).
+- [x] Each first-party adapter passes `contract.test.ts` (fake-backed unit variant in CI; live variant opt-in with its key, skipping individually when absent).
+- [x] `doctor --json` lists every adapter with `tier: first-party | catalog`, `verified`, and the capability row; stubs are visibly `catalog-stub`.
+- [x] `packages/runtime/tests/lanes-gpu.test.ts`: a `Runtime.md` with `lanes: [gpu:L40S]` on the `heavy` profile routes exactly one lane to `modal` (spy) and everything else to the CPU sandbox; without the lane declaration `modal` never mounts.
+- [x] `scripts/generate-capability-matrix.mjs --check` is part of `npm test` (drift fails).
 
 ### Z8 — MCP, skills, agent-plugin, API store
 
@@ -1150,11 +1150,11 @@ Tasks
 
 Acceptance
 
-- [ ] `tests/mcp-server.test.ts` (superset): every tool in `ZAP_MCP_TOOLS` is registered, has annotations (`readOnlyHint` for plan/quote/list, `destructiveHint` for `live:true`), and `zap_keys_list` still masks; a `zap_runtime_exec` with `live:true` and the CLI's payer in `missing` mode (A's `testing.ts` fake via `ZAP_TEST_PAYER=missing`) returns `isError:true` with `PAYER_MISSING`.
-- [ ] `packages/mcp/tests/http.test.ts`: HTTP transport refuses non-loopback binds without `ZAP_MCP_TOKEN`; stdio unchanged.
-- [ ] `tests/zap-skills.test.ts` + `skills check`: manifest hashes match; every harness template's `skills/*/SKILL.md` validates against the contract.
-- [ ] The API-store plugins produce correct MCP config fragments for every harness `mcpConfig` format (unit fixtures) and `apistore.open-connector`'s unit binds loopback only (config test); the in-runtime `doctor.sh` checks (`mcp-openviking`, `mcp-context7`, `mcp-open-connector`) are ticked in Z10; the catalog page lists every brief API with its `via`.
-- [ ] `docs/agent-plugin.md` snippets are executed by `tests/agent-plugin-snippets.test.ts` (JSON validity + `npx @wzrdtech/zap mcp` resolvable).
+- [x] `tests/mcp-server.test.ts` (superset): every tool in `ZAP_MCP_TOOLS` is registered, has annotations (`readOnlyHint` for plan/quote/list, `destructiveHint` for `live:true`), and `zap_keys_list` still masks; a `zap_runtime_exec` with `live:true` and the CLI's payer in `missing` mode (A's `testing.ts` fake via `ZAP_TEST_PAYER=missing`) returns `isError:true` with `PAYER_MISSING`.
+- [x] `packages/mcp/tests/http.test.ts`: HTTP transport refuses non-loopback binds without `ZAP_MCP_TOKEN`; stdio unchanged.
+- [x] `tests/zap-skills.test.ts` + `skills check`: manifest hashes match; every harness template's `skills/*/SKILL.md` validates against the contract.
+- [x] The API-store plugins produce correct MCP config fragments for every harness `mcpConfig` format (unit fixtures) and `apistore.open-connector`'s unit binds loopback only (config test); the in-runtime `doctor.sh` checks (`mcp-openviking`, `mcp-context7`, `mcp-open-connector`) are ticked in Z10; the catalog page lists every brief API with its `via`.
+- [x] `docs/agent-plugin.md` snippets are executed by `tests/agent-plugin-snippets.test.ts` (JSON validity + `npx @wzrdtech/zap mcp` resolvable).
 
 ### Z9 — Auth, pay, meter, cloud control API
 
@@ -1171,12 +1171,12 @@ Tasks
 
 Acceptance
 
-- [ ] `packages/runtime/tests/pay-fail-closed.test.ts` (caller-side gate; the harness driver is a stub that records whether it was called): `--live` with `status:"missing"` → `PAYER_MISSING`; a prompt with `status:"missing"` → `PAYER_MISSING` **before the driver is called**; a prompt with a payer and no `--live` reaches the driver with `live:false` and, on the stub's `run.completed { usage }`, `meter.settle` records the token lines (the in-VM half — zero side-effecting tools executed — is E's `harness-zap.test.ts` (1) and K's `plan-only.test.ts`); BYOK keys never appear in logs (canary scan of every log line); device-auth and session keys are stored mode 0600 and never printed; the client wrapper refuses a payment above `maxValue`.
-- [ ] `packages/cloud/tests/gate.test.ts` (fake facilitator injected, mppx local secret): (a) no credential → 402 with **both** `PAYMENT-REQUIRED` (x402 v2) and `WWW-Authenticate: Payment` (MPP); (b) valid x402 v2 `PAYMENT-SIGNATURE` → verify → settle → receipt → 200 with `PAYMENT-RESPONSE`; (c) x402 v1 `X-PAYMENT` → 402 with an upgrade hint by default, and → settle via the shim when `ZAP_X402_V1_SHIM=1`; (d) valid MPP `Authorization: Payment` → `Payment-Receipt`; (e) replayed nonce/challenge → 402 `already redeemed`, one receipt row (Upstash `SET NX`); (f) underpayment → 402; (g) facilitator error → 402, **no** meter row (C25); (h) `payTo` always equals `ZAP_TREASURY` or the tenant's verified wallet — never derived from request data (C8); (i) gate scope: `POST /v1/runtimes/{id}/exec` with `prompt` → 402 in both modes, with `command` → no 402; `POST /v1/sessions/{id}/turns` (a stub route mounted behind the same middleware) → 402; the reservation row is created only after the receipt (§4.10 order).
-- [ ] `packages/cloud/tests/gateway-proxy.test.ts`: the LLM/media proxy rejects a missing/foreign `RUNTIME_TOKEN`, streams SSE, meters tokens against the run reservation, never returns a provider key header, and a managed runtime's env (recorded fork body) contains no provider key.
-- [ ] `packages/runtime/tests/meter.test.ts`: reserve/settle atomicity (Upstash memory mode), daily cap, `PRICE_UNKNOWN` fatal in live, sandbox-seconds computed from `ExecResult.usage`/sandbox uptime × size multiplier, idle seconds billed with `runId: null`, ledger lines carry `payer` and `receiptId`, `balances` adjust the next quote.
-- [ ] `packages/cloud/tests/sweep.test.ts`: `stop_after` sweeper stops only `ready|idle` runtimes past deadline, never `running`, never with `force`, and backs off on `SandboxStartLimit`.
-- [ ] `packages/cloud/tests/stranger.test.ts` (§12.7): a second principal cannot list, exec, snapshot, pay for, or read memory status of another tenant's runtime; `packages/cloud/tests/ratelimit.test.ts` and `packages/cloud/tests/ops.test.ts` (counters reconcile with the ledger tables) green; `packages/cloud/tests/webhook.test.ts` added only when verify item 13 confirms the contract.
+- [x] `packages/runtime/tests/pay-fail-closed.test.ts` (caller-side gate; the harness driver is a stub that records whether it was called): `--live` with `status:"missing"` → `PAYER_MISSING`; a prompt with `status:"missing"` → `PAYER_MISSING` **before the driver is called**; a prompt with a payer and no `--live` reaches the driver with `live:false` and, on the stub's `run.completed { usage }`, `meter.settle` records the token lines (the in-VM half — zero side-effecting tools executed — is E's `harness-zap.test.ts` (1) and K's `plan-only.test.ts`); BYOK keys never appear in logs (canary scan of every log line); device-auth and session keys are stored mode 0600 and never printed; the client wrapper refuses a payment above `maxValue`.
+- [x] `packages/cloud/tests/gate.test.ts` (fake facilitator injected, mppx local secret): (a) no credential → 402 with **both** `PAYMENT-REQUIRED` (x402 v2) and `WWW-Authenticate: Payment` (MPP); (b) valid x402 v2 `PAYMENT-SIGNATURE` → verify → settle → receipt → 200 with `PAYMENT-RESPONSE`; (c) x402 v1 `X-PAYMENT` → 402 with an upgrade hint by default, and → settle via the shim when `ZAP_X402_V1_SHIM=1`; (d) valid MPP `Authorization: Payment` → `Payment-Receipt`; (e) replayed nonce/challenge → 402 `already redeemed`, one receipt row (Upstash `SET NX`); (f) underpayment → 402; (g) facilitator error → 402, **no** meter row (C25); (h) `payTo` always equals `ZAP_TREASURY` or the tenant's verified wallet — never derived from request data (C8); (i) gate scope: `POST /v1/runtimes/{id}/exec` with `prompt` → 402 in both modes, with `command` → no 402; `POST /v1/sessions/{id}/turns` (a stub route mounted behind the same middleware) → 402; the reservation row is created only after the receipt (§4.10 order).
+- [x] `packages/cloud/tests/gateway-proxy.test.ts`: the LLM/media proxy rejects a missing/foreign `RUNTIME_TOKEN`, streams SSE, meters tokens against the run reservation, never returns a provider key header, and a managed runtime's env (recorded fork body) contains no provider key.
+- [x] `packages/runtime/tests/meter.test.ts`: reserve/settle atomicity (Upstash memory mode), daily cap, `PRICE_UNKNOWN` fatal in live, sandbox-seconds computed from `ExecResult.usage`/sandbox uptime × size multiplier, idle seconds billed with `runId: null`, ledger lines carry `payer` and `receiptId`, `balances` adjust the next quote.
+- [x] `packages/cloud/tests/sweep.test.ts`: `stop_after` sweeper stops only `ready|idle` runtimes past deadline, never `running`, never with `force`, and backs off on `SandboxStartLimit`.
+- [x] `packages/cloud/tests/stranger.test.ts` (§12.7): a second principal cannot list, exec, snapshot, pay for, or read memory status of another tenant's runtime; `packages/cloud/tests/ratelimit.test.ts` and `packages/cloud/tests/ops.test.ts` (counters reconcile with the ledger tables) green; `packages/cloud/tests/webhook.test.ts` added only when verify item 13 confirms the contract.
 - [ ] Live acceptance (manual, Base Sepolia `eip155:84532` + `https://x402.org/facilitator`, then Base mainnet with Thirdweb): a scripted client using a CLI session key pays a `$0.01` gated `POST /v1/runtimes/{id}/exec`, the receipt row has the on-chain tx, and the treasury address receives it; `doctor --json` reports `payer: byok | managed | missing`; managed path meters sandbox + gateway + gpu + api + browser units in one ledger; Studio panel pays with the browser wallet.
 - [ ] `packages/cloud` passes the same adapter-parametrized `packages/cloud/tests/*` on the Vercel adapter (deployed to a preview) and the Cloudflare adapter (`wrangler dev`); `ZAP_CLOUD_ADAPTER=vercel` is the shipped default.
 
@@ -1200,9 +1200,9 @@ Tasks
 Acceptance
 
 - [ ] Every default-on harness has `bake.sh`, `doctor.sh`, a manifest with pins, and passes `zap harness doctor` on a fresh `noEnv` box created `from` the snapshot (manual workflow, one job per template); `doctor.sh` includes the Z5/Z8 in-runtime checks (`mcp-openviking`, `mcp-context7`, `mcp-open-connector`, `open-connector-loopback`) and they PASS.
-- [ ] `packages/runtime/tests/harness-manifests.test.ts`: every manifest's `run` matches the §5.6 table; `http-runs | openai-compat | ws-jsonrpc` harnesses declare exactly one `api` port (`zap` declares zap-agentd's 8722), `cli-exec | rpc-jsonl` harnesses declare none; `hostPrivate:true` for every hosted port; `disabledInbound` non-empty except single-inbound-by-construction harnesses; `managedGateway` present unless `inProcess` or `pullOnly`; `pins` non-empty after bake.
+- [x] `packages/runtime/tests/harness-manifests.test.ts`: every manifest's `run` matches the §5.6 table; `http-runs | openai-compat | ws-jsonrpc` harnesses declare exactly one `api` port (`zap` declares zap-agentd's 8722), `cli-exec | rpc-jsonl` harnesses declare none; `hostPrivate:true` for every hosted port; `disabledInbound` non-empty except single-inbound-by-construction harnesses; `managedGateway` present unless `inProcess` or `pullOnly`; `pins` non-empty after bake.
 - [ ] `zap-heavy-hermes` obeys airv2 invariants: one box, `noEnv`, filesystem memory, only `api_server` enabled (`GET /api/messaging/platforms` shows every other channel disabled), `hermes-host.service` re-registers routes after `stop → resume` and the adapter learns the rotated token (checked by `doctor.sh` + `box.test.ts`), and the named snapshot contains no provider key (`secret-sweep.sh` zero hits).
-- [ ] `packages/runtime/tests/harness-events.test.ts`: `zap runtime exec --prompt "list /zap/fs"` produces the same `RunEvent` sequence shape on hermes, openclaw, opencode, deepseek, omg (golden JSONL fixtures per adapter, redacted); in managed mode the recorded fork body has no provider key and the harness's base URL points at the gateway proxy.
+- [x] `packages/runtime/tests/harness-events.test.ts`: `zap runtime exec --prompt "list /zap/fs"` produces the same `RunEvent` sequence shape on hermes, openclaw, opencode, deepseek, omg (golden JSONL fixtures per adapter, redacted); in managed mode the recorded fork body has no provider key and the harness's base URL points at the gateway proxy.
 - [ ] `env-omarchy` over `zap-heavy-opencode` and `env-macos` (Namespace) pass their harness `doctor.sh` (manual).
 - [ ] `zap-heavy-grok` doctor output states the xAI-routed status; `zap-heavy-devin` connects as an Outpost worker and serves one test session (manual, `DEVIN_OUTPOSTS_TOKEN`).
 - [ ] Named snapshot count on the Box account ≤ 6 after Z10 (`box snapshots --json`), leaving 4 free (C22).
@@ -1222,10 +1222,10 @@ Tasks
 Acceptance
 
 - [ ] `npm run evals` is CI-safe: every runtime eval passes with zero network; `EVALS_LIVE=1 npm run evals:live` passes on Box (manual) with `starts == 1`.
-- [ ] `public/llms.txt` follows the Appendix C template and lists CLI, agents as code, kernel, sandbox contract, templates, providers, pay; `tests/llms-txt.test.ts` asserts every template, provider and agent page is linked; `tests/no-platform-names.test.ts` green over the finished `docs/**`, `public/llms.txt`, `README.md`, `CHANGELOG.md`, package descriptions and `--json` fixtures.
-- [ ] Secret sweep zero hits on every template dir and every published snapshot (evidence in `docs/verify-log.md`).
-- [ ] Red-team suite green; Z9 rate-limit and stranger tests still green; log scrubber canaries never leak in any package.
-- [ ] `npm run typecheck && npm test && npm run cli -- doctor --json && npm run evals` green in CI; `docs:validate` green.
+- [x] `public/llms.txt` follows the Appendix C template and lists CLI, agents as code, kernel, sandbox contract, templates, providers, pay; `tests/llms-txt.test.ts` asserts every template, provider and agent page is linked; `tests/no-platform-names.test.ts` green over the finished `docs/**`, `public/llms.txt`, `README.md`, `CHANGELOG.md`, package descriptions and `--json` fixtures.
+- [x] Secret sweep zero hits on every template dir and every published snapshot (evidence in `docs/verify-log.md`).
+- [x] Red-team suite green; Z9 rate-limit and stranger tests still green; log scrubber canaries never leak in any package.
+- [x] `npm run typecheck && npm test && npm run cli -- doctor --json && npm run evals` green in CI; `docs:validate` green.
 - [ ] `goal.md` checkboxes for Z0–Z12 all ticked with evidence links; `@wzrdtech/zap@5.0.0` published; `npx @wzrdtech/zap@5.0.0 compose --weight heavy --sandbox box --dry-run --json` and `npx @wzrdtech/zap@5.0.0 agent render --agent transcode --input "transcode a.mp4" --json` work in a clean `zap init` directory.
 
 ### Z12 — Agents as code (`@wzrdtech/zap-agent`, sessions, deploys) — session K
