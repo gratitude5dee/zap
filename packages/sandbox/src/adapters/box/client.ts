@@ -192,13 +192,14 @@ export function createBoxClient(options: BoxClientOptions): BoxClient {
   async function boxFetch<T>(
     path: string,
     schema: z.ZodType<T>,
-    init?: RequestInit & { idempotencyKey?: string },
+    init?: RequestInit & { idempotencyKey?: string; confirmDelete?: string },
   ): Promise<T> {
     const headers: Record<string, string> = {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     };
     if (init?.idempotencyKey) headers["Idempotency-Key"] = init.idempotencyKey;
+    if (init?.confirmDelete) headers["X-Ascii-Confirm-Delete"] = init.confirmDelete;
     const response = await fetchFn(`${base}${path}`, { ...init, headers });
     if (response.status === 429) {
       const body = await response.text();
@@ -280,7 +281,8 @@ export function createBoxClient(options: BoxClientOptions): BoxClient {
       return envelope.box;
     },
     async remove(boxId) {
-      await boxFetch(`/boxes/${boxId}`, z.unknown(), { method: "DELETE" });
+      // delete requires echoing the target id in X-Ascii-Confirm-Delete (verify item 13)
+      await boxFetch(`/boxes/${boxId}`, z.unknown(), { method: "DELETE", confirmDelete: boxId });
     },
     async get(boxId) {
       const envelope = await boxFetch(`/boxes/${boxId}`, BoxEnvelopeSchema);
