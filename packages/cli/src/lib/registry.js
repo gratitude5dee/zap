@@ -9,7 +9,7 @@
  *
  * ```js
  * // @ts-check
- * /** @type {import("../../lib/registry.js").CliCommand} *​/
+ * // typed as CliCommand from ../../lib/registry.js
  * export const command = {
  *   name: "pay",
  *   summary: "Payer status and managed-payer login",
