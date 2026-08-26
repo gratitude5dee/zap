@@ -1,7 +1,7 @@
 # Zap
 
 Zap v5 is a composable CPU agent runtime: compose a runtime (light | med | heavy)
-on a Box VM, write agents as code, run them plan-only by default, and pay with
+on an isolated Zap sandbox VM, write agents as code, run them plan-only by default, and pay with
 your own keys (BYOK) or per request (managed wallet).
 
 - npm: https://www.npmjs.com/package/@wzrdtech/zap
@@ -13,7 +13,7 @@ your own keys (BYOK) or per request (managed wallet).
 - **Agents compose runtime plugins.** A runtime is a plugin graph declared in
   `Runtime.md`; `zap compose` resolves the graph and boots it on a sandbox.
 - **CPU work runs in tenant sandboxes.** Every command goes through
-  `sandbox.exec` on an isolated Box VM (`noEnv: true`); Namespace, self-host,
+  `sandbox.exec` on an isolated Zap sandbox VM (`noEnv: true`); Namespace, self-host,
   microsandbox, E2B, Daytona, Cloudflare, Modal (GPU lane), and Docker adapters
   share one contract.
 - **Plan-only is the default.** Side-effecting tools emit `tool.planned` with
@@ -85,14 +85,14 @@ npm run evals
 ```
 
 `npm run evals` is CI-safe: deterministic contracts run, live cases visibly
-skip. Live Box/provider evals are opt-in via `npm run evals:live`
+skip. Live sandbox/provider evals are opt-in via `npm run evals:live`
 (`EVALS_LIVE=1`); they spend real credits and require org-provisioned
 credentials.
 
 ## Repository layout
 
 - `packages/kernel` — plugin lifecycle, contexts, effects, services, events
-- `packages/sandbox` — sandbox provider contract and adapters (Box default)
+- `packages/sandbox` — sandbox provider contract and adapters (Zap sandbox default)
 - `packages/runtime` — agentd, lanes, gateway, harnesses, pay, redaction
 - `packages/agent-code` — agents-as-code build, lint, manifests
 - `packages/cli` — the `zap` CLI (`@wzrdtech/zap`)

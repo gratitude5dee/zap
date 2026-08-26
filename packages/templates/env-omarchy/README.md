@@ -1,6 +1,6 @@
 # env-omarchy
 
-Omarchy (Arch Linux + Hyprland) environment overlay for Box VMs, applied over
+Omarchy (Arch Linux + Hyprland) environment overlay for Zap sandbox VMs, applied over
 a baked `zap-light`/`zap-heavy` template. Status: **coming soon** — the
 environment profile is registered (`packages/runtime/src/environments.ts`) and
 `doctor` reports it `comingSoon` until the overlay is verified end-to-end.
@@ -14,4 +14,4 @@ environment profile is registered (`packages/runtime/src/environments.ts`) and
 - `monitors-headless.lua` — fixed 1920x1080 headless monitor config.
 
 Restart semantics are systemd (`restartCommand()` in environments.ts returns
-`systemctl` for every Box environment).
+`systemctl` for every Zap sandbox environment).

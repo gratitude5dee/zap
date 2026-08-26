@@ -1,6 +1,6 @@
 # @wzrdtech/zap
 
-The `zap` CLI: compose a composable CPU agent runtime (light | med | heavy) on a Box VM, write agents as code, and run them plan-only by default.
+The `zap` CLI: compose a composable CPU agent runtime (light | med | heavy) on an isolated Zap sandbox VM, write agents as code, and run them plan-only by default.
 
 Requires Node 24.x.
 

@@ -1,6 +1,6 @@
 # zap-light
 
-The default Zap sandbox template: a Box VM baked with the light-profile
+The default Zap sandbox template: a Zap sandbox VM baked with the light-profile
 toolchain (Node 24, Bun, Python 3.12, ffmpeg/imagemagick/libvips, Playwright
 Chromium) plus `zap-agentd` on `0.0.0.0:8722` behind bearer auth and a private
 hosted route.
@@ -19,4 +19,4 @@ Overlay: `zap-light-browser` (`BROWSER_OVERLAY=1 bake.sh` installs the pinned
 
 Baking and verification are operator flows: see `infra/box/build-template.sh`
 and `infra/box/verify-template.sh`. Never bake a secret into the template —
-per-box env arrives at create time via the §7 allowlist and `noEnv:true`.
+per-sandbox env arrives at create time via the §7 allowlist and `noEnv:true`.

@@ -8,7 +8,7 @@ npm install @wzrdtech/zap-cloud
 
 Responsibilities:
 
-- **Runtimes:** create/fork/stop tenant runtime VMs (Box by default, `noEnv: true`, idempotent create, no forced stop)
+- **Runtimes:** create/fork/stop tenant runtime VMs (Zap sandbox by default, `noEnv: true`, idempotent create, no forced stop)
 - **Sessions:** a proxy to in-VM sessions; sessions bind to the deployment selected at creation
 - **Pay gate:** live work requires a payer; missing payer fails closed with `PAYER_MISSING`
 - **Meter:** usage metering for managed spend

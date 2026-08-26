@@ -1,6 +1,6 @@
 # @wzrdtech/zap-sandbox
 
-Sandbox provider contract and adapters for CPU-first agent runtimes. Box is the default: one isolated VM per tenant, created with `noEnv: true` and idempotency keys, stopped without `force`.
+Sandbox provider contract and adapters for CPU-first agent runtimes. The Zap sandbox is the default: one isolated VM per tenant, created with `noEnv: true` and idempotency keys, stopped without `force`.
 
 ```bash
 npm install @wzrdtech/zap-sandbox
