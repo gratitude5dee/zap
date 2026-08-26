@@ -180,7 +180,7 @@ export function createZepMemory(options: ZepMemoryOptions): MemoryService {
       }
       const threadMatch = uri.match(/^zep:\/\/thread\/([^/]+)\/(.+)$/);
       if (threadMatch?.[1] !== undefined && threadMatch[2] !== undefined) {
-        if (!threadMatch[1].startsWith(`zap-${scope.tenantId}-`)) return null;
+        if (threadMatch[1] !== threadIdOf(scope)) return null;
         const { data } = await call<{ messages?: Array<{ uuid: string; content: string }> }>(
           `/api/v2/threads/${encodeURIComponent(threadMatch[1])}/messages`,
         );
