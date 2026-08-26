@@ -7,4 +7,4 @@ a labelled stub only.
 - Tier: `catalog`, `verified:false`.
 - `acquire()` throws `CATALOG_STUB` pointing at this page.
 - Manifest: `packages/sandbox/src/adapters/catalog/orgo.ts`.
-- Vendor: <https://www.orgo.ai>
+- Vendor: [https://www.orgo.ai](https://www.orgo.ai)

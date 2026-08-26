@@ -7,4 +7,4 @@ labelled stub only.
 - Tier: `catalog`, `verified:false`.
 - `acquire()` throws `CATALOG_STUB` pointing at this page.
 - Manifest: `packages/sandbox/src/adapters/catalog/tensorlake.ts`.
-- Vendor: <https://www.tensorlake.ai>
+- Vendor: [https://www.tensorlake.ai](https://www.tensorlake.ai)

@@ -8,4 +8,4 @@ Runpod Pods lane adapter is a later spec.
 - `acquire()` throws `CATALOG_STUB` pointing at this page.
 - `doctor` lists the stub row so `doctor --json` shows it as `catalog-stub`.
 - Manifest: `packages/sandbox/src/adapters/catalog/runpod.ts`.
-- Vendor: <https://www.runpod.io>
+- Vendor: [https://www.runpod.io](https://www.runpod.io)

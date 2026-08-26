@@ -7,4 +7,4 @@ only.
 - Tier: `catalog`, `verified:false`.
 - `acquire()` throws `CATALOG_STUB` pointing at this page.
 - Manifest: `packages/sandbox/src/adapters/catalog/freestyle.ts`.
-- Vendor: <https://freestyle.sh>
+- Vendor: [https://freestyle.sh](https://freestyle.sh)
