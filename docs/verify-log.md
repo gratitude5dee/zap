@@ -34,3 +34,12 @@ Provider facts assumed on 2026-08-26 (Z6, pending live verification — no live 
 - xAI: OpenAI-compatible chat completions at `https://api.x.ai/v1` with `XAI_API_KEY`, models `grok-4*` (docs read, not exercised live).
 - Open Interpreter overlay: native installer `https://www.openinterpreter.com/install`, `interpreter app-server --listen ws://127.0.0.1:9000`, MCP servers in `~/.openinterpreter/config.toml` `[mcp_servers]` (per locked brief; binary not installed in CI).
 - fx overlay: installer `https://fx.sh/setup.sh`, config at `~/.fx/settings.json`, MCP at `~/.fx/mcp.json`, driven as `fx ask --json` (per locked brief; binary not installed in CI).
+
+Provider facts assumed on 2026-08-26 (Z7, pending live verification — no live calls were made):
+
+- E2B: `Sandbox.create/connect` and `pause()` back stop/resume/snapshot; default workdir `/home/user`; `getHost(port)` returns a public HTTPS host; SDK pinned as `e2b@2.6.4` in `adapters/e2b/index.ts`. Evidence: E2B SDK docs and the 0.3.1 driver (`packages/sandbox-adapters/src/e2b.ts`); not exercised live.
+- Daytona: `@daytonaio/sdk` (pinned `0.27.0`) sandboxes stop/start with a persistent filesystem, take named snapshots, and expose `getPreviewLink(port)` returning a URL plus access token (token treated as secret, C24); default workdir assumed `/home/daytona`. Evidence: Daytona SDK docs and the 0.3.1 driver (`packages/sandbox-adapters/src/daytona.ts`); not exercised live.
+- Cloudflare Sandbox: `@cloudflare/sandbox` (pinned `0.4.3`) `getSandbox`/`exec`/`exposePort` plus `createBackup`/`restoreBackup` as the snapshot primitive; no stop/resume surface; workdir assumed `/workspace`. Evidence: package README/docs; needs the §3 Cloudflare account for a live check.
+- Modal: GPU lane target only (`purpose:"lane"`); `gpu_second` per-class USD rates in `adapters/modal/pricing.json` seeded from the public pricing page (`verified:false` in the file); SDK pinned as `modal@0.3.14`. Not exercised live.
+- Runpod and Baseten have no sandbox product (verified from vendor product pages) — documented as GPU/inference targets only; catalog stubs `catalog:runpod` / `catalog:baseten`.
+- Blaxel, Freestyle, Orgo, Tensorlake: catalog stubs only; contract mappings unverified (`verified:false` manifests in `adapters/catalog/`).
