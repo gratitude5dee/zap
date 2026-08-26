@@ -1,0 +1,14 @@
+[Unit]
+Description=zap host route registration (private 8722) at boot/resume
+After=network-online.target zap-agentd.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=user
+# Re-runs the in-VM host registration until it sticks; hosted tokens rotate on
+# resume, so this must run on every boot (the adapter re-reads them after).
+ExecStart=/bin/bash -c 'for i in $(seq 1 30); do /home/user/.ascii/host 8722 --private && exit 0; sleep 2; done; exit 1'
+
+[Install]
+WantedBy=multi-user.target

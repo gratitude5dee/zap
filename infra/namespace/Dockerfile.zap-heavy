@@ -1,0 +1,25 @@
+# zap-heavy image for Namespace Linux instances, produced from the SAME
+# packages/templates bake script as the Box snapshot (TARGET=namespace): one
+# bake, two providers, no drift.
+#
+#   docker build -f infra/namespace/Dockerfile.zap-heavy -t <registry>/zap-heavy:<tag> .
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update -y && apt-get install -y sudo curl git jq ca-certificates gnupg systemd \
+  && useradd -m -u 1000 -s /bin/bash user \
+  && printf 'user ALL=(ALL) NOPASSWD: ALL\n' > /etc/sudoers.d/user && chmod 0440 /etc/sudoers.d/user \
+  && mkdir -p /zap/fs /zap/runs /zap/media && chown -R user:user /zap
+
+COPY packages/templates /home/user/templates
+RUN chown -R user:user /home/user/templates
+
+USER user
+WORKDIR /home/user
+ENV HOME=/home/user TARGET=namespace
+RUN bash /home/user/templates/zap-light/bake.sh
+
+# zap-agentd on 0.0.0.0:8722; Namespace ingress authenticates the route and
+# the daemon checks the RUNTIME_TOKEN bearer supplied per-instance at create.
+EXPOSE 8722
+CMD ["zap-agentd", "serve"]
