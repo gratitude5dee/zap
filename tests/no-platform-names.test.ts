@@ -8,7 +8,7 @@ const { deny } = JSON.parse(
 ) as { deny: string[] };
 
 const SCAN_DIRS = ["packages", "agents", "docs"];
-const SCAN_FILES = ["project.ts", "README.md", "CHANGELOG.md"];
+const SCAN_FILES = ["project.ts", "README.md", "CHANGELOG.md", "public/llms.txt"];
 const EXTENSIONS = new Set([".ts", ".tsx", ".js", ".mjs", ".json", ".md"]);
 const SKIP_DIRS = new Set(["node_modules", "dist", ".next", "fixtures"]);
 
@@ -51,6 +51,56 @@ describe("no upstream platform names in shipped sources", () => {
         if (text.includes(name)) offenders.push(`${path.relative(repoRoot, file)} → ${name}`);
       }
     }
+    expect(offenders).toEqual([]);
+  });
+
+  it("every package.json description is clean", () => {
+    const offenders: string[] = [];
+    const packageFiles = [path.join(repoRoot, "package.json")];
+    for (const entry of readdirSync(path.join(repoRoot, "packages"))) {
+      const candidate = path.join(repoRoot, "packages", entry, "package.json");
+      try {
+        statSync(candidate);
+        packageFiles.push(candidate);
+      } catch {
+        // workspace without package.json
+      }
+    }
+    for (const file of packageFiles) {
+      const { description = "" } = JSON.parse(readFileSync(file, "utf8")) as { description?: string };
+      for (const name of deny) {
+        if (description.toLowerCase().includes(name)) offenders.push(`${path.relative(repoRoot, file)} → ${name}`);
+      }
+    }
+    expect(packageFiles.length).toBeGreaterThan(1);
+    expect(offenders).toEqual([]);
+  });
+
+  it("every --json fixture is clean", () => {
+    const offenders: string[] = [];
+    const fixtureFiles: string[] = [];
+    const collect = (dir: string) => {
+      for (const entry of readdirSync(dir)) {
+        if (entry === "node_modules" || entry === "dist" || entry === ".next") continue;
+        const full = path.join(dir, entry);
+        if (statSync(full).isDirectory()) collect(full);
+        else if (
+          full.includes(`${path.sep}fixtures${path.sep}`) &&
+          /\.(json|jsonl)$/.test(entry) &&
+          entry !== "platform-name-denylist.json"
+        )
+          fixtureFiles.push(full);
+      }
+    };
+    collect(path.join(repoRoot, "packages"));
+    collect(path.join(repoRoot, "tests"));
+    for (const file of fixtureFiles) {
+      const text = readFileSync(file, "utf8").toLowerCase();
+      for (const name of deny) {
+        if (text.includes(name)) offenders.push(`${path.relative(repoRoot, file)} → ${name}`);
+      }
+    }
+    expect(fixtureFiles.length).toBeGreaterThan(0);
     expect(offenders).toEqual([]);
   });
 });

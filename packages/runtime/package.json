@@ -1,6 +1,6 @@
 {
   "name": "@wzrdtech/zap-runtime",
-  "version": "5.0.0-alpha.0",
+  "version": "5.0.0",
   "private": false,
   "description": "Zap runtime: compose profiles, lanes, gateway, media FS, harnesses, meter, pay, and the zap-agentd contract daemon.",
   "license": "MIT",
@@ -77,12 +77,12 @@
     }
   },
   "dependencies": {
-    "@wzrdtech/core": "5.0.0-alpha.0",
-    "@wzrdtech/zap-kernel": "5.0.0-alpha.0",
-    "@wzrdtech/zap-sandbox": "5.0.0-alpha.0",
-    "@wzrdtech/zap-memory": "5.0.0-alpha.0",
-    "@wzrdtech/zap-agent": "5.0.0-alpha.0",
-    "@wzrdtech/providers": "5.0.0-alpha.0",
+    "@wzrdtech/core": "5.0.0",
+    "@wzrdtech/zap-kernel": "5.0.0",
+    "@wzrdtech/zap-sandbox": "5.0.0",
+    "@wzrdtech/zap-memory": "5.0.0",
+    "@wzrdtech/zap-agent": "5.0.0",
+    "@wzrdtech/providers": "5.0.0",
     "zod": "4.4.3"
   },
   "engines": {

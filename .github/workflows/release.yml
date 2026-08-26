@@ -28,7 +28,7 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           missing_packages=()
-          for package_name in @wzrdtech/core @wzrdtech/providers @wzrdtech/agent @wzrdtech/zap-mcp @wzrdtech/zap; do
+          for package_name in @wzrdtech/core @wzrdtech/zap-kernel @wzrdtech/zap-sandbox @wzrdtech/zap-memory @wzrdtech/providers @wzrdtech/zap-agent @wzrdtech/zap-runtime @wzrdtech/zap-templates @wzrdtech/zap-cloud @wzrdtech/zap-mcp @wzrdtech/agent @wzrdtech/zap; do
             if ! npm view "$package_name" version >/dev/null 2>&1; then
               missing_packages+=("$package_name")
             fi
@@ -61,11 +61,9 @@ jobs:
       - run: npm run build
       - name: Verify package contents
         run: |
-          npm pack --workspace @wzrdtech/core --dry-run
-          npm pack --workspace @wzrdtech/providers --dry-run
-          npm pack --workspace @wzrdtech/agent --dry-run
-          npm pack --workspace @wzrdtech/zap-mcp --dry-run
-          npm pack --workspace @wzrdtech/zap --dry-run
+          for package_name in @wzrdtech/core @wzrdtech/zap-kernel @wzrdtech/zap-sandbox @wzrdtech/zap-memory @wzrdtech/providers @wzrdtech/zap-agent @wzrdtech/zap-runtime @wzrdtech/zap-templates @wzrdtech/zap-cloud @wzrdtech/zap-mcp @wzrdtech/agent @wzrdtech/zap; do
+            npm pack --workspace "$package_name" --dry-run
+          done
       - name: Publish npm packages
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -89,7 +87,14 @@ jobs:
           }
 
           publish_workspace @wzrdtech/core packages/core
+          publish_workspace @wzrdtech/zap-kernel packages/kernel
+          publish_workspace @wzrdtech/zap-sandbox packages/sandbox
+          publish_workspace @wzrdtech/zap-memory packages/memory
           publish_workspace @wzrdtech/providers packages/providers
-          publish_workspace @wzrdtech/agent packages/agent
+          publish_workspace @wzrdtech/zap-agent packages/agent-code
+          publish_workspace @wzrdtech/zap-runtime packages/runtime
+          publish_workspace @wzrdtech/zap-templates packages/templates
+          publish_workspace @wzrdtech/zap-cloud packages/cloud
           publish_workspace @wzrdtech/zap-mcp packages/mcp
+          publish_workspace @wzrdtech/agent packages/agent
           publish_workspace @wzrdtech/zap packages/cli

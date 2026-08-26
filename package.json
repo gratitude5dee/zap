@@ -1,8 +1,8 @@
 {
   "name": "zap-platform",
-  "version": "0.3.1",
+  "version": "5.0.0",
   "private": true,
-  "description": "Zap: one-click generative content recipes on Eve, Next.js, Convex, Upstash, Supabase, Vertex AI, Bedrock, GMI Cloud, and fal.",
+  "description": "Zap v5 composable CPU agent runtime: compose light/med/heavy runtimes on Box VMs, write agents as code, plan-only by default, BYOK or managed pay.",
   "type": "module",
   "workspaces": [
     "packages/*"

@@ -1,11 +1,30 @@
 // @ts-check
 // Renders public/llms.txt from the goal.md Appendix C template shape.
 // Public surface: names Zap only (C3). Run: node scripts/generate-llms-txt.mjs
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+
+const pages = (dir) =>
+  readdirSync(path.join(repoRoot, "docs", dir))
+    .filter((name) => name.endsWith(".md"))
+    .map((name) => name.replace(/\.md$/, ""))
+    .sort();
+
+const templateLines = pages("templates")
+  .map((slug) => `- /docs/templates/${slug}`)
+  .join("\n");
+const providerLines = pages("providers")
+  .map((slug) => `- /docs/providers/${slug}`)
+  .join("\n");
+const harnessLines = pages("harnesses")
+  .map((slug) => `- /docs/harnesses/${slug}`)
+  .join("\n");
+const agentLines = pages("agents")
+  .map((slug) => `- /docs/agents/${slug}`)
+  .join("\n");
 
 const LLMS_TXT = `# Zap — composable CPU agent runtime
 
@@ -33,7 +52,7 @@ docs: https://zap.wzrd.tech/docs
 
 ## Agents as code
 - /docs/agents — the model, hook table, capabilities, secrets and egress, sessions and deploys
-- /docs/agents/quickstart — zap agent new → zap deploy --watch → zap session
+${agentLines}
 - /docs/reference/agent-api — @wzrdtech/zap-agent exports
 
 ## Runtime
@@ -43,17 +62,14 @@ docs: https://zap.wzrd.tech/docs
 - /docs/mediafs — media file system and ffmpeg presets
 
 ## Templates
-- /docs/templates/zap-light · zap-light-ffmpeg · zap-light-code · zap-light-browser · zap-med · zap-med-genmedia · zap-med-interpreter · zap-med-fx · zap-heavy · zap-heavy-<harness> · env-omarchy · env-macos (one page per template)
+${templateLines}
 
 ## Providers
-- /docs/providers/box · namespace · selfhost · microsandbox · hyperlight · e2b · daytona · cloudflare · modal · docker (sandboxes)
-- /docs/providers/openviking · mem0 · zep (memory)
-- /docs/providers/openrouter · ai-gateway · openai · anthropic · xai · gmi · fal · prodia · runware · replicate · vertex · aws (gateway)
-- /docs/providers/thirdweb · cdp · mpp (pay)
-- /docs/providers/context7 · open-connector · composio (API store)
+${providerLines}
 
 ## Harnesses
-- /docs/harnesses — the catalog of third-party harness templates a heavy runtime can host, with ports, auth and run adapters
+- the catalog of third-party harness templates a heavy runtime can host, with ports, auth and run adapters
+${harnessLines}
 
 ## Pay
 - /docs/pay — BYOK, managed x402 / MPP, quotes, meter, caps · /docs/auth — wallet, Claude Code, Codex login

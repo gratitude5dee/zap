@@ -1,6 +1,6 @@
 {
   "name": "@wzrdtech/core",
-  "version": "5.0.0-alpha.0",
+  "version": "5.0.0",
   "private": false,
   "description": "Core Zap recipe schema, planning, and registry utilities.",
   "license": "MIT",

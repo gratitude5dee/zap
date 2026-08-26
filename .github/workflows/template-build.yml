@@ -1,0 +1,49 @@
+name: Template Build
+
+# Builds (or rebuilds in place) a Box named-snapshot template from
+# packages/templates/<name> and verifies it before it replaces the prod
+# snapshot. Manual only: this spends live Box compute.
+
+on:
+  workflow_dispatch:
+    inputs:
+      template:
+        description: Template name (packages/templates/<name>)
+        required: true
+        type: string
+
+concurrency:
+  group: template-build-${{ inputs.template }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Validate template directory
+        run: |
+          test -d "packages/templates/${{ inputs.template }}" || {
+            echo "no such template: packages/templates/${{ inputs.template }}" >&2
+            exit 1
+          }
+          test -f "packages/templates/${{ inputs.template }}/bake.sh"
+          test -f "packages/templates/${{ inputs.template }}/doctor.sh"
+          test -f "packages/templates/${{ inputs.template }}/template.json"
+      - name: Secret sweep template directory
+        run: infra/box/secret-sweep.sh "packages/templates/${{ inputs.template }}"
+      - name: Build snapshot
+        env:
+          BOX_API_KEY: ${{ secrets.BOX_API_KEY }}
+        run: infra/box/build-template.sh "${{ inputs.template }}"
+      - name: Verify snapshot
+        env:
+          BOX_API_KEY: ${{ secrets.BOX_API_KEY }}
+        run: infra/box/verify-template.sh "${{ inputs.template }}"

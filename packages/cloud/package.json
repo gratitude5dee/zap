@@ -1,6 +1,6 @@
 {
   "name": "@wzrdtech/zap-cloud",
-  "version": "5.0.0-alpha.0",
+  "version": "5.0.0",
   "private": false,
   "description": "Zap cloud control API: runtimes, sessions, pay gate, meter, templates, and the sweeper.",
   "license": "MIT",
@@ -33,9 +33,9 @@
     }
   },
   "dependencies": {
-    "@wzrdtech/core": "5.0.0-alpha.0",
-    "@wzrdtech/zap-kernel": "5.0.0-alpha.0",
-    "@wzrdtech/zap-runtime": "5.0.0-alpha.0",
+    "@wzrdtech/core": "5.0.0",
+    "@wzrdtech/zap-kernel": "5.0.0",
+    "@wzrdtech/zap-runtime": "5.0.0",
     "hono": "^4.12.28"
   },
   "engines": {

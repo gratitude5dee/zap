@@ -24,7 +24,7 @@ docs: https://zap.wzrd.tech/docs
 
 ## Agents as code
 - /docs/agents — the model, hook table, capabilities, secrets and egress, sessions and deploys
-- /docs/agents/quickstart — zap agent new → zap deploy --watch → zap session
+- /docs/agents/quickstart
 - /docs/reference/agent-api — @wzrdtech/zap-agent exports
 
 ## Runtime
@@ -34,17 +34,83 @@ docs: https://zap.wzrd.tech/docs
 - /docs/mediafs — media file system and ffmpeg presets
 
 ## Templates
-- /docs/templates/zap-light · zap-light-ffmpeg · zap-light-code · zap-light-browser · zap-med · zap-med-genmedia · zap-med-interpreter · zap-med-fx · zap-heavy · zap-heavy-<harness> · env-omarchy · env-macos (one page per template)
+- /docs/templates/env-macos
+- /docs/templates/env-omarchy
+- /docs/templates/zap-heavy
+- /docs/templates/zap-heavy-agno
+- /docs/templates/zap-heavy-cursor
+- /docs/templates/zap-heavy-deepseek
+- /docs/templates/zap-heavy-devin
+- /docs/templates/zap-heavy-frontier
+- /docs/templates/zap-heavy-grok
+- /docs/templates/zap-heavy-headlong
+- /docs/templates/zap-heavy-hermes
+- /docs/templates/zap-heavy-kimi
+- /docs/templates/zap-heavy-omg
+- /docs/templates/zap-heavy-openclaw
+- /docs/templates/zap-heavy-opencode
+- /docs/templates/zap-heavy-pi
+- /docs/templates/zap-heavy-prime
+- /docs/templates/zap-light
+- /docs/templates/zap-med
+- /docs/templates/zap-med-fx
+- /docs/templates/zap-med-genmedia
+- /docs/templates/zap-med-interpreter
 
 ## Providers
-- /docs/providers/box · namespace · selfhost · microsandbox · hyperlight · e2b · daytona · cloudflare · modal · docker (sandboxes)
-- /docs/providers/openviking · mem0 · zep (memory)
-- /docs/providers/openrouter · ai-gateway · openai · anthropic · xai · gmi · fal · prodia · runware · replicate · vertex · aws (gateway)
-- /docs/providers/thirdweb · cdp · mpp (pay)
-- /docs/providers/context7 · open-connector · composio (API store)
+- /docs/providers/ai-gateway
+- /docs/providers/anthropic
+- /docs/providers/aws
+- /docs/providers/baseten
+- /docs/providers/blaxel
+- /docs/providers/box
+- /docs/providers/cdp
+- /docs/providers/cloudflare
+- /docs/providers/daytona
+- /docs/providers/e2b
+- /docs/providers/fal
+- /docs/providers/freestyle
+- /docs/providers/gmi
+- /docs/providers/hyperlight
+- /docs/providers/mem0
+- /docs/providers/microsandbox
+- /docs/providers/modal
+- /docs/providers/mpp
+- /docs/providers/namespace
+- /docs/providers/openai
+- /docs/providers/openrouter
+- /docs/providers/openviking
+- /docs/providers/orgo
+- /docs/providers/prodia
+- /docs/providers/replicate
+- /docs/providers/runpod
+- /docs/providers/runware
+- /docs/providers/selfhost
+- /docs/providers/tensorlake
+- /docs/providers/thirdweb
+- /docs/providers/vertex
+- /docs/providers/xai
+- /docs/providers/zep
 
 ## Harnesses
-- /docs/harnesses — the catalog of third-party harness templates a heavy runtime can host, with ports, auth and run adapters
+- the catalog of third-party harness templates a heavy runtime can host, with ports, auth and run adapters
+- /docs/harnesses/agno
+- /docs/harnesses/cursor
+- /docs/harnesses/deepseek
+- /docs/harnesses/devin
+- /docs/harnesses/frontier
+- /docs/harnesses/fx
+- /docs/harnesses/grok
+- /docs/harnesses/headlong
+- /docs/harnesses/hermes
+- /docs/harnesses/interpreter
+- /docs/harnesses/kimi
+- /docs/harnesses/omg
+- /docs/harnesses/openclaw
+- /docs/harnesses/opencode
+- /docs/harnesses/pi
+- /docs/harnesses/prime
+- /docs/harnesses/zap
 
 ## Pay
 - /docs/pay — BYOK, managed x402 / MPP, quotes, meter, caps · /docs/auth — wallet, Claude Code, Codex login
