@@ -191,7 +191,7 @@ export function SettingsClient({ secretTypes }: { readonly secretTypes: readonly
 
   return (
     <div className="grid gap-5 lg:grid-cols-[1fr_420px]">
-      <section className="rounded-md border border-white/10 bg-black/25 p-5">
+      <section className="zap-gradient-card rounded-md p-5">
         <div className="mb-5 flex items-center gap-3">
           <div className="flex size-10 items-center justify-center rounded-md bg-zap-ink text-zap-cyan">
             <WalletCards className="size-5" />
@@ -215,7 +215,8 @@ export function SettingsClient({ secretTypes }: { readonly secretTypes: readonly
           Connect Vault
         </Button>
 
-        <div className="mt-7 border-white/10 border-t pt-5">
+        <div aria-hidden className="zap-hairline mt-7" />
+        <div className="pt-5">
           <h3 className="font-semibold text-white">Wallet proof proxy</h3>
           <p className="mt-1 text-sm text-white/50">Sign a Zap wallet proof, or paste the JSON payload produced by your Thirdweb wallet signature flow.</p>
           <Button className="mt-3 gap-2" disabled={loading} onClick={connectWalletAndSign} variant="outline">
@@ -233,7 +234,8 @@ export function SettingsClient({ secretTypes }: { readonly secretTypes: readonly
           </Button>
         </div>
 
-        <div className="mt-7 border-white/10 border-t pt-5">
+        <div aria-hidden className="zap-hairline mt-7" />
+        <div className="pt-5">
           <h3 className="flex items-center gap-2 font-semibold text-white"><Link2 className="size-4" /> Link a chat channel</h3>
           <p className="mt-1 text-sm text-white/50">
             Generate a one-use code, then send <code>/link CODE</code> to Zap in Slack, Telegram, or iMessage. Codes expire after five minutes.
@@ -251,7 +253,7 @@ export function SettingsClient({ secretTypes }: { readonly secretTypes: readonly
         </div>
       </section>
 
-      <section className="rounded-md border border-white/10 bg-black/25 p-5">
+      <section className="zap-gradient-card rounded-md p-5">
         <div className="mb-5 flex items-center gap-3">
           <div className="flex size-10 items-center justify-center rounded-md bg-zap-amber text-zap-ink">
             <KeyRound className="size-5" />
@@ -285,7 +287,7 @@ export function SettingsClient({ secretTypes }: { readonly secretTypes: readonly
           {secretTypes.map((type) => {
             const secret = stored.get(type);
             return (
-              <div className="flex items-center justify-between gap-3 rounded-md border border-white/10 bg-white/[0.04] px-3 py-2" key={type}>
+              <div className="zap-gradient-card flex items-center justify-between gap-3 rounded-md px-3 py-2" key={type}>
                 <div>
                   <p className="font-medium text-sm text-white">{type}</p>
                   <p className="text-white/45 text-xs">{secret ? `stored ${secret.last4 ?? "****"}` : "not stored"}</p>
@@ -297,7 +299,7 @@ export function SettingsClient({ secretTypes }: { readonly secretTypes: readonly
             );
           })}
         </div>
-        {message ? <p className="mt-4 rounded-md border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white/58">{message}</p> : null}
+        {message ? <p className="zap-gradient-card mt-4 rounded-md px-3 py-2 text-sm text-white/58">{message}</p> : null}
       </section>
     </div>
   );
