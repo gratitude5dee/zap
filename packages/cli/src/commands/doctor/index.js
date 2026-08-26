@@ -21,9 +21,38 @@ export const command = {
     checks.push(check("hyperframes", hasExecutable("npx") && canRun("npx", ["hyperframes", "--version"]), "optional HyperFrames CLI available"));
     if (flags.json) {
       const payer = await resolvePayerStatus();
-      printJson({ checks, payer, version });
+      const sandbox = await listSandboxAdapters();
+      printJson({ checks, payer, sandbox, version });
       return;
     }
     checks.forEach((item) => console.log(`${item.ok ? "ok" : "warn"} ${item.name}: ${item.detail}`));
   },
 };
+
+/** Lists sandbox adapters and catalog stubs for `doctor --json`. */
+async function listSandboxAdapters() {
+  try {
+    const mod = await import("@wzrdtech/zap-sandbox");
+    const adapters = [
+      { id: "box", tier: "first-party", default: true, capabilities: mod.BOX_CAPABILITIES },
+      { id: "namespace", tier: "first-party", capabilities: mod.NAMESPACE_CAPABILITIES },
+      { id: "selfhost", tier: "first-party", capabilities: mod.SELFHOST_CAPABILITIES },
+      { id: "microsandbox", tier: "first-party", capabilities: mod.MICROSANDBOX_CAPABILITIES },
+      { id: "docker", tier: "first-party", capabilities: mod.DOCKER_CAPABILITIES },
+      { id: "e2b", tier: "first-party", capabilities: mod.E2B_CAPABILITIES },
+      { id: "daytona", tier: "first-party", capabilities: mod.DAYTONA_CAPABILITIES },
+      { id: "cloudflare", tier: "first-party", capabilities: mod.CLOUDFLARE_CAPABILITIES },
+      { id: "modal", tier: "first-party", gpu: true, capabilities: mod.MODAL_CAPABILITIES },
+      { id: "local", tier: "first-party", capabilities: mod.LOCAL_CAPABILITIES },
+      { id: "fake", tier: "first-party", capabilities: mod.FAKE_CAPABILITIES },
+    ].filter((entry) => entry.capabilities);
+    const catalog = (mod.CATALOG_MANIFESTS ?? []).map((manifest) => ({
+      id: manifest.id,
+      tier: "catalog-stub",
+      capabilities: mod.STUB_CAPABILITIES,
+    }));
+    return { adapters: [...adapters, ...catalog] };
+  } catch {
+    return { adapters: [], detail: "@wzrdtech/zap-sandbox not installed" };
+  }
+}
