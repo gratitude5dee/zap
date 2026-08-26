@@ -1,5 +1,11 @@
 # Changelog
 
+## 5.0.1 — 2026-08-26
+
+### Changed
+
+- Refreshed package READMEs across all published `@wzrdtech/*` workspaces with v5-accurate examples and docs links (no code changes).
+
 ## 5.0.0 — 2026-08-26
 
 ### Added

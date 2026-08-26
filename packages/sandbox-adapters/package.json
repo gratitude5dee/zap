@@ -7,8 +7,8 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@wzrdtech/zap-kernel": "5.0.0",
-    "@wzrdtech/zap-sandbox": "5.0.0"
+    "@wzrdtech/zap-kernel": "5.0.1",
+    "@wzrdtech/zap-sandbox": "5.0.1"
   },
   "peerDependencies": {
     "eve": "0.22.4"

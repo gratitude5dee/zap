@@ -1,6 +1,6 @@
 {
   "name": "@wzrdtech/zap-agent",
-  "version": "5.0.0",
+  "version": "5.0.1",
   "private": false,
   "description": "Zap agents as code: defineAgent, hooks, tools, connections, and the deterministic render frame.",
   "license": "MIT",
@@ -34,10 +34,10 @@
     }
   },
   "dependencies": {
-    "@wzrdtech/core": "5.0.0",
-    "@wzrdtech/zap-kernel": "5.0.0",
-    "@wzrdtech/zap-sandbox": "5.0.0",
-    "@wzrdtech/zap-memory": "5.0.0",
+    "@wzrdtech/core": "5.0.1",
+    "@wzrdtech/zap-kernel": "5.0.1",
+    "@wzrdtech/zap-sandbox": "5.0.1",
+    "@wzrdtech/zap-memory": "5.0.1",
     "esbuild": "0.27.0"
   },
   "engines": {

@@ -1,6 +1,6 @@
 {
   "name": "@wzrdtech/zap-templates",
-  "version": "5.0.0",
+  "version": "5.0.1",
   "private": false,
   "description": "Zap runtime template manifests, bake scripts, units, and doctor checks.",
   "license": "MIT",
@@ -33,7 +33,7 @@
     }
   },
   "dependencies": {
-    "@wzrdtech/core": "5.0.0"
+    "@wzrdtech/core": "5.0.1"
   },
   "engines": {
     "node": "24.x"
