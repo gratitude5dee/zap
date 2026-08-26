@@ -175,7 +175,7 @@ export function createZepMemory(options: ZepMemoryOptions): MemoryService {
           `/api/v2/graph/episodes/${encodeURIComponent(graphMatch[1])}`,
         );
         if (!ok || data?.content === undefined) return null;
-        if (data.user_id !== undefined && data.user_id !== scope.tenantId) return null;
+        if (data.user_id !== scope.tenantId) return null;
         return decode(data.content).text;
       }
       const threadMatch = uri.match(/^zep:\/\/thread\/([^/]+)\/(.+)$/);
