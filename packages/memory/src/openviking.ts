@@ -261,7 +261,7 @@ export function createOpenVikingMemory(options: OpenVikingMemoryOptions = {}): M
     },
 
     async read(scope, uri) {
-      if (!uri.startsWith(tenantRoot(scope.tenantId))) return null;
+      if (!uri.startsWith(`${tenantRoot(scope.tenantId)}/`)) return null;
       return transport.read(uri);
     },
 
