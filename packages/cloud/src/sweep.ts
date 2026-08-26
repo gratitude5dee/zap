@@ -20,7 +20,7 @@ export async function sweepRuntimes(deps: CloudDeps, now: Date): Promise<SweepRe
     if (row.state !== "ready" && row.state !== "idle") continue;
     if (!row.stopAfter || new Date(row.stopAfter).getTime() > now.getTime()) continue;
     try {
-      await deps.sandbox.stop({ id: row.id });
+      await deps.sandbox.stop({ id: row.providerId });
       await deps.runtimes.update(row.id, { state: "stopped", stopAfter: null });
       await deps.counters.bump("sweeperStops");
       stopped.push(row.id);

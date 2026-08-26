@@ -57,6 +57,7 @@ export function createCloudApp(deps: CloudDeps, options: CreateCloudAppOptions =
     if (!row || row.tenantId !== principal) {
       return c.json({ error: { code: "RUNTIME_NOT_FOUND", message: "No such runtime." } }, 404);
     }
+    c.set("runtime", row);
     await next();
   };
 
@@ -72,12 +73,13 @@ export function createCloudApp(deps: CloudDeps, options: CreateCloudAppOptions =
       }
     }
     const body = (await c.req.json().catch(() => ({}))) as { weight?: RuntimeRow["weight"]; provider?: string };
-    await deps.sandbox.create({ weight: body.weight ?? "light", noEnv: true });
+    const created = await deps.sandbox.create({ weight: body.weight ?? "light", noEnv: true });
     const row: RuntimeRow = {
       id: newId("rt"),
       tenantId: principal,
       weight: body.weight ?? "light",
       provider: body.provider ?? "box",
+      providerId: created.providerId,
       state: "ready",
       createdAt: now().toISOString(),
       stopAfter: new Date(now().getTime() + 30 * MINUTE_MS).toISOString(),
@@ -99,7 +101,8 @@ export function createCloudApp(deps: CloudDeps, options: CreateCloudAppOptions =
   });
 
   app.post("/v1/runtimes/:id/down", ownRuntime, async (c) => {
-    await deps.sandbox.stop({ id: c.req.param("id") });
+    const row = c.get("runtime");
+    await deps.sandbox.stop({ id: row?.providerId ?? "" });
     await deps.runtimes.update(c.req.param("id"), { state: "stopped", stopAfter: null });
     return c.json({ ok: true });
   });
@@ -129,7 +132,7 @@ export function createCloudApp(deps: CloudDeps, options: CreateCloudAppOptions =
       live?: boolean;
     };
     if (body.command) {
-      const result = await deps.sandbox.exec(id, body.command);
+      const result = await deps.sandbox.exec(c.get("runtime")?.providerId ?? id, body.command);
       return c.json({ stdout: result.stdout, exitCode: result.exitCode });
     }
     if (body.prompt !== undefined) {
@@ -143,13 +146,13 @@ export function createCloudApp(deps: CloudDeps, options: CreateCloudAppOptions =
   });
 
   app.post("/v1/runtimes/:id/snapshot", ownRuntime, async (c) => {
-    const result = await deps.sandbox.snapshot(c.req.param("id"));
+    const result = await deps.sandbox.snapshot(c.get("runtime")?.providerId ?? "");
     return c.json(result);
   });
 
   app.post("/v1/runtimes/:id/fork", ownRuntime, gate, async (c) => {
-    const id = c.req.param("id");
-    const forked = await deps.sandbox.fork(id, { source: id, noEnv: true });
+    const source = c.get("runtime")?.providerId ?? "";
+    const forked = await deps.sandbox.fork(source, { source, noEnv: true });
     return c.json({ id: forked.providerId, receiptId: c.get("receipt")?.id ?? null });
   });
 

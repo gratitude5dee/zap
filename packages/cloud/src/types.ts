@@ -8,6 +8,8 @@ export interface RuntimeRow {
   tenantId: string;
   weight: "light" | "med" | "heavy";
   provider: string;
+  /** the sandbox provider's own id for this box; all provider calls use it. */
+  providerId: string;
   state: RuntimeState;
   createdAt: string;
   stopAfter: string | null;
@@ -129,6 +131,7 @@ export interface CloudDeps {
 export interface CloudVars {
   principal?: string;
   receipt?: ReceiptRow;
+  runtime?: RuntimeRow;
 }
 
 export type CloudHono = Hono<{ Variables: CloudVars }>;

@@ -180,6 +180,7 @@ export function createTestCloud(options: CreateTestCloudOptions): TestCloud {
   }): Promise<void> => {
     await deps.runtimes.insert({
       id: input.id,
+      providerId: `sbx:${input.id}`,
       tenantId: "token-alice",
       weight: "light",
       provider: "box",
