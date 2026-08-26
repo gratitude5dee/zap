@@ -113,7 +113,15 @@ async function runtimeExec({ args, flags }) {
   const runtimeId = requireId(args);
   if (flags.prompt !== undefined) await requirePayer("zap runtime exec --prompt");
   const argv = args.slice(1);
-  if (argv.length === 0 && flags.prompt === undefined) throw usageError("Usage: zap runtime exec <id> -- <command...>");
+  if (flags.prompt !== undefined && argv.length === 0) {
+    throw new ZapCliError({
+      code: "PROMPT_UNSUPPORTED",
+      message: "Prompt-driven exec is not available in this build yet.",
+      remediation: "Run a command directly with zap runtime exec <id> -- <command...>. Prompt execution lands with the harness milestone.",
+      retryable: false,
+    });
+  }
+  if (argv.length === 0) throw usageError("Usage: zap runtime exec <id> -- <command...>");
   const state = await readRuntimeState();
   const record = findRuntime(state, runtimeId);
   const handle = await reacquireHandle(record);
