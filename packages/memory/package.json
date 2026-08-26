@@ -1,6 +1,6 @@
 {
   "name": "@wzrdtech/zap-memory",
-  "version": "5.0.0-alpha.0",
+  "version": "5.0.0",
   "private": false,
   "description": "Zap memory contract and providers for agent runtimes.",
   "license": "MIT",
@@ -33,7 +33,7 @@
     }
   },
   "dependencies": {
-    "@wzrdtech/zap-kernel": "5.0.0-alpha.0"
+    "@wzrdtech/zap-kernel": "5.0.0"
   },
   "engines": {
     "node": "24.x"

@@ -1,6 +1,6 @@
 {
   "name": "@wzrdtech/agent",
-  "version": "5.0.0-alpha.0",
+  "version": "5.0.0",
   "private": false,
   "description": "Agent prompts and helper utilities for authoring and running Zap recipes.",
   "license": "MIT",
@@ -37,7 +37,7 @@
     }
   },
   "dependencies": {
-    "@wzrdtech/core": "5.0.0-alpha.0"
+    "@wzrdtech/core": "5.0.0"
   },
   "peerDependencies": {
     "eve": ">=0.22.0",

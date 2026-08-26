@@ -1,6 +1,6 @@
 # Changelog
 
-## 5.0.0-alpha.0 — Unreleased
+## 5.0.0 — 2026-08-26
 
 ### Added
 
@@ -37,9 +37,12 @@
 - Eve bridge: v5 provider ids (`box`, `docker`, `namespace`, `selfhost`, `microsandbox`, `fake`) route through `@wzrdtech/zap-sandbox`; `box-legacy` keeps the previous SDK path.
 - Templates and infra: `packages/templates/zap-light` (bake/doctor/systemd units), `env-omarchy` and `env-macos` (coming soon), `infra/box` build/verify scripts, `infra/namespace` (bridge, create-instance, zap-heavy image), `infra/self-host/setup.sh`, provider/template docs, and `docs/verify-log.md` with live Box evidence.
 
+- Hardening (Z11): security regression suite under `packages/runtime/tests/security/` (secrets never leak into prompts/logs/templates/snapshots/manifests/events/JSON; plan-only default; `PAYER_MISSING` fail-closed; gateway owns provider keys; template/named-snapshot secret sweep), runtime evals (`evals/runtime-{light,med,heavy}.eval.ts`, opt-in `evals/live/runtime-box.eval.ts`), `tests/llms-txt.test.ts`, expanded `tests/no-platform-names.test.ts` (docs, README, CHANGELOG, `public/llms.txt`, package descriptions, `--json` fixtures), and release workflows (`release.yml`, `template-build.yml`).
+
 ### Changed
 
-- All `@wzrdtech/*` workspaces bumped to `5.0.0-alpha.0` with exact internal dependency pins; `build:packages` now builds in kernel-first dependency order; CI runs typecheck and regression before the main suite.
+- All `@wzrdtech/*` workspaces released as `5.0.0` with exact internal dependency pins; `build:packages` builds in kernel-first dependency order; CI runs typecheck and regression before the main suite.
+- README, docs, and `public/llms.txt` rewritten for the v5 composable CPU agent runtime; `public/llms.txt` is generated from the docs tree and links every template, provider, harness, and agent page.
 
 ## 0.3.1 — 2026-07-13
 
