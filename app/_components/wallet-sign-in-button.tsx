@@ -22,7 +22,7 @@ export function WalletSignInButton({
   if (!client) {
     return (
       <Link
-        className="inline-flex h-[50px] w-[165px] shrink-0 items-center justify-center rounded-md border border-white/15 px-3 text-sm text-white/70 hover:border-zap-cyan hover:text-white"
+        className="zap-glass-pill h-[50px] w-[165px] shrink-0 justify-center px-3 text-sm"
         href="/settings#thirdweb-setup"
         prefetch={false}
         title="Set NEXT_PUBLIC_THIRDWEB_CLIENT_ID to enable wallet sign-in"
@@ -85,7 +85,7 @@ export function WalletSignInButton({
 export function WalletSignInPlaceholder({ label = "Sign In" }: { readonly label?: string }) {
   return (
     <button
-      className="inline-flex h-[50px] w-[165px] shrink-0 items-center justify-center rounded-md border border-white/15 bg-white px-3 text-sm text-black disabled:cursor-wait disabled:opacity-90"
+      className="zap-glass-pill h-[50px] w-[165px] shrink-0 justify-center px-3 text-sm disabled:cursor-wait disabled:opacity-90"
       disabled
       type="button"
     >

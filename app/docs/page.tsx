@@ -46,13 +46,13 @@ export default function DocsPage() {
             <span className="font-mono text-xs tracking-[0.14em] text-zap-amber uppercase">Legacy 0.3.1</span>
             <span className="ml-3 text-white/72">These topics cover the compatible recipe framework. Current Zap v5 documentation lives at docs.zap.wzrd.tech.</span>
           </p>
-          <Link className="inline-flex min-h-11 items-center gap-2 rounded-md border border-white/15 px-4 font-medium text-sm text-white transition hover:bg-white/10" href={ZAP_DOCS_URL} prefetch={false}>
+          <Link className="zap-glass-pill min-h-11 px-4 font-medium text-sm" href={ZAP_DOCS_URL} prefetch={false}>
             Open the v5 docs
             <ArrowUpRight className="size-4" />
           </Link>
         </div>
 
-        <header className="mt-8 grid gap-8 border-white/10 border-b pb-10 lg:grid-cols-[1fr_360px]">
+        <header className="mt-8 grid gap-8 pb-10 lg:grid-cols-[1fr_360px]">
           <div>
             <Eyebrow tone="amber">
               <BookOpen className="size-4" />
@@ -63,17 +63,18 @@ export default function DocsPage() {
               The web docs and `zap docs` CLI topics share the same markdown source. Agents can read these topics offline, then validate each recipe with plan-only runs before live provider spend.
             </p>
           </div>
-          <div className="rounded-md border border-white/10 bg-black/25 p-5">
+          <div className="zap-gradient-card rounded-md p-5">
             <p className="font-mono text-xs text-white/45">quick command</p>
             <pre className="mt-3 overflow-x-auto rounded-md bg-zap-ink p-4 text-[13px] leading-6 text-zinc-100"><code>{`zap docs zap-spec
 zap docs agents
 zap doctor --json`}</code></pre>
           </div>
         </header>
+        <div aria-hidden className="zap-hairline" />
 
         <div className="grid gap-8 py-10 lg:grid-cols-[290px_1fr]">
           <aside className="lg:sticky lg:top-6 lg:self-start">
-            <div className="rounded-md border border-white/10 bg-black/25 p-3">
+            <div className="zap-gradient-card rounded-md p-3">
               <p className="mb-2 flex items-center gap-2 px-2 font-medium text-sm text-white">
                 <Braces className="size-4 text-zap-blue" />
                 Topics
@@ -91,14 +92,15 @@ zap doctor --json`}</code></pre>
 
           <div className="grid gap-5">
             {docs.map((topic) => (
-              <section className="scroll-mt-8 rounded-md border border-white/10 bg-black/25 p-5 md:p-7" id={topic.id} key={topic.id}>
-                <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-white/10 border-b pb-5">
+              <section className="zap-gradient-card scroll-mt-8 rounded-md p-5 md:p-7" id={topic.id} key={topic.id}>
+                <div className="flex flex-wrap items-center justify-between gap-3 pb-5">
                   <div>
                     <p className="font-mono text-xs text-white/45">zap docs {topic.id}</p>
                     <h2 className="mt-2 font-semibold text-3xl leading-tight text-white">{topic.title}</h2>
                   </div>
-                  <Link className="inline-flex min-h-11 items-center rounded-md border border-white/10 px-3 font-medium text-sm text-white transition hover:bg-white/10" href="/api/skills/zap?format=json" prefetch={false}>Skill JSON</Link>
+                  <Link className="zap-glass-pill min-h-11 px-4 font-medium text-sm" href="/api/skills/zap?format=json" prefetch={false}>Skill JSON</Link>
                 </div>
+                <div aria-hidden className="zap-hairline mb-5" />
                 <article className="max-w-4xl text-white/62">{renderMarkdown(topic.content, topic.id)}</article>
               </section>
             ))}

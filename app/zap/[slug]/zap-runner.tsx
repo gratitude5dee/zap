@@ -90,7 +90,7 @@ export function ZapRunner({ zap }: { readonly zap: PublicZapSpec }) {
           </div>
 
           <nav className="mt-5 flex gap-2 text-sm">
-            <Link className="inline-flex min-h-10 items-center rounded-md px-3 text-white/55 transition hover:bg-white/10 hover:text-white" href="/gallery" prefetch={false}>Gallery</Link>
+            <Link className="inline-flex min-h-10 items-center rounded-md px-3 text-white/55 transition hover:bg-white/10 hover:text-white" href="/providers" prefetch={false}>Providers</Link>
             <Link className="inline-flex min-h-10 items-center rounded-md px-3 text-white/55 transition hover:bg-white/10 hover:text-white" href={ZAP_DOCS_URL} prefetch={false}>Docs</Link>
             <Link className="inline-flex min-h-10 items-center rounded-md px-3 text-white/55 transition hover:bg-white/10 hover:text-white" href="/studio" prefetch={false}>Studio</Link>
           </nav>

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import Image from "next/image";
 import type { ReactNode } from "react";
 import {
@@ -57,13 +56,13 @@ export default async function Page() {
 
   return (
     <PageShell tone="dark">
-      <section className="relative overflow-hidden border-white/10 border-b bg-[#03100a]">
+      <section className="relative overflow-hidden bg-[#03100a]">
         <div className="absolute inset-0">
           <CrtBackground version={ZAP_VERSION} />
         </div>
         <div className="relative z-10 mx-auto flex min-h-[92svh] max-w-7xl flex-col justify-between px-5 py-5 lg:px-8">
           <SiteNav tone="dark" />
-          <div className="flex flex-col items-start gap-3 pb-8 sm:flex-row sm:items-center">
+          <div className="flex flex-col items-start gap-3 pb-8 sm:flex-row sm:items-center sm:justify-end">
             <CopyCommandCta command={mcpCommand} />
             <GlassCta href={ZAP_DOCS_URL} tone="sulfur">
               <BookOpen className="size-4" />
@@ -73,7 +72,7 @@ export default async function Page() {
         </div>
       </section>
 
-      <section className="relative overflow-hidden border-white/10 border-b bg-[#05080c]/72">
+      <section className="relative overflow-hidden bg-[#05080c]/72">
         <Image
           alt=""
           className="pointer-events-none absolute right-[-7rem] bottom-[-6rem] hidden h-[36rem] w-[36rem] rotate-[-8deg] object-contain opacity-[0.09] lg:block"
@@ -111,7 +110,8 @@ export default async function Page() {
             </div>
           </div>
 
-          <div className="grid gap-3 border-white/10 border-t pt-5 sm:grid-cols-3">
+          <div aria-hidden className="zap-hairline" />
+          <div className="grid gap-3 pt-5 sm:grid-cols-3">
             <RuntimeSignal
               icon={<Workflow className="size-4" />}
               label="Plan-only by default"
@@ -132,7 +132,7 @@ export default async function Page() {
       </section>
 
       <div className="relative">
-      <section className="relative border-white/10 border-b bg-[#05080c]/80 text-white">
+      <section className="relative bg-[#05080c]/80 text-white">
         <div className="mx-auto grid max-w-7xl gap-8 px-5 py-14 lg:grid-cols-[380px_1fr] lg:px-8">
           <div>
             <Eyebrow>
@@ -154,7 +154,7 @@ export default async function Page() {
         </div>
       </section>
 
-      <section className="relative border-white/10 border-b bg-zap-ink/80 text-white">
+      <section className="relative bg-zap-ink/80 text-white">
         <div className="mx-auto max-w-7xl px-5 py-14 lg:px-8">
           <Eyebrow>
             <Cpu className="size-4" />
@@ -175,10 +175,10 @@ export default async function Page() {
 
           <div className="mt-10 grid gap-4 md:grid-cols-3">
             {profiles.map((profile) => (
-              <div className="rounded-md border border-white/10 bg-white/[0.045] p-5" key={profile.name}>
+              <div className="zap-gradient-card rounded-md p-5" key={profile.name}>
                 <p className="font-mono text-sm text-zap-cyan">--weight {profile.name}</p>
                 <p className="mt-3 text-sm leading-6 text-white/62">{profile.summary}</p>
-                <p className="mt-4 rounded-md border border-white/10 bg-black/30 px-3 py-2 font-mono text-xs text-white/50">
+                <p className="mt-4 rounded-md bg-black/30 px-3 py-2 font-mono text-xs text-white/50">
                   {profile.detail}
                 </p>
               </div>
@@ -187,7 +187,7 @@ export default async function Page() {
         </div>
       </section>
 
-      <section className="relative border-white/10 border-b bg-[#05080c]/80 text-white">
+      <section className="relative bg-[#05080c]/80 text-white">
         <div className="mx-auto grid max-w-7xl gap-8 px-5 py-14 lg:grid-cols-[1fr_500px] lg:px-8">
           <div>
             <Eyebrow>
@@ -249,14 +249,10 @@ export default async function Page() {
                 defaults, per-recipe estimates, and hard caps.
               </p>
             </div>
-            <Link
-              className="inline-flex min-h-11 items-center gap-2 rounded-md border border-white/15 px-4 font-medium text-sm text-white transition hover:bg-white/10"
-              href="/gallery"
-              prefetch={false}
-            >
-              Browse compatible recipes
+            <GlassCta href="/providers">
+              Explore providers
               <ArrowRight className="size-4" />
-            </Link>
+            </GlassCta>
           </div>
 
           <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -265,7 +261,8 @@ export default async function Page() {
             ))}
           </div>
 
-          <div className="mt-12 grid gap-4 border-white/10 border-t pt-8 sm:grid-cols-[1fr_auto] sm:items-center">
+          <div aria-hidden className="zap-hairline mt-12" />
+          <div className="grid gap-4 pt-8 sm:grid-cols-[1fr_auto] sm:items-center">
             <div>
               <h2 className="font-semibold text-2xl leading-tight">Start with zero side effects.</h2>
               <p className="mt-2 max-w-2xl text-sm leading-7 text-white/62">
@@ -279,14 +276,10 @@ export default async function Page() {
                   {doctorCommand}
                 </CodeWindow>
               </div>
-              <Link
-                className="inline-flex min-h-11 items-center gap-2 rounded-md border border-white/15 px-4 font-medium text-sm text-white transition hover:bg-white/10"
-                href={ZAP_DOCS_URL}
-                prefetch={false}
-              >
+              <GlassCta href={ZAP_DOCS_URL}>
                 Read the v5 docs
                 <ArrowRight className="size-4" />
-              </Link>
+              </GlassCta>
             </div>
           </div>
         </div>
@@ -298,7 +291,7 @@ export default async function Page() {
 
 function RuntimeSignal({ icon, label, value }: { readonly icon: ReactNode; readonly label: string; readonly value: string }) {
   return (
-    <div className="rounded-md border border-white/10 bg-white/[0.055] p-4">
+    <div className="zap-gradient-card rounded-md p-4">
       <div className="flex items-center gap-2 text-zap-cyan">
         {icon}
         <p className="font-medium text-sm text-white">{label}</p>
@@ -310,13 +303,13 @@ function RuntimeSignal({ icon, label, value }: { readonly icon: ReactNode; reado
 
 function RuntimeRow({ body, detail, icon, title }: { readonly body: string; readonly detail: string; readonly icon: ReactNode; readonly title: string }) {
   return (
-    <div className="grid gap-4 rounded-md border border-white/10 bg-white/[0.045] p-4 sm:grid-cols-[44px_1fr_150px] sm:items-center">
+    <div className="zap-gradient-card grid gap-4 rounded-md p-4 sm:grid-cols-[44px_1fr_150px] sm:items-center">
       <div className="flex size-11 items-center justify-center rounded-md bg-black/50 text-zap-cyan">{icon}</div>
       <div>
         <h3 className="font-semibold text-white">{title}</h3>
         <p className="mt-1 text-sm leading-6 text-white/58">{body}</p>
       </div>
-      <p className="rounded-md border border-white/10 bg-black/30 px-3 py-2 font-mono text-xs text-white/50">{detail}</p>
+      <p className="rounded-md bg-black/30 px-3 py-2 font-mono text-xs text-white/50">{detail}</p>
     </div>
   );
 }

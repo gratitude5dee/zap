@@ -1,20 +1,20 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ArrowUpRight, BookOpen, Images, Settings, TerminalSquare } from "lucide-react";
+import { ArrowUpRight, BookOpen, Plug, Settings, TerminalSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ZAP_DOCS_URL } from "@/lib/zap-urls";
 
 const navItems = [
   { href: ZAP_DOCS_URL, icon: BookOpen, label: "Docs" },
-  { href: "/gallery", icon: Images, label: "Gallery" },
+  { href: "/providers", icon: Plug, label: "Providers" },
   { href: "/settings", icon: Settings, label: "Settings" },
 ];
 
 export function ZapLogo({ className = "", compact = false }: { readonly className?: string; readonly compact?: boolean }) {
   return (
     <Link className={cn("group inline-flex min-h-11 items-center gap-3", className)} href="/" prefetch={false}>
-      <span className="relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md border border-white/15 bg-zap-ink shadow-[0_0_24px_rgba(40,138,255,0.22)]">
+      <span className="relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-zap-ink shadow-[0_0_24px_rgba(40,138,255,0.22)]">
         <Image
           alt="Zap lightning mark"
           className="h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-110"
@@ -59,12 +59,7 @@ export function SiteNav({ tone = "light" }: { readonly tone?: "light" | "dark" }
           </Link>
         ))}
         <Link
-          className={cn(
-            "inline-flex min-h-11 items-center gap-2 rounded-md px-4 font-medium text-sm transition",
-            isDark
-              ? "border border-white/15 bg-white text-zap-ink hover:bg-zap-ash"
-              : "bg-zap-ink text-white hover:bg-black",
-          )}
+          className="zap-glass-pill min-h-11 px-4 font-medium text-sm"
           href="/studio"
           prefetch={false}
         >
@@ -126,8 +121,8 @@ export function CodeWindow({
   readonly status?: string;
 }) {
   return (
-    <div className="overflow-hidden rounded-md border border-white/10 bg-[#07090d] text-white shadow-[0_24px_70px_rgba(2,8,23,0.32)]">
-      <div className="flex min-h-12 items-center justify-between gap-3 border-white/10 border-b px-4">
+    <div className="zap-gradient-frame overflow-hidden rounded-md text-white shadow-[0_24px_70px_rgba(2,8,23,0.32)]">
+      <div className="flex min-h-12 items-center justify-between gap-3 px-4">
         <div className="flex items-center gap-2">
           <span className="size-2 rounded-full bg-zap-ember" />
           <span className="size-2 rounded-full bg-zap-amber" />
@@ -136,6 +131,7 @@ export function CodeWindow({
         </div>
         {status ? <span className="rounded-md bg-zap-blue/15 px-2 py-1 font-mono text-[11px] text-blue-100">{status}</span> : null}
       </div>
+      <div aria-hidden className="zap-hairline" />
       <pre className="overflow-x-auto p-4 text-[13px] leading-6 text-zinc-200"><code>{children}</code></pre>
     </div>
   );

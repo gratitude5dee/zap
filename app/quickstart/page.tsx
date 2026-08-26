@@ -19,7 +19,7 @@ export default function QuickstartPage() {
       <div className="mx-auto max-w-7xl px-5 py-5 lg:px-8">
         <SiteNav tone="dark" />
 
-        <header className="mt-12 grid gap-8 border-white/10 border-b pb-10 lg:grid-cols-[1fr_500px] lg:items-end">
+        <header className="mt-12 grid gap-8 pb-10 lg:grid-cols-[1fr_500px] lg:items-end">
           <div>
             <Eyebrow>
               <Bot className="size-4" />
@@ -38,9 +38,10 @@ export default function QuickstartPage() {
             {safeFirstRun}
           </CodeWindow>
         </header>
+        <div aria-hidden className="zap-hairline" />
 
         <section className="grid gap-5 py-10 lg:grid-cols-[1fr_420px]">
-          <div className="rounded-md border border-white/10 bg-black/25 p-5 md:p-7">
+          <div className="zap-gradient-card rounded-md p-5 md:p-7">
             <div className="flex items-start gap-3">
               <div className="flex size-11 shrink-0 items-center justify-center rounded-md bg-zap-ink text-zap-cyan">
                 <TerminalSquare className="size-5" />
@@ -76,14 +77,14 @@ export default function QuickstartPage() {
           </div>
 
           <div className="grid content-start gap-5">
-            <div className="rounded-md border border-white/10 bg-black/35 p-5 text-white">
+            <div className="zap-gradient-card rounded-md p-5 text-white">
               <div className="flex items-center gap-3">
                 <CheckCircle2 className="size-5 text-zap-cyan" />
                 <h2 className="font-semibold text-xl">Works with</h2>
               </div>
               <div className="mt-5 grid gap-2">
                 {agents.map((agent) => (
-                  <div className="flex min-h-12 items-center justify-between rounded-md border border-white/10 bg-white/5 px-3" key={agent}>
+                  <div className="zap-gradient-card flex min-h-12 items-center justify-between rounded-md px-3" key={agent}>
                     <span className="font-medium text-sm">{agent}</span>
                     <span className="font-mono text-[11px] text-white/45">MCP</span>
                   </div>
@@ -97,7 +98,7 @@ export default function QuickstartPage() {
                 Migrating from the 0.3.1 recipe framework? Recipes remain compatible on v5.
               </p>
               <Link
-                className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-md border border-white/15 px-4 font-medium text-sm text-white transition hover:bg-white/10"
+                className="zap-glass-pill mt-4 min-h-11 px-4 font-medium text-sm"
                 href={`${ZAP_DOCS_URL}/legacy/introduction`}
                 prefetch={false}
               >
@@ -114,7 +115,7 @@ export default function QuickstartPage() {
 
 function Endpoint({ label, value }: { readonly label: string; readonly value: string }) {
   return (
-    <div className="grid gap-2 rounded-md border border-white/10 bg-white/[0.04] px-3 py-3 sm:grid-cols-[170px_1fr] sm:items-center">
+    <div className="zap-gradient-card grid gap-2 rounded-md px-3 py-3 sm:grid-cols-[170px_1fr] sm:items-center">
       <span className="font-medium text-sm text-white/78">{label}</span>
       <span className="break-all font-mono text-xs text-zap-cyan">{value}</span>
     </div>
