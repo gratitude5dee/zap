@@ -1,0 +1,29 @@
+{
+  "name": "zap-light",
+  "weight": "light",
+  "provider": "box",
+  "lanes": ["codegen", "ffmpeg", "media-workflows", "browser"],
+  "aliases": {
+    "zap-light-ffmpeg": { "lanes": ["ffmpeg"] },
+    "zap-light-code": { "lanes": ["codegen"] }
+  },
+  "overlays": {
+    "zap-light-browser": { "bake": "BROWSER_OVERLAY=1" }
+  },
+  "pins": {
+    "node": "24",
+    "python": "3.12",
+    "bun": "1.2.20",
+    "ffmpeg": "apt",
+    "playwright": "1.55.0",
+    "browser-use": "0.5.5"
+  },
+  "envAllowlist": [
+    "TENANT_ID",
+    "RUNTIME_ID",
+    "RUNTIME_TOKEN",
+    "GATEWAY_URL",
+    "GATEWAY_TOKEN",
+    "ZAP_ENVIRONMENT"
+  ]
+}

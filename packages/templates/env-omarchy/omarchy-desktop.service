@@ -1,0 +1,22 @@
+[Unit]
+Description=Omarchy desktop (Hyprland on vkms + Xwayland)
+Requires=arch-root.service
+After=arch-root.service
+# The box has no GPU: setup.sh loads the vkms virtual-KMS module (and keeps
+# Xorg from grabbing it via AutoAddGPU=off). Hyprland's DRM backend drives the
+# virtual display; its Xwayland display (:1) is where browser windows render.
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+# arch-run drops to uid 1000 inside the Arch root itself.
+User=root
+Environment=HYPRLAND_NO_RT=1
+ExecStartPre=/sbin/modprobe vkms
+ExecStartPre=/bin/bash -c 'install -d -m 0700 -o user -g user /run/user/1000'
+ExecStart=/usr/local/bin/arch-run "exec Hyprland"
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
