@@ -54,7 +54,9 @@ The list below is generated from the discovered command set by
 - `zap logout [--json]` — Remove the stored Zap API token.
 - `zap mcp [--http [--port 3910]] [--json]` — Start the Zap MCP server (stdio by default, --http for HTTP).
 - `zap media <ls|info> [path] [--json]` — Inspect local media outputs under .zap/runs.
+- `zap memory <subcommand>` — Run `zap memory \<subcommand>`.
 - `zap new <slug> [--force] [--json]` — Scaffold agent/skills/zap-\<slug>.
+- `zap pay <subcommand> [--json]` — Payer status, managed wallet login/logout, and payment quotes.
 - `zap run <slug|Zap.md> [--input KEY=VALUE] [--budget-cap-usd N] [--live] [--json]` — Plan a Zap by default; use --live to submit providers.
 - `zap runtime <up|down|ps|logs|exec|snapshot|fork|stop|resume|desktop|import-sprite> [...] [--json]` — Manage Zap runtimes (up, down, ps, logs, exec, snapshot, fork, stop, resume, desktop, import-sprite).
 - `zap search <query> [--remote] [--json]` — Search registry templates; add --remote for hosted search.

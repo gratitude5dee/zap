@@ -38,7 +38,9 @@ async function main(argv) {
     console.log(command.usage);
     return;
   }
-  await command.run({ args: args.slice(1), cwd: process.cwd(), flags });
+  const commandIndex = argv.indexOf(commandName);
+  const rawArgv = commandIndex >= 0 ? argv.slice(commandIndex + 1) : argv;
+  await command.run({ args: args.slice(1), argv: rawArgv, cwd: process.cwd(), flags });
 }
 
 /** @param {Map<string, import("./lib/registry.js").CliCommand>} registry */
