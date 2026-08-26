@@ -35,3 +35,11 @@ Provider facts assumed on 2026-08-26 (Z6, pending live verification — no live 
 - xAI: OpenAI-compatible chat completions at `https://api.x.ai/v1` with `XAI_API_KEY`, models `grok-4*` (docs read, not exercised live).
 - Open Interpreter overlay: native installer `https://www.openinterpreter.com/install`, `interpreter app-server --listen ws://127.0.0.1:9000`, MCP servers in `~/.openinterpreter/config.toml` `[mcp_servers]` (per locked brief; binary not installed in CI).
 - fx overlay: installer `https://fx.sh/setup.sh`, config at `~/.fx/settings.json`, MCP at `~/.fx/mcp.json`, driven as `fx ask --json` (per locked brief; binary not installed in CI).
+
+| 2026-08-26 | zap-v5-session-g (Z8: MCP + skills + API store) | `npm run typecheck`, `npm run build:packages`, `npm test` (95 files, 566 passed / 7 skipped), `npm run test:regression` (16 passed, 5 skipped), `npm run cli -- validate`, `npm run cli -- lint`, `npx vitest run tests/mcp-server.test.ts packages/mcp/tests/http.test.ts tests/zap-skills.test.ts tests/agent-plugin-snippets.test.ts` | All green; no live provider calls (payer gating tested with `ZAP_TEST_PAYER`). |
+
+Provider facts assumed on 2026-08-26 (Z8, pending live verification — no live calls were made):
+
+- Context7: hosted MCP endpoint `https://mcp.context7.com/mcp` (Streamable HTTP) authenticating with a `CONTEXT7_API_KEY` header. Evidence: Context7 docs read; fragment renders an env reference only, never a value.
+- open-connector (oomol-lab): pinned to `v0.1.0` of `https://github.com/oomol-lab/open-connector.git`; serves MCP at `/mcp` on the configured host/port and reads `OOMOL_CONNECT_ENCRYPTION_KEY` / `OOMOL_CONNECT_RUNTIME_TOKEN` / `OOMOL_CONNECT_ADMIN_TOKEN` from the environment. Baked loopback-only (`127.0.0.1:3000`); `bake.d/50-apistore.sh` verifies the pinned tag exists at bake time (C30) and does not start the service (secrets arrive per-box at boot).
+- Composio: hosted MCP sessions are minted by the control plane per tenant entity and reached over an HTTPS session URL; the runtime plugin validates `https://` and renders headers as env references only.
