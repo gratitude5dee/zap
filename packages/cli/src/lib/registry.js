@@ -27,7 +27,7 @@
 import { existsSync } from "node:fs";
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 /**
  * @typedef {Object} CommandContext
@@ -59,7 +59,7 @@ export async function discoverCommands() {
     const moduleFile = path.join(commandsDir, entry.name, "index.js");
     if (!existsSync(moduleFile)) continue;
     /** @type {{ command?: CliCommand, commands?: CliCommand[] }} */
-    const mod = await import(new URL(`file://${moduleFile}`).href);
+    const mod = await import(pathToFileURL(moduleFile).href);
     for (const command of [mod.command, ...(mod.commands ?? [])]) {
       if (!command) continue;
       registry.set(command.name, command);
