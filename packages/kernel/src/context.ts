@@ -523,13 +523,17 @@ export class ContextImpl implements Context {
     }
     this.stateValue = "DISPOSED";
     this.parentImpl?.children.delete(this);
-    if (!this.parentImpl) {
-      // reject outstanding waiters fail-closed
+    // A context that introduced its own realm (root, or isolate()/fork with
+    // isolate) fails its realm's pending waiters closed. Shared realms are
+    // left alone so a child dispose never closes the parent's services.
+    if (!this.parentImpl || this.realm !== this.parentImpl.realm) {
       this.realm.disposed = true;
       for (const [key, slot] of this.realm.localSlots()) {
         const waiters = slot.waiters.splice(0);
         for (const waiter of waiters) waiter.reject(new ServiceMissingError(key));
       }
+    }
+    if (!this.parentImpl) {
       this.bus.clear();
     }
   }

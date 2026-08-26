@@ -61,4 +61,21 @@ describe("kernel fork", () => {
     expect(realm.get("meter")).toBe("shared-meter");
     await ctx.dispose();
   });
+
+  it("disposing an isolated child rejects its pending injections fail-closed", async () => {
+    const ctx = createContext();
+    ctx.provide("meter", "shared-meter");
+    const isolated = ctx.isolate(["sandbox"]);
+    const pending = isolated.inject("sandbox");
+    const outcome = pending.then(
+      () => "resolved",
+      (error: { code?: string }) => error.code,
+    );
+    await isolated.dispose();
+    expect(await outcome).toBe("SERVICE_MISSING");
+    // parent realm untouched: services still resolve and inject still works
+    expect(ctx.get("meter")).toBe("shared-meter");
+    expect(await ctx.inject("meter")).toBe("shared-meter");
+    await ctx.dispose();
+  });
 });
