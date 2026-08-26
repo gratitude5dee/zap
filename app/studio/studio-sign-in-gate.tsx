@@ -10,20 +10,20 @@ export function StudioSignInGate({ clientId }: { readonly clientId?: string }) {
           <span className="inline-flex size-12 items-center justify-center rounded-lg border border-zap-cyan/30 bg-zap-cyan/10 text-zap-cyan">
             <LockKeyhole className="size-6" />
           </span>
-          <p className="mt-6 font-mono text-xs tracking-[0.18em] text-zap-cyan uppercase">Protected workspace</p>
-          <h1 className="mt-3 text-balance font-semibold text-4xl tracking-tight">Sign in to open Zap Studio</h1>
+          <p className="mt-6 font-mono text-xs tracking-[0.18em] text-zap-cyan uppercase">Owner-scoped workspace</p>
+          <h1 className="mt-3 text-balance font-semibold text-4xl tracking-tight">Compose, deploy, and operate from one control room.</h1>
           <p className="mt-4 max-w-xl text-pretty leading-7 text-white/65">
-            Gallery browsing and plan-only runs stay public. Studio uses a verified wallet session so drafts, provider secrets, deployments, and WZRD Cloud spend remain scoped to you.
+            Build runtimes, author agents, inspect deployments and sessions, manage declared connections, and approve live spend without losing the execution trail. Gallery browsing and plan-only runs stay public.
           </p>
         </div>
 
         <div className="grid gap-6 p-7 sm:grid-cols-[1fr_auto] sm:items-center sm:p-10">
           <div className="grid gap-3 text-sm text-white/65">
             <p className="flex items-center gap-2"><WalletCards className="size-4 text-zap-cyan" /> Sign once with your thirdweb wallet.</p>
-            <p className="flex items-center gap-2"><ShieldCheck className="size-4 text-zap-cyan" /> Provider keys stay server-side and masked.</p>
+            <p className="flex items-center gap-2"><ShieldCheck className="size-4 text-zap-cyan" /> Provider secrets are write-only after storage and masked everywhere.</p>
           </div>
           <div className="flex flex-col gap-3 sm:items-end">
-            <WalletSignInButton clientId={clientId} label="Sign In to Studio" resumePath="/studio" />
+            <WalletSignInButton clientId={clientId} label="Continue with wallet" resumePath="/studio" />
             <Link className="text-sm text-white/45 underline-offset-4 hover:text-white hover:underline" href="/gallery" prefetch={false}>
               Browse the gallery instead
             </Link>

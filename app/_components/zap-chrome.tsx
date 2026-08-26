@@ -26,7 +26,7 @@ export function ZapLogo({ className = "", compact = false }: { readonly classNam
       {compact ? null : (
         <span className="flex flex-col leading-none">
           <span className="font-semibold text-[17px] text-zap-ink">Zap</span>
-          <span className="mt-1 text-[11px] text-zap-muted">agent media runtime</span>
+          <span className="mt-1 text-[11px] text-zap-muted">composable CPU agent runtime</span>
         </span>
       )}
     </Link>

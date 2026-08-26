@@ -3,34 +3,49 @@ import Image from "next/image";
 import type { ReactNode } from "react";
 import {
   ArrowRight,
-  BadgeDollarSign,
   Boxes,
   Braces,
-  CheckCircle2,
-  Clock3,
+  Cpu,
+  History,
   KeyRound,
-  Play,
+  Plug,
   ShieldCheck,
-  Sparkles,
   TerminalSquare,
   Workflow,
 } from "lucide-react";
 import { CodeWindow, Eyebrow, PageShell, SiteNav } from "@/app/_components/zap-chrome";
 import { ZapCard } from "@/app/_components/zap-card";
 import { ZAP_DOCS_URL } from "@/lib/zap-urls";
+import { ZAP_VERSION } from "@/lib/zap-version";
 import { listCanonicalZapSpecs } from "@/lib/zap-files";
 
-const cliProof = `npx @wzrdtech/zap@0.3.0 init match-day
-cd match-day
-npx @wzrdtech/zap@0.3.0 new world-cup-entrance
-npx @wzrdtech/zap@0.3.0 validate
-npx @wzrdtech/zap@0.3.0 run agent/skills/zap-world-cup-entrance/Zap.md --json
+const doctorCommand = `npx @wzrdtech/zap@${ZAP_VERSION} doctor --json`;
 
-{
-  "mode": "plan",
-  "status": "planned",
-  "quoteUsd": 1.50
-}`;
+const executionTrace = `Runtime.md resolved                         med · sandbox: box
+Zap sandbox acquisition                     planned
+sandbox.exec ffmpeg -i takes.mov …          planned
+Provider cost                               quoted — $0.42, cap $1.50
+Live execution                              waiting for explicit approval`;
+
+const mcpCommand = `npx -y @wzrdtech/zap@${ZAP_VERSION} mcp`;
+
+const profiles = [
+  {
+    name: "light",
+    summary: "Kernel, CLI surface, and plan pipeline on a minimal CPU footprint.",
+    detail: "fast start · smallest surface",
+  },
+  {
+    name: "med",
+    summary: "Adds the memory service, media filesystem, and gateway connections.",
+    detail: "default for durable sessions",
+  },
+  {
+    name: "heavy",
+    summary: "Hosts harness templates and optional GPU/model lanes beside CPU work.",
+    detail: "full workbench",
+  },
+];
 
 export default async function Page() {
   const zaps = await listCanonicalZapSpecs();
@@ -51,36 +66,57 @@ export default async function Page() {
           <SiteNav tone="dark" />
 
           <div className="relative z-10 max-w-5xl py-10 lg:py-12">
-            <p className="font-mono text-[12px] tracking-[0.24em] text-[#f6ff00] uppercase">agent media runtime / v0.3.0</p>
-            <h1 className="mt-5 text-balance font-semibold text-[clamp(4.5rem,18vw,12rem)] leading-[0.78] text-white tracking-normal">
-              Zap
+            <p className="font-mono text-[12px] tracking-[0.24em] text-[#f6ff00] uppercase">
+              @wzrdtech/zap · v{ZAP_VERSION} · node 24.x
+            </p>
+            <h1 className="mt-5 text-balance font-semibold text-[clamp(3rem,9vw,6.5rem)] leading-[0.9] text-white tracking-normal">
+              Agents need a computer.
             </h1>
             <p className="mt-6 max-w-3xl text-pretty text-xl leading-8 text-white/72">
-              File-first media recipes for agents, creators, and operators: provider routes, budgets, assets, gallery slugs, and finalization all stay inspectable.
+              Zap composes a CPU runtime on an isolated Zap sandbox VM by default, renders agents as
+              code, and plans side-effecting tools before live execution.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-[#f6ff00] px-5 font-semibold text-[#1a1a1a] transition hover:bg-white" href="/zap/world-cup-entrance" prefetch={false}>
-                <Play className="size-4" />
-                Run demo Zap
+              <Link
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-[#f6ff00] px-5 font-semibold text-[#1a1a1a] transition hover:bg-white"
+                href={`${ZAP_DOCS_URL}/quickstart`}
+                prefetch={false}
+              >
+                <ArrowRight className="size-4" />
+                Open the v5 quickstart
               </Link>
-              <Link className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md border border-white/15 px-5 font-medium text-white transition hover:bg-white/10" href="/quickstart" prefetch={false}>
-                <TerminalSquare className="size-4" />
-                Agent quickstart
+              <Link
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md border border-white/15 px-5 font-medium text-white transition hover:bg-white/10"
+                href="/quickstart"
+                prefetch={false}
+              >
+                <Plug className="size-4" />
+                Connect your agent
               </Link>
             </div>
-            <div className="mt-10 max-w-3xl overflow-hidden rounded-md border border-white/10 bg-[#1a1a1a]/70">
-              <div className="grid grid-cols-3 divide-x divide-white/10">
-                <Signal label="recipes" value={String(zaps.length)} />
-                <Signal label="default" value="draft + plan" />
-                <Signal label="package" value="@wzrdtech/zap" />
-              </div>
+            <div className="mt-10 max-w-3xl">
+              <CodeWindow label="safe first run — no sandbox acquired, nothing spends" status="plan-safe">
+                {doctorCommand}
+              </CodeWindow>
             </div>
           </div>
 
           <div className="grid gap-3 border-white/10 border-t pt-5 sm:grid-cols-3">
-            <RuntimeSignal icon={<BadgeDollarSign className="size-4" />} label="Zero-spend demos" value="Plan-only runs are the default until the creator explicitly chooses live providers." />
-            <RuntimeSignal icon={<Workflow className="size-4" />} label="Durable run state" value="Convex records runs while Upstash handles idempotency, queues, and polling." />
-            <RuntimeSignal icon={<KeyRound className="size-4" />} label="BYOK vault" value="Provider keys stay user-owned in Supabase, masked in the browser." />
+            <RuntimeSignal
+              icon={<Workflow className="size-4" />}
+              label="Plan-only by default"
+              value="Side-effecting tools are planned, never executed, until you pass --live with a payer. Read-only work may run; model tokens meter under the payer."
+            />
+            <RuntimeSignal
+              icon={<Boxes className="size-4" />}
+              label="Isolated sandbox VMs"
+              value="Each runtime composes onto its own Zap sandbox VM. CPU work is sandbox.exec inside the tenant boundary."
+            />
+            <RuntimeSignal
+              icon={<KeyRound className="size-4" />}
+              label="Write-only secrets"
+              value="Agent secrets resolve only inside declared HTTPS connections and never appear in bundles, events, or --json output."
+            />
           </div>
         </div>
       </section>
@@ -89,25 +125,99 @@ export default async function Page() {
         <div className="mx-auto grid max-w-7xl gap-8 px-5 py-14 lg:grid-cols-[380px_1fr] lg:px-8">
           <div>
             <Eyebrow>
-              <Braces className="size-4" />
-              Zap.md runtime contract
+              <History className="size-4" />
+              Execution trace
             </Eyebrow>
             <h2 className="mt-4 text-balance font-semibold text-4xl leading-tight">
-              Recipes agents can read, creators can run, and operators can meter.
+              Every step is an event you can inspect before it becomes live.
             </h2>
             <p className="mt-4 text-pretty leading-7 text-white/62">
-              Zap keeps prompts, provider routing, budget caps, input contracts, and output shape in files first. The studio is the control room, not a black box.
+              A session turn renders instructions, plans side effects with quotes and caps, and
+              waits. Nothing acquires or spends until you approve it.
             </p>
-            <Link className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-md border border-white/15 px-4 font-medium text-sm text-white transition hover:bg-white/10" href={ZAP_DOCS_URL} prefetch={false}>
-              Read the schema docs
-              <ArrowRight className="size-4" />
-            </Link>
+            <p className="mt-3 font-mono text-xs text-white/40">Example trace — illustrative, not a live session.</p>
+          </div>
+          <CodeWindow label="zap session --agent transcode --json" status="plan">
+            {executionTrace}
+          </CodeWindow>
+        </div>
+      </section>
+
+      <section className="border-white/10 border-b bg-zap-ink text-white">
+        <div className="mx-auto max-w-7xl px-5 py-14 lg:px-8">
+          <Eyebrow>
+            <Cpu className="size-4" />
+            Why CPU
+          </Eyebrow>
+          <div className="mt-4 grid gap-8 lg:grid-cols-[1fr_1fr]">
+            <h2 className="text-balance font-semibold text-4xl leading-tight">
+              Most agent work is CPU work: files, ffmpeg, builds, HTTP, git.
+            </h2>
+            <p className="text-pretty leading-7 text-white/62">
+              Zap treats the CPU sandbox as the default substrate. Instructions render for free on
+              CPU; model thinking and GPU lanes are plugins that attach only when a runtime declares
+              them. Compose from <span className="font-mono text-zap-cyan">Runtime.md</span> or{" "}
+              <span className="font-mono text-zap-cyan">zap.config.ts</span>, deploy immutably by
+              SHA, and keep durable sessions pinned to the deployment they started on.
+            </p>
           </div>
 
-          <div className="grid gap-3">
-            <RuntimeRow icon={<Boxes className="size-5" />} title="Skill package" body="Every Zap ships as SKILL.md, Zap.md, prompt files, and registry metadata." detail={`${zaps.length} local recipes`} />
-            <RuntimeRow icon={<ShieldCheck className="size-5" />} title="Budget guard" body="CLI and server paths estimate spend, enforce caps, and require explicit live approval." detail="plan by default" />
-            <RuntimeRow icon={<Clock3 className="size-5" />} title="Polling flow" body="Provider submissions enqueue durable poll jobs and update Convex idempotently." detail="retry + dead letter" />
+          <div className="mt-10 grid gap-4 md:grid-cols-3">
+            {profiles.map((profile) => (
+              <div className="rounded-md border border-white/10 bg-white/[0.045] p-5" key={profile.name}>
+                <p className="font-mono text-sm text-zap-cyan">--weight {profile.name}</p>
+                <p className="mt-3 text-sm leading-6 text-white/62">{profile.summary}</p>
+                <p className="mt-4 rounded-md border border-white/10 bg-black/30 px-3 py-2 font-mono text-xs text-white/50">
+                  {profile.detail}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="border-white/10 border-b bg-[#05080c] text-white">
+        <div className="mx-auto grid max-w-7xl gap-8 px-5 py-14 lg:grid-cols-[1fr_500px] lg:px-8">
+          <div>
+            <Eyebrow>
+              <Braces className="size-4" />
+              Agents as code
+            </Eyebrow>
+            <h2 className="mt-4 text-balance font-semibold text-4xl leading-tight">
+              A synchronous render function. Hooks attach everything else.
+            </h2>
+            <p className="mt-4 max-w-2xl leading-7 text-white/62">
+              <span className="font-mono text-zap-cyan">useModel</span>,{" "}
+              <span className="font-mono text-zap-cyan">useTool</span>, and MCP hooks declare
+              capabilities on every turn — conditionally, from empty. The runtime executes after
+              render, inside the sandbox, under plan/live gating. Connect any MCP-capable coding
+              agent with one command:
+            </p>
+            <div className="mt-5 max-w-xl">
+              <CodeWindow label="MCP — stdio" status="copy & connect">
+                {mcpCommand}
+              </CodeWindow>
+            </div>
+          </div>
+          <div className="grid content-start gap-3">
+            <RuntimeRow
+              icon={<ShieldCheck className="size-5" />}
+              title="Payer or it fails closed"
+              body="Missing payer fails with PAYER_MISSING before the first model step. There is no silent downgrade."
+              detail="plan · live gated"
+            />
+            <RuntimeRow
+              icon={<KeyRound className="size-5" />}
+              title="Declared egress only"
+              body="Outbound HTTP goes through declared HTTPS connections with method and path-prefix policies."
+              detail="write-only secrets"
+            />
+            <RuntimeRow
+              icon={<Boxes className="size-5" />}
+              title="Immutable deployments"
+              body="zap deploy content-addresses each bundle; aliases move, sessions stay pinned to their deployment."
+              detail="sha-addressed"
+            />
           </div>
         </div>
       </section>
@@ -116,11 +226,24 @@ export default async function Page() {
         <div className="mx-auto max-w-7xl px-5 py-14 lg:px-8">
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
             <div>
-              <p className="font-mono text-sm text-zap-cyan">installed recipes</p>
-              <h2 className="mt-2 font-semibold text-4xl leading-tight">Creator flows ready to run</h2>
+              <Eyebrow tone="amber">
+                <TerminalSquare className="size-4" />
+                Legacy 0.3.1 · compatible recipes
+              </Eyebrow>
+              <h2 className="mt-4 font-semibold text-4xl leading-tight">
+                Your media recipes still run on v5.
+              </h2>
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-white/62">
+                Zap 0.3.1 recipe workflows remain supported as a compatibility layer — same plan-first
+                defaults, per-recipe estimates, and hard caps.
+              </p>
             </div>
-            <Link className="inline-flex min-h-11 items-center gap-2 rounded-md border border-white/15 px-4 font-medium text-sm text-white transition hover:bg-white/10" href="/gallery" prefetch={false}>
-              View gallery
+            <Link
+              className="inline-flex min-h-11 items-center gap-2 rounded-md border border-white/15 px-4 font-medium text-sm text-white transition hover:bg-white/10"
+              href="/gallery"
+              prefetch={false}
+            >
+              Browse compatible recipes
               <ArrowRight className="size-4" />
             </Link>
           </div>
@@ -130,45 +253,34 @@ export default async function Page() {
               <ZapCard href={`/zap/${zap.zap}`} key={zap.zap} variant="mini" zap={zap} />
             ))}
           </div>
-        </div>
-      </section>
 
-      <section className="border-white/10 border-t bg-[#05080c] text-white">
-        <div className="mx-auto grid max-w-7xl gap-8 px-5 py-14 lg:grid-cols-[1fr_500px] lg:px-8">
-          <div>
-            <Eyebrow tone="amber">
-              <CheckCircle2 className="size-4" />
-              Agent-compatible by design
-            </Eyebrow>
-            <h2 className="mt-4 text-balance font-semibold text-4xl leading-tight">
-              Point Codex, Claude Code, Cursor, OpenClaw, or Hermes at the URL.
-            </h2>
-            <p className="mt-4 max-w-2xl leading-7 text-white/62">
-              The framework exposes skill downloads, JSON manifests, docs topics, and plan commands so agents can start with evidence.
-            </p>
-          </div>
-          <div className="grid gap-4">
-            <CodeWindow label="install" status="published">
-              {cliProof}
-            </CodeWindow>
-            <div className="grid gap-3 text-sm sm:grid-cols-3">
-              <Endpoint label="Manifest" value="https://zap.wzrd.tech/api/skills" />
-              <Endpoint label="Core skill" value="https://zap.wzrd.tech/api/skills/zap" />
-              <Endpoint label="Authoring" value="https://zap.wzrd.tech/api/skills/zap-authoring" />
+          <div className="mt-12 grid gap-4 border-white/10 border-t pt-8 sm:grid-cols-[1fr_auto] sm:items-center">
+            <div>
+              <h2 className="font-semibold text-2xl leading-tight">Start with zero side effects.</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-7 text-white/62">
+                Run the doctor, read the docs, connect your agent. Nothing acquires a sandbox or
+                spends until you say so.
+              </p>
+            </div>
+            <div className="grid gap-3 sm:justify-items-end">
+              <div className="w-full max-w-md sm:w-[28rem]">
+                <CodeWindow label="safe first run" status="plan-safe">
+                  {doctorCommand}
+                </CodeWindow>
+              </div>
+              <Link
+                className="inline-flex min-h-11 items-center gap-2 rounded-md border border-white/15 px-4 font-medium text-sm text-white transition hover:bg-white/10"
+                href={ZAP_DOCS_URL}
+                prefetch={false}
+              >
+                Read the v5 docs
+                <ArrowRight className="size-4" />
+              </Link>
             </div>
           </div>
         </div>
       </section>
     </PageShell>
-  );
-}
-
-function Signal({ label, value }: { readonly label: string; readonly value: string }) {
-  return (
-    <div className="px-4 py-3">
-      <p className="font-mono text-[11px] text-white/45">{label}</p>
-      <p className="mt-1 truncate font-semibold text-sm text-white">{value}</p>
-    </div>
   );
 }
 
@@ -193,15 +305,6 @@ function RuntimeRow({ body, detail, icon, title }: { readonly body: string; read
         <p className="mt-1 text-sm leading-6 text-white/58">{body}</p>
       </div>
       <p className="rounded-md border border-white/10 bg-black/30 px-3 py-2 font-mono text-xs text-white/50">{detail}</p>
-    </div>
-  );
-}
-
-function Endpoint({ label, value }: { readonly label: string; readonly value: string }) {
-  return (
-    <div className="grid gap-2 rounded-md border border-white/10 bg-zap-ink px-3 py-3">
-      <span className="font-medium text-white/70">{label}</span>
-      <span className="break-all font-mono text-zap-cyan text-xs">{value}</span>
     </div>
   );
 }

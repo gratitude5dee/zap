@@ -8,10 +8,11 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "Zap — agent media runtime",
+    default: "Zap — composable CPU agent runtime",
     template: "%s | Zap",
   },
-  description: "Agent-first generative content recipes on Eve, Convex, Upstash, and Vercel.",
+  description:
+    "Zap composes a CPU runtime on an isolated Zap sandbox VM, renders agents as code, and plans side-effecting tools before live execution.",
 };
 
 export default function RootLayout({ children }: { readonly children: ReactNode }) {

@@ -16,7 +16,7 @@ function pages(dir: string): string[] {
 describe("public/llms.txt", () => {
   it("follows the Appendix C template sections", () => {
     for (const heading of [
-      "# Zap — composable CPU agent runtime",
+      "# Zap v5 — composable CPU agent runtime",
       "## For agents",
       "## Programming model",
       "## CLI",
@@ -27,9 +27,19 @@ describe("public/llms.txt", () => {
       "## Harnesses",
       "## Pay",
       "## Kernel and contracts",
+      "## Legacy 0.3.1 (compatible recipes)",
     ]) {
       expect(llms).toContain(heading);
     }
+  });
+
+  it("pins the current published version and canonical docs", () => {
+    const version = JSON.parse(
+      readFileSync(path.join(repoRoot, "packages", "cli", "package.json"), "utf8"),
+    ).version as string;
+    expect(llms).toContain(`@wzrdtech/zap@${version}`);
+    expect(llms).toContain("https://docs.zap.wzrd.tech");
+    expect(Buffer.byteLength(llms, "utf8")).toBeLessThan(8192);
   });
 
   it("links every template page", () => {
