@@ -10,7 +10,7 @@ export default function SettingsPage() {
     <PageShell className="zap-metal-field" tone="dark">
       <div className="mx-auto max-w-6xl px-5 py-5 lg:px-8">
         <SiteNav tone="dark" />
-        <div className="mb-8 mt-10 flex flex-col justify-between gap-4 border-white/10 border-b pb-8 sm:flex-row sm:items-end">
+        <div className="mt-10 flex flex-col justify-between gap-4 pb-8 sm:flex-row sm:items-end">
           <div>
             <Eyebrow>
               <KeyRound className="size-4" />
@@ -21,8 +21,9 @@ export default function SettingsPage() {
               Connect wallet auth, store provider keys in Supabase, and keep live Zap runs user-owned.
             </p>
           </div>
-          <Link className="inline-flex min-h-11 items-center rounded-md border border-white/10 px-3 font-medium text-sm text-white transition hover:bg-white/10" href={ZAP_DOCS_URL} prefetch={false}>Docs</Link>
+          <Link className="zap-glass-pill min-h-11 px-4 font-medium text-sm" href={ZAP_DOCS_URL} prefetch={false}>Docs</Link>
         </div>
+        <div aria-hidden className="zap-hairline mb-8" />
         <SettingsClient secretTypes={zapSecretTypes} />
       </div>
     </PageShell>

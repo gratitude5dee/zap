@@ -12,7 +12,7 @@ export default async function GalleryPage() {
       <div className="mx-auto max-w-7xl px-5 py-5 lg:px-8">
         <SiteNav tone="dark" />
 
-        <header className="mt-12 border-white/10 border-b pb-10">
+        <header className="mt-12 pb-10">
           <Eyebrow tone="amber">
             <Sparkles className="size-4" />
             Compatible recipes · Legacy 0.3.1 on v5
@@ -30,6 +30,7 @@ export default async function GalleryPage() {
             </div>
           </div>
         </header>
+        <div aria-hidden className="zap-hairline" />
 
         <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {zaps.map((zap) => (
@@ -37,7 +38,8 @@ export default async function GalleryPage() {
           ))}
         </div>
 
-        <section className="mt-10 grid gap-4 border-white/10 border-t pt-8 md:grid-cols-2">
+        <div aria-hidden className="zap-hairline mt-10" />
+        <section className="grid gap-4 pt-8 md:grid-cols-2">
           <GalleryNote icon={<Film className="size-5" />} title="Inspect before you run" body="Each card opens a runner with plan mode by default: input capture, step graph, progress, output, and feedback." />
           <GalleryNote icon={<BadgeDollarSign className="size-5" />} title="Per-recipe budget guard" body="Every recipe carries its own live estimate and hard cap; live providers require explicit approval per run." />
         </section>
@@ -48,7 +50,7 @@ export default async function GalleryPage() {
 
 function RegistryMetric({ label, value }: { readonly label: string; readonly value: string }) {
   return (
-    <div className="rounded-md border border-white/10 bg-white/[0.055] p-3">
+    <div className="zap-gradient-card rounded-md p-3">
       <p className="font-semibold text-2xl leading-none text-white">{value}</p>
       <p className="mt-2 font-mono text-[11px] text-white/45">{label}</p>
     </div>
@@ -57,7 +59,7 @@ function RegistryMetric({ label, value }: { readonly label: string; readonly val
 
 function GalleryNote({ body, icon, title }: { readonly body: string; readonly icon: ReactNode; readonly title: string }) {
   return (
-    <div className="rounded-md border border-white/10 bg-black/20 p-5">
+    <div className="zap-gradient-card rounded-md p-5">
       <div className="flex items-center gap-3 text-zap-cyan">
         {icon}
         <h2 className="font-semibold text-white">{title}</h2>
