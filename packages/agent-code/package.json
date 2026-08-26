@@ -1,0 +1,44 @@
+{
+  "name": "@wzrdtech/zap-agent",
+  "version": "5.0.0-alpha.0",
+  "private": false,
+  "description": "Zap agents as code: defineAgent, hooks, tools, connections, and the deterministic render frame.",
+  "license": "MIT",
+  "type": "module",
+  "types": "./dist/index.d.ts",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && node ../../scripts/rewrite-dts-imports.mjs dist",
+    "prepack": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gratitude5dee/Zap.git",
+    "directory": "packages/agent-code"
+  },
+  "bugs": {
+    "url": "https://github.com/gratitude5dee/Zap/issues"
+  },
+  "homepage": "https://zap.wzrd.tech",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@wzrdtech/core": "5.0.0-alpha.0",
+    "@wzrdtech/zap-kernel": "5.0.0-alpha.0",
+    "@wzrdtech/zap-sandbox": "5.0.0-alpha.0",
+    "@wzrdtech/zap-memory": "5.0.0-alpha.0"
+  },
+  "engines": {
+    "node": "24.x"
+  }
+}

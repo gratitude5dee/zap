@@ -1,5 +1,19 @@
 # Changelog
 
+## 5.0.0-alpha.0 — Unreleased
+
+### Added
+
+- Seven new workspaces for the composable CPU agent runtime: `@wzrdtech/zap-kernel`, `@wzrdtech/zap-sandbox`, `@wzrdtech/zap-memory`, `@wzrdtech/zap-runtime`, `@wzrdtech/zap-agent`, `@wzrdtech/zap-templates`, and `@wzrdtech/zap-cloud`.
+- Kernel (Z1): plugin lifecycle with `definePlugin`/`createRuntime`, `ctx.effect` inverse disposers, fork/isolate contexts, service injection, event bus, and delta reconciliation, with the full acceptance test suite under `packages/kernel/tests/`.
+- Typed contracts: sandbox provider/handle/lane contract, memory scopes/service, meter units, runtime spec schema, and the agents-as-code public API surface (`defineAgent`, hooks, connections, secrets).
+- Canonical agents-as-code files under `agents/` plus `project.ts`, and the north-star compose fixture.
+- Regression harness: `npm run test:regression` with frozen 0.3.1 CLI fixtures, output normalization, docs-snippet checks, and the platform-name denylist test.
+
+### Changed
+
+- All `@wzrdtech/*` workspaces bumped to `5.0.0-alpha.0` with exact internal dependency pins; `build:packages` now builds in kernel-first dependency order; CI runs typecheck and regression before the main suite.
+
 ## 0.3.1 — 2026-07-13
 
 ### Fixed

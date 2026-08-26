@@ -1,6 +1,6 @@
 {
   "name": "@wzrdtech/core",
-  "version": "0.3.0",
+  "version": "5.0.0-alpha.0",
   "private": false,
   "description": "Core Zap recipe schema, planning, and registry utilities.",
   "license": "MIT",
@@ -46,6 +46,14 @@
     "./sprite": {
       "types": "./dist/sprite.d.ts",
       "import": "./dist/sprite.js"
+    },
+    "./meter": {
+      "types": "./dist/meter.d.ts",
+      "import": "./dist/meter.js"
+    },
+    "./runtime-spec": {
+      "types": "./dist/runtime-spec.d.ts",
+      "import": "./dist/runtime-spec.js"
     }
   },
   "dependencies": {

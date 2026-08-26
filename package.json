@@ -14,7 +14,7 @@
   "scripts": {
     "prebuild": "node scripts/generate-sprite-connections.mjs",
     "build": "npm run build:packages && next build",
-    "build:packages": "npm run build --workspace @wzrdtech/core && npm run build --workspace @wzrdtech/providers && npm run build --workspace @wzrdtech/agent",
+    "build:packages": "npm run build --workspace @wzrdtech/core && npm run build --workspace @wzrdtech/zap-kernel && npm run build --workspace @wzrdtech/zap-sandbox && npm run build --workspace @wzrdtech/zap-memory && npm run build --workspace @wzrdtech/providers && npm run build --workspace @wzrdtech/zap-agent && npm run build --workspace @wzrdtech/zap-runtime && npm run build --workspace @wzrdtech/zap-templates && npm run build --workspace @wzrdtech/zap-cloud && npm run build --workspace @wzrdtech/agent",
     "cli": "npm run build:packages && node packages/cli/bin/zap.js",
     "predev": "node scripts/generate-sprite-connections.mjs",
     "dev": "next dev",
@@ -40,7 +40,13 @@
     "evals": "eve eval --strict --verbose --junit .eve/junit.xml",
     "evals:live": "EVALS_LIVE=1 eve eval live --strict --verbose --junit .eve/junit-live.xml",
     "world-convex:spike": "node experiments/world-convex/run-spike.mjs --mode convex --samples 9 --output experiments/world-convex/results/latest.json",
-    "convex:codegen": "convex codegen"
+    "convex:codegen": "convex codegen",
+    "test:regression": "npm run test:cli && vitest run tests/zap-recipes-golden.test.ts tests/sandbox-selector.test.ts tests/sandbox-contract.test.ts tests/regression-fixtures.test.ts",
+    "test:kernel": "vitest run packages/kernel/tests",
+    "test:sandbox": "vitest run packages/sandbox/tests",
+    "test:memory": "vitest run packages/memory/tests",
+    "test:runtime": "vitest run packages/runtime/tests",
+    "test:cloud": "vitest run packages/cloud/tests"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.12",

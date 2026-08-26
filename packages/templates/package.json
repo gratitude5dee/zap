@@ -1,0 +1,41 @@
+{
+  "name": "@wzrdtech/zap-templates",
+  "version": "5.0.0-alpha.0",
+  "private": false,
+  "description": "Zap runtime template manifests, bake scripts, units, and doctor checks.",
+  "license": "MIT",
+  "type": "module",
+  "types": "./dist/index.d.ts",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && node ../../scripts/rewrite-dts-imports.mjs dist",
+    "prepack": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gratitude5dee/Zap.git",
+    "directory": "packages/templates"
+  },
+  "bugs": {
+    "url": "https://github.com/gratitude5dee/Zap/issues"
+  },
+  "homepage": "https://zap.wzrd.tech",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@wzrdtech/core": "5.0.0-alpha.0"
+  },
+  "engines": {
+    "node": "24.x"
+  }
+}

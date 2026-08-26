@@ -1,6 +1,6 @@
 {
   "name": "@wzrdtech/providers",
-  "version": "0.3.0",
+  "version": "5.0.0-alpha.0",
   "private": false,
   "description": "Provider adapters and queue helpers for Zap runtimes.",
   "license": "MIT",
@@ -25,8 +25,8 @@
   "bugs": {
     "url": "https://github.com/gratitude5dee/Zap/issues"
   },
-    "homepage": "https://zap.wzrd.tech",
-    "exports": {
+  "homepage": "https://zap.wzrd.tech",
+  "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
@@ -75,7 +75,7 @@
   "dependencies": {
     "@fal-ai/client": "^1.8.0",
     "@upstash/redis": "^1.38.0",
-    "@wzrdtech/core": "0.3.0"
+    "@wzrdtech/core": "5.0.0-alpha.0"
   },
   "engines": {
     "node": "24.x"

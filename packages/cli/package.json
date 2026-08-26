@@ -1,6 +1,6 @@
 {
   "name": "@wzrdtech/zap",
-  "version": "0.3.1",
+  "version": "5.0.0-alpha.0",
   "private": false,
   "description": "Agent-first CLI for creating, validating, and running Zap recipes.",
   "license": "MIT",
@@ -24,16 +24,38 @@
     "bin",
     "resources",
     "src",
-    "README.md"
+    "README.md",
+    "v5"
   ],
   "dependencies": {
-    "@wzrdtech/core": "0.3.0",
-    "@wzrdtech/zap-mcp": "0.3.0",
-    "@wzrdtech/providers": "0.3.0",
+    "@wzrdtech/core": "5.0.0-alpha.0",
+    "@wzrdtech/zap-mcp": "5.0.0-alpha.0",
+    "@wzrdtech/providers": "5.0.0-alpha.0",
     "convex": "^1.28.0",
-    "yaml": "^2.8.1"
+    "yaml": "^2.8.1",
+    "@wzrdtech/zap-runtime": "5.0.0-alpha.0"
   },
   "engines": {
     "node": "24.x"
+  },
+  "exports": {
+    ".": "./src/cli.js",
+    "./sandbox/*": {
+      "types": "./v5/sandbox/*.d.ts",
+      "import": "./v5/sandbox/*.js"
+    },
+    "./memory/*": {
+      "types": "./v5/memory/*.d.ts",
+      "import": "./v5/memory/*.js"
+    },
+    "./harness/*": {
+      "types": "./v5/harness/*.d.ts",
+      "import": "./v5/harness/*.js"
+    },
+    "./pay/*": {
+      "types": "./v5/pay/*.d.ts",
+      "import": "./v5/pay/*.js"
+    },
+    "./package.json": "./package.json"
   }
 }
