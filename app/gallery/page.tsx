@@ -6,7 +6,6 @@ import { listCanonicalZapSpecs } from "@/lib/zap-files";
 
 export default async function GalleryPage() {
   const zaps = await listCanonicalZapSpecs();
-  const totalEstimate = zaps.reduce((sum, zap) => sum + zap.budget.estimate_usd, 0);
 
   return (
     <PageShell className="zap-metal-field" tone="dark">
@@ -14,21 +13,20 @@ export default async function GalleryPage() {
         <SiteNav tone="dark" />
 
         <header className="mt-12 border-white/10 border-b pb-10">
-          <Eyebrow>
+          <Eyebrow tone="amber">
             <Sparkles className="size-4" />
-            Local Zap registry
+            Compatible recipes · Legacy 0.3.1 on v5
           </Eyebrow>
           <div className="mt-4 grid gap-6 lg:grid-cols-[1fr_420px] lg:items-end">
             <div>
-              <h1 className="text-balance font-semibold text-5xl leading-none text-white sm:text-6xl">Zap Gallery</h1>
+              <h1 className="text-balance font-semibold text-5xl leading-none text-white sm:text-6xl">Start from a workflow you can inspect.</h1>
               <p className="mt-5 max-w-3xl text-pretty leading-7 text-white/62">
-                Pick a recipe, inspect the step graph, plan spend, then switch to live providers only when keys and budgets are ready.
+                Media recipes from the 0.3.1 framework, compatible with Zap v5. Open a recipe to inspect its step graph, plan spend against its own estimate and hard cap, and go live only when keys and budgets are ready.
               </p>
             </div>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <RegistryMetric label="recipes" value={String(zaps.length)} />
-              <RegistryMetric label="plan default" value="$0" />
-              <RegistryMetric label="est. live" value={`$${totalEstimate.toFixed(2)}`} />
+              <RegistryMetric label="default mode" value="plan" />
             </div>
           </div>
         </header>
@@ -40,8 +38,8 @@ export default async function GalleryPage() {
         </div>
 
         <section className="mt-10 grid gap-4 border-white/10 border-t pt-8 md:grid-cols-2">
-          <GalleryNote icon={<Film className="size-5" />} title="Creator view" body="Each card opens a one-click runner with plan mode, input capture, progress, output, and feedback." />
-          <GalleryNote icon={<BadgeDollarSign className="size-5" />} title="Budget guard" body="Every recipe carries an estimate and hard cap before live providers are allowed." />
+          <GalleryNote icon={<Film className="size-5" />} title="Inspect before you run" body="Each card opens a runner with plan mode by default: input capture, step graph, progress, output, and feedback." />
+          <GalleryNote icon={<BadgeDollarSign className="size-5" />} title="Per-recipe budget guard" body="Every recipe carries its own live estimate and hard cap; live providers require explicit approval per run." />
         </section>
       </div>
     </PageShell>

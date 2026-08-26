@@ -2,8 +2,9 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { BookOpen, Braces } from "lucide-react";
+import { ArrowUpRight, BookOpen, Braces } from "lucide-react";
 import { Eyebrow, PageShell, SiteNav } from "@/app/_components/zap-chrome";
+import { ZAP_DOCS_URL } from "@/lib/zap-urls";
 
 export const dynamic = "force-static";
 
@@ -40,11 +41,22 @@ export default function DocsPage() {
       <div className="mx-auto max-w-7xl px-5 py-5 lg:px-8">
         <SiteNav tone="dark" />
 
-        <header className="mt-12 grid gap-8 border-white/10 border-b pb-10 lg:grid-cols-[1fr_360px]">
+        <div className="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-md border border-zap-amber/25 bg-zap-amber/10 px-5 py-4">
+          <p className="text-sm leading-6 text-white">
+            <span className="font-mono text-xs tracking-[0.14em] text-zap-amber uppercase">Legacy 0.3.1</span>
+            <span className="ml-3 text-white/72">These topics cover the compatible recipe framework. Current Zap v5 documentation lives at docs.zap.wzrd.tech.</span>
+          </p>
+          <Link className="inline-flex min-h-11 items-center gap-2 rounded-md border border-white/15 px-4 font-medium text-sm text-white transition hover:bg-white/10" href={ZAP_DOCS_URL} prefetch={false}>
+            Open the v5 docs
+            <ArrowUpRight className="size-4" />
+          </Link>
+        </div>
+
+        <header className="mt-8 grid gap-8 border-white/10 border-b pb-10 lg:grid-cols-[1fr_360px]">
           <div>
-            <Eyebrow>
+            <Eyebrow tone="amber">
               <BookOpen className="size-4" />
-              Docs for humans and agents
+              Legacy recipe docs · humans and agents
             </Eyebrow>
             <h1 className="mt-4 text-balance font-semibold text-5xl leading-none text-white sm:text-6xl">Zap Docs</h1>
             <p className="mt-5 max-w-3xl text-pretty leading-7 text-white/62">

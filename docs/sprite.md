@@ -1,6 +1,6 @@
 # Sprite Alpha
 
-A Sprite is the deployable agent runtime produced by Studio. One signed-in wallet owns one Sprite in v0.3.0.
+A Sprite is the deployable agent runtime produced by Studio. One signed-in wallet owns one Sprite in v0.3.1.
 
 `agent/sprites/<slug>/Sprite.md` mirrors Zap frontmatter and contains exactly six wizard dimensions:
 

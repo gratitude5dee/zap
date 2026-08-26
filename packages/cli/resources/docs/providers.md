@@ -2,7 +2,7 @@
 
 Zap separates recipe planning from provider execution.
 
-Production providers for v0.3.0:
+Production providers for v0.3.1:
 
 - `aws`: Amazon Bedrock Nova Canvas image generation and Nova Reel async video generation.
 - `gmi`: GMI Cloud video generation through the request queue API.

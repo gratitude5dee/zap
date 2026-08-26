@@ -1,6 +1,6 @@
 # Chat Channels
 
-Zap v0.3.0 exposes one Eve-backed agent through Slack, Telegram, and an iMessage bridge.
+Zap v0.3.1 exposes one Eve-backed agent through Slack, Telegram, and an iMessage bridge.
 
 | Channel | Webhook | Channel-specific environment |
 | --- | --- | --- |

@@ -24,7 +24,7 @@ Auth posture:
 
 Machine surfaces:
 
-- `/.agent` and `/.well-known/agent.json`: the same v0.3.0 discovery manifest.
+- `/.agent` and `/.well-known/agent.json`: the same v0.3.1 discovery manifest.
 - `/api/zaps?query=cup`: canonical registry search used by the gallery and CLI.
 - `/zaps/:slug/plan`: public plan-only endpoint.
 - `/eve/v1/slack`, `/eve/v1/telegram`, `/eve/v1/imessage`: signed channel webhooks.

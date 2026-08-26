@@ -136,29 +136,12 @@ select {
   outline-offset: 3px;
 }
 
-.zap-site-header-inner {
-  min-height: 7rem;
-  flex-wrap: wrap;
-}
-
-.zap-site-primary-nav {
-  order: 3;
-  flex: 0 0 100%;
-  width: 100%;
-  justify-content: center;
-}
-
-.zap-site-auth {
-  flex-shrink: 0;
-  margin-left: auto;
-}
-
 .zap-studio-height {
-  height: calc(100dvh - 7rem);
+  height: 100dvh;
 }
 
 .zap-studio-min-height {
-  min-height: calc(100dvh - 7rem);
+  min-height: 100dvh;
 }
 
 .zap-studio-layout {
@@ -173,28 +156,6 @@ select {
 
 .zap-run-rail {
   display: none;
-}
-
-@media (min-width: 40rem) {
-  .zap-site-header-inner {
-    min-height: 4rem;
-    flex-wrap: nowrap;
-  }
-
-  .zap-site-primary-nav {
-    order: 0;
-    flex: 1 1 0%;
-    width: auto;
-    justify-content: flex-start;
-  }
-
-  .zap-studio-height {
-    height: calc(100dvh - 4rem);
-  }
-
-  .zap-studio-min-height {
-    min-height: calc(100dvh - 4rem);
-  }
 }
 
 @media (min-width: 64rem) {
@@ -426,6 +387,112 @@ select {
   .zap-card-float,
   .zap-card-pulse,
   .zap-card-scan-beam {
+    animation: none;
+  }
+}
+
+/* Glassmorphism CTA — adapted from ThreeUI RectangleButtons (glassmorphism-cta). */
+.zap-glass-cta {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  overflow: hidden;
+  cursor: pointer;
+  border-radius: 9999px;
+  box-shadow: 0 8px 40px rgba(180, 220, 200, 0.12);
+  transition:
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.3s ease;
+}
+
+.zap-glass-cta:hover {
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 0 40px 8px rgba(140, 240, 180, 0.22);
+}
+
+.zap-glass-cta:active {
+  transform: translateY(0) scale(1);
+}
+
+.zap-glass-cta:focus-visible {
+  outline: 2px solid var(--zap-cyan, #62e7e5);
+  outline-offset: 3px;
+}
+
+.zap-glass-cta__beam {
+  position: absolute;
+  inset: -200%;
+  z-index: 0;
+  background: conic-gradient(
+    from 225deg,
+    transparent 0deg,
+    rgba(255, 255, 255, 0.6) 90deg,
+    transparent 90deg
+  );
+  animation: zap-cta-spin 4s linear infinite;
+}
+
+.zap-glass-cta--sulfur .zap-glass-cta__beam {
+  background: conic-gradient(
+    from 225deg,
+    transparent 0deg,
+    rgba(246, 255, 0, 0.85) 90deg,
+    transparent 90deg
+  );
+}
+
+.zap-glass-cta__pane {
+  position: absolute;
+  inset: 1px;
+  z-index: 1;
+  border-radius: 9999px;
+  background: rgba(10, 16, 13, 0.82);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.zap-glass-cta--sulfur .zap-glass-cta__pane {
+  background: rgba(24, 24, 8, 0.82);
+}
+
+.zap-glass-cta__label {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  font-weight: 500;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.zap-glass-cta--sulfur .zap-glass-cta__label {
+  color: #f8ffc8;
+}
+
+@keyframes zap-cta-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zap-glass-cta,
+  .zap-glass-cta:hover {
+    transform: none;
+    transition: none;
+  }
+
+  .zap-glass-cta__beam {
     animation: none;
   }
 }

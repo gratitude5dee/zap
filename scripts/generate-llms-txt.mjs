@@ -1,11 +1,15 @@
 // @ts-check
 // Renders public/llms.txt from the goal.md Appendix C template shape.
 // Public surface: names Zap only (C3). Run: node scripts/generate-llms-txt.mjs
-import { mkdirSync, readdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+
+const version = JSON.parse(
+  readFileSync(path.join(repoRoot, "packages", "cli", "package.json"), "utf8"),
+).version;
 
 const pages = (dir) =>
   readdirSync(path.join(repoRoot, "docs", dir))
@@ -26,19 +30,27 @@ const agentLines = pages("agents")
   .map((slug) => `- /docs/agents/${slug}`)
   .join("\n");
 
-const LLMS_TXT = `# Zap — composable CPU agent runtime
+const LLMS_TXT = `# Zap v5 — composable CPU agent runtime
 
-> @wzrdtech/zap v5: compose a runtime (light | med | heavy) on a Box VM, write agents as code, run them plan-only by default, pay with your own keys or per request.
+> Current package: @wzrdtech/zap@${version}. Requires Node 24.x.
+> Zap composes agents, tools, MCP servers, services, and sandbox providers into a CPU runtime (light | med | heavy) on an isolated sandbox VM. Write agents as code; plan-only is the default for side-effecting tools.
 
+Canonical docs: https://docs.zap.wzrd.tech
+Full agent index: https://docs.zap.wzrd.tech/llms.txt
 npm: https://www.npmjs.com/package/@wzrdtech/zap
 repo: https://github.com/gratitude5dee/Zap
-docs: https://zap.wzrd.tech/docs
+local docs (this site): https://zap.wzrd.tech/docs
 
 ## For agents
 - Read this file first. Every CLI command has --json; humans get text, agents get JSON.
-- Start: npx @wzrdtech/zap doctor --json, then npx @wzrdtech/zap compose --weight med --sandbox box --dry-run --json.
-- Plan-only is the default. --live requires a payer (BYOK key or managed wallet). Nothing spends without it.
-- MCP: npx @wzrdtech/zap mcp (stdio) or --http; skills at /api/skills/<skill>.
+- Safe first run (no sandbox acquired, no live work):
+  npx @wzrdtech/zap@${version} doctor --json
+  npx @wzrdtech/zap@${version} init my-zap --non-interactive --json
+  cd my-zap
+  npx @wzrdtech/zap@${version} compose --weight med --sandbox box --dry-run --json
+- Plan-only is the default. --live requires a payer (BYOK key or managed wallet). A missing payer fails closed with PAYER_MISSING; read-only tools may run in plan mode and model tokens meter under the payer.
+- MCP: npx -y @wzrdtech/zap@${version} mcp (stdio) or --http; skills at /api/skills/<skill>.
+- Secrets are write-only, scoped to declared HTTPS connections; they never appear in bundles, instructions, events, or --json output.
 
 ## Programming model
 - An agent is a function that renders the next step's instructions. Hooks attach a model, tools, MCP servers, subagents; hooks are synchronous and may be conditional; the runtime executes.
@@ -78,6 +90,10 @@ ${harnessLines}
 - /docs/kernel — Context, effects, services, forks, events
 - /docs/sandbox-contract — SandboxProvider / SandboxHandle / SandboxSpec / ExecResult
 - /docs/agent-plugin — install Zap as a plugin in your coding agent
+
+## Legacy 0.3.1 (compatible recipes)
+- Zap 0.3.1 media recipes remain supported on v5 as a compatibility layer.
+- Browse: https://zap.wzrd.tech/gallery · Legacy docs: https://docs.zap.wzrd.tech/legacy/introduction
 `;
 
 const target = path.join(repoRoot, "public", "llms.txt");

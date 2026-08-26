@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ZAP_VERSION } from "./zap-version";
 
 const relativeEndpointSchema = z.string().startsWith("/");
 
@@ -34,7 +35,7 @@ export const agentManifest: AgentManifest = agentManifestSchema.parse({
   name: "Zap",
   protocols: {},
   supportedChannels: ["web", "slack", "telegram", "imessage-beta"],
-  version: "0.3.0",
+  version: ZAP_VERSION,
   zapCatalogUrl: "/api/zaps",
 });
 
