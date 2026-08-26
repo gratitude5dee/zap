@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-05T02:25:43.627Z",
+  "generatedAt": "2026-08-26T01:26:35.214Z",
   "skills": [
     {
       "fileCount": 1,
@@ -15,7 +15,7 @@
     },
     {
       "fileCount": 1,
-      "hash": "3944b2e03f81d72b5179b9c690440e7a697de252688aae35a307d37f4908660e",
+      "hash": "4442db896b1d74bf11cc79ee1f03410d967dc2c69fe155a82d31183d738734b6",
       "path": "skills/zap-cli",
       "skill": "zap-cli"
     },

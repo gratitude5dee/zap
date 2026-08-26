@@ -9,6 +9,7 @@
 - Typed contracts: sandbox provider/handle/lane contract, memory scopes/service, meter units, runtime spec schema, and the agents-as-code public API surface (`defineAgent`, hooks, connections, secrets).
 - Canonical agents-as-code files under `agents/` plus `project.ts`, and the north-star compose fixture.
 - Regression harness: `npm run test:regression` with frozen 0.3.1 CLI fixtures, output normalization, docs-snippet checks, and the platform-name denylist test.
+- CLI (Z3): dispatcher split into auto-discovered `packages/cli/src/commands/<domain>/` modules with a documented registration API; new `zap compose`, `zap runtime` (up/down/ps/logs/exec/snapshot/fork/stop/resume/desktop/import-sprite), `zap fs`, `zap media`, `zap ffmpeg`, and `zap template` commands; `zap doctor --json` reports payer status; `zap mcp --http`; `zap login --provider`; structured `--json` errors with exit codes and payer gates (`PAYER_MISSING`) on every live/spending path; `.zap/auth.json` namespaced so `zap logout` clears only the API token.
 
 ### Changed
 
