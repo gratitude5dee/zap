@@ -1,6 +1,6 @@
 import type { GenRequest, ProviderPollResult, ProviderSecrets } from "@wzrdtech/providers";
 import { GatewayError } from "./errors.ts";
-import { buildIdempotencyKey, quoteGenerationForMode, selectAdapter, type MediaGenRequest } from "./router.ts";
+import { buildIdempotencyKey, quoteGenerationForMode, selectAdapter, selectProviderById, type MediaGenRequest } from "./router.ts";
 
 export type MediaSubmitInput = Omit<MediaGenRequest, "provider" | "model"> & { model?: string };
 
@@ -43,15 +43,7 @@ export function createMediaService(provider: string, opts: { model?: string } = 
       return { idemKey, provider: adapter.id, requestId: submitted.requestId };
     },
     async poll(requestId, secrets) {
-      const adapter = selectAdapter({
-        capability: "image.gen",
-        inputs: {},
-        model: opts.model ?? "",
-        prompt: "",
-        provider,
-        runId: "poll",
-        stepId: "poll",
-      });
+      const adapter = selectProviderById(provider);
       return adapter.poll(requestId, secrets);
     },
   };

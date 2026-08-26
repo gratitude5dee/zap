@@ -97,6 +97,39 @@ function lineUnit(step: ZapStep): string {
   return step.duration_s !== undefined ? "second" : "request";
 }
 
+type AnthropicContentBlock =
+  | { type: "text"; text: string }
+  | { type: "tool_use"; id: string; name: string; input: unknown }
+  | { type: "tool_result"; tool_use_id: string; content: string };
+
+function toAnthropicMessages(messages: LlmMessage[]): Array<{ role: "user" | "assistant"; content: string | AnthropicContentBlock[] }> {
+  const out: Array<{ role: "user" | "assistant"; content: string | AnthropicContentBlock[] }> = [];
+  for (const m of messages) {
+    if (m.role === "system") continue;
+    if (m.role === "tool") {
+      const block: AnthropicContentBlock = { type: "tool_result", tool_use_id: m.toolCallId ?? "", content: m.content };
+      const prev = out[out.length - 1];
+      if (prev && prev.role === "user" && Array.isArray(prev.content) && prev.content.every((b) => b.type === "tool_result")) {
+        prev.content.push(block);
+      } else {
+        out.push({ role: "user", content: [block] });
+      }
+      continue;
+    }
+    if (m.role === "assistant" && m.toolCalls && m.toolCalls.length > 0) {
+      const blocks: AnthropicContentBlock[] = [];
+      if (m.content) blocks.push({ type: "text", text: m.content });
+      for (const call of m.toolCalls) {
+        blocks.push({ type: "tool_use", id: call.id, name: call.name, input: call.input ?? {} });
+      }
+      out.push({ role: "assistant", content: blocks });
+      continue;
+    }
+    out.push({ role: m.role, content: m.content });
+  }
+  return out;
+}
+
 function toolCallsFromChoice(message: {
   content?: string | null;
   tool_calls?: Array<{ id: string; function: { name: string; arguments: string } }>;
@@ -144,7 +177,7 @@ function createLlmService(
           headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "Content-Type": "application/json" },
           body: JSON.stringify({
             max_tokens: 4096,
-            messages: req.messages.filter((m) => m.role !== "system").map((m) => ({ role: m.role, content: m.content })),
+            messages: toAnthropicMessages(req.messages),
             model,
             system: req.messages.find((m) => m.role === "system")?.content,
             tools: (req.tools ?? []).map((tool) => ({
@@ -181,6 +214,14 @@ function createLlmService(
             content: m.content,
             role: m.role,
             tool_call_id: m.toolCallId,
+            tool_calls:
+              m.role === "assistant" && m.toolCalls && m.toolCalls.length > 0
+                ? m.toolCalls.map((call) => ({
+                    id: call.id,
+                    type: "function" as const,
+                    function: { name: call.name, arguments: JSON.stringify(call.input ?? {}) },
+                  }))
+                : undefined,
           })),
           model,
           tools: tools.length > 0 ? tools : undefined,
