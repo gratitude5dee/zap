@@ -11,6 +11,20 @@ export {
   memoryReceiptStore,
   memoryRuntimeStore,
 } from "./memory.ts";
+export {
+  createSessionsModule,
+  memoryAgentSessionStore,
+  type AgentSessionRow,
+  type AgentSessionStore,
+  type RuntimeAgentdTransport,
+  type SessionsModuleOptions,
+} from "./sessions/index.ts";
+export {
+  createSecretsResolveModule,
+  memoryTenantSecretStore,
+  type TenantSecretRecord,
+  type TenantSecretStore,
+} from "./secrets/resolve.ts";
 export { createVercelCloud, vercelFetchHandler, type VercelAdapterOptions } from "./adapters/vercel.ts";
 export { thirdwebFacilitator, type ThirdwebFacilitatorOptions } from "./facilitators/thirdweb.ts";
 export { cdpFacilitator, type CdpFacilitatorOptions } from "./facilitators/cdp.ts";

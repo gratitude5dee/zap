@@ -32,6 +32,7 @@ The list below is generated from the discovered command set by
 
 {/* zap-commands:start */}
 - `zap add <registry-name> [--force] [--json]` — Add a registry Zap.
+- `zap agent <new|ls|render|lint> [--json]` — Scaffold, list, render, and lint agents-as-code.
 - `zap compose [Runtime.md|zap.config.ts] [--dry-run] [--json]` — Resolve Runtime.md or zap.config.ts into the runtime plugin tree.
 - `zap deploy <slug|Zap.md> [--finalize] [--json]` — Upload a draft Zap to the hosted API.
 - `zap dev` — Start the web app dev server.
@@ -61,6 +62,9 @@ The list below is generated from the discovered command set by
 - `zap run <slug|Zap.md> [--input KEY=VALUE] [--budget-cap-usd N] [--live] [--json]` — Plan a Zap by default; use --live to submit providers.
 - `zap runtime <up|down|ps|logs|exec|snapshot|fork|stop|resume|desktop|import-sprite> [...] [--json]` — Manage Zap runtimes (up, down, ps, logs, exec, snapshot, fork, stop, resume, desktop, import-sprite).
 - `zap search <query> [--remote] [--json]` — Search registry templates; add --remote for hosted search.
+- `zap secret <set|list|remove|sync> [NAME] [--agent <id>] [--env <alias>] [--stdin] [--json]` — Set, list, remove, and sync write-only agent secrets.
+- `zap session --agent <id>[@<alias>] [--session <id>] [--live] [--verbose|--json] "..."` — Run a turn against a durable agent session (plan-only by default).
+- `zap sessions ls [--json]` — List durable agent sessions.
 - `zap skills [generate|update|check] [--json]` — Generate or check skills/skills-manifest.json.
 - `zap status [runId] [--json]` — Show local run status.
 - `zap studio` — Start the web studio.

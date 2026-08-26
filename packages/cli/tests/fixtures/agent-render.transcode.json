@@ -1,0 +1,12 @@
+{
+  "instructions": "Do the work. Plan-only unless --live. Request: transcode a.mp4",
+  "model": "openrouter/anthropic/claude-sonnet-4.6",
+  "tools": [
+    "ffmpeg_transcode"
+  ],
+  "mcpServers": [],
+  "subagents": [],
+  "secretsBound": [
+    "WEBHOOK_TOKEN"
+  ]
+}
