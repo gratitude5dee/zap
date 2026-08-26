@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { createHash, timingSafeEqual } from "node:crypto";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -44,6 +45,13 @@ interface RouteEntry {
 
 function json(status: number, body: unknown): AgentdResponse {
   return { status, headers: { "content-type": "application/json" }, body };
+}
+
+/** constant-time bearer comparison; hashing first equalizes lengths */
+function bearerMatches(header: string, token: string): boolean {
+  const given = createHash("sha256").update(header).digest();
+  const expected = createHash("sha256").update(`Bearer ${token}`).digest();
+  return timingSafeEqual(given, expected);
 }
 
 function execBash(
@@ -233,7 +241,7 @@ export function createAgentdServer(options: AgentdOptions): AgentdServer {
   async function handle(req: AgentdRequest): Promise<AgentdResponse> {
     if (req.path !== "/v1/health") {
       const auth = req.headers.authorization ?? "";
-      if (auth !== `Bearer ${options.token}`) {
+      if (!bearerMatches(auth, options.token)) {
         return json(401, { error: "unauthorized" });
       }
     }

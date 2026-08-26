@@ -61,7 +61,7 @@ const BOX_SERVICES = ["zap-agentd", "zap-host"] as const;
 const OMARCHY_SERVICES = [...BOX_SERVICES, "omarchy-desktop"] as const;
 
 /** Namespace publishes ports declaratively, so it needs no host unit. */
-const NATIVE_SERVICES = ["zap-agentd"] as const;
+const NATIVE_SERVICES = ["agentd", "bridge"] as const;
 
 export const ENVIRONMENT_PROFILES: Record<HostEnvironment, HostEnvironmentProfile> = {
   ubuntu: {

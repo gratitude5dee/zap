@@ -96,6 +96,8 @@ export interface IdempotencyStore {
   /** returns true when the key was newly set (the caller may proceed) */
   setNx(key: string, value: string, ttlSeconds: number): Promise<boolean>;
   get(key: string): Promise<string | null>;
+  /** releases a pending marker so a failed create/fork can be retried */
+  delete(key: string): Promise<void>;
 }
 
 export function memoryIdempotencyStore(): IdempotencyStore {
@@ -108,6 +110,9 @@ export function memoryIdempotencyStore(): IdempotencyStore {
     },
     async get(key) {
       return store.get(key) ?? null;
+    },
+    async delete(key) {
+      store.delete(key);
     },
   };
 }
@@ -228,7 +233,14 @@ export function createBoxClient(options: BoxClientOptions): BoxClient {
       if (cached) return BoxSchema.parse(JSON.parse(cached));
       throw new BoxApiError(409, `box: create/fork with idempotencyKey ${key} is already in flight`);
     }
-    const box = await run();
+    let box: Box;
+    try {
+      box = await run();
+    } catch (error) {
+      // release the pending marker so a transient failure doesn't lock the key
+      await idempotency.delete(`zap:box:idem:${key}`);
+      throw error;
+    }
     await idempotency.setNx(`zap:box:idem:${key}:box`, JSON.stringify(box), 3600);
     return box;
   }
