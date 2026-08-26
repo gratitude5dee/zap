@@ -1,0 +1,14 @@
+{
+  "name": "zap-heavy-grok",
+  "weight": "heavy",
+  "from": "zap-heavy-opencode",
+  "description": "Overlay on zap-heavy-opencode with the xAI route as the default LLM: gateway.llm(\"xai\"), XAI_API_KEY in the BYOK allowlist, Grok-compatible skills/AGENTS layout.",
+  "channel": "ship",
+  "namedSnapshot": false,
+  "overlay": true,
+  "harness": "grok",
+  "units": ["zap-agentd.service", "opencode-serve.service"],
+  "ports": [{ "port": 4096, "role": "api", "hostPrivate": true }],
+  "stateDirs": ["~/.config/opencode"],
+  "mcpConfig": { "path": "~/.config/opencode/opencode.json", "format": "json" }
+}

@@ -1,0 +1,245 @@
+{
+  "harnesses": [
+    {
+      "id": "zap",
+      "run": "http-runs",
+      "minWeight": "med",
+      "inProcess": true,
+      "pullOnly": false,
+      "ports": [
+        {
+          "port": 8722,
+          "role": "api",
+          "hostPrivate": true
+        }
+      ],
+      "pins": {}
+    },
+    {
+      "id": "interpreter",
+      "run": "ws-jsonrpc",
+      "minWeight": "med",
+      "inProcess": false,
+      "pullOnly": false,
+      "ports": [
+        {
+          "port": 9000,
+          "role": "api",
+          "hostPrivate": true
+        }
+      ],
+      "pins": {}
+    },
+    {
+      "id": "fx",
+      "run": "cli-exec",
+      "minWeight": "med",
+      "inProcess": false,
+      "pullOnly": false,
+      "ports": [],
+      "pins": {}
+    },
+    {
+      "id": "hermes",
+      "run": "http-runs",
+      "minWeight": "heavy",
+      "inProcess": false,
+      "pullOnly": false,
+      "ports": [
+        {
+          "port": 8642,
+          "role": "api",
+          "hostPrivate": true
+        },
+        {
+          "port": 9119,
+          "role": "dashboard",
+          "hostPrivate": true
+        }
+      ],
+      "pins": {
+        "HERMES_REF": "v0.4.1"
+      }
+    },
+    {
+      "id": "openclaw",
+      "run": "openai-compat",
+      "minWeight": "heavy",
+      "inProcess": false,
+      "pullOnly": false,
+      "ports": [
+        {
+          "port": 18789,
+          "role": "api",
+          "hostPrivate": true
+        }
+      ],
+      "pins": {
+        "openclaw": "1.2.0"
+      }
+    },
+    {
+      "id": "opencode",
+      "run": "http-runs",
+      "minWeight": "heavy",
+      "inProcess": false,
+      "pullOnly": false,
+      "ports": [
+        {
+          "port": 4096,
+          "role": "api",
+          "hostPrivate": true
+        }
+      ],
+      "pins": {
+        "opencode-ai": "0.6.4"
+      }
+    },
+    {
+      "id": "deepseek",
+      "run": "cli-exec",
+      "minWeight": "heavy",
+      "inProcess": false,
+      "pullOnly": false,
+      "ports": [],
+      "pins": {
+        "@deepseek-ai/dsh": "0.1.1-rc.2"
+      }
+    },
+    {
+      "id": "grok",
+      "run": "http-runs",
+      "minWeight": "heavy",
+      "inProcess": false,
+      "pullOnly": false,
+      "ports": [
+        {
+          "port": 4096,
+          "role": "api",
+          "hostPrivate": true
+        }
+      ],
+      "pins": {
+        "opencode-ai": "0.6.4"
+      }
+    },
+    {
+      "id": "omg",
+      "run": "ws-jsonrpc",
+      "minWeight": "heavy",
+      "inProcess": false,
+      "pullOnly": false,
+      "ports": [
+        {
+          "port": 8766,
+          "role": "api",
+          "hostPrivate": true
+        }
+      ],
+      "pins": {
+        "@omg-dev/cli": "0.9.3"
+      }
+    },
+    {
+      "id": "pi",
+      "run": "rpc-jsonl",
+      "minWeight": "heavy",
+      "inProcess": false,
+      "pullOnly": false,
+      "ports": [],
+      "pins": {
+        "@earendil-works/pi-coding-agent": "0.3.2"
+      }
+    },
+    {
+      "id": "cursor",
+      "run": "cli-exec",
+      "minWeight": "heavy",
+      "inProcess": false,
+      "pullOnly": false,
+      "ports": [],
+      "pins": {
+        "cursor-agent": "2026.08"
+      }
+    },
+    {
+      "id": "devin",
+      "run": "cli-exec",
+      "minWeight": "heavy",
+      "inProcess": false,
+      "pullOnly": true,
+      "ports": [],
+      "pins": {
+        "devin-cli": "2026.08"
+      }
+    },
+    {
+      "id": "kimi",
+      "run": "http-runs",
+      "minWeight": "heavy",
+      "inProcess": false,
+      "pullOnly": false,
+      "ports": [
+        {
+          "port": 58627,
+          "role": "api",
+          "hostPrivate": true
+        }
+      ],
+      "pins": {
+        "@moonshot-ai/kimi-code": "0.5.1"
+      }
+    },
+    {
+      "id": "agno",
+      "run": "http-runs",
+      "minWeight": "heavy",
+      "inProcess": false,
+      "pullOnly": false,
+      "ports": [
+        {
+          "port": 7777,
+          "role": "api",
+          "hostPrivate": true
+        }
+      ],
+      "pins": {
+        "agno": "2.1.0"
+      }
+    },
+    {
+      "id": "prime",
+      "run": "rpc-jsonl",
+      "minWeight": "heavy",
+      "inProcess": false,
+      "pullOnly": false,
+      "ports": [],
+      "pins": {
+        "prime-agent": "0.2.0"
+      }
+    },
+    {
+      "id": "headlong",
+      "run": "cli-exec",
+      "minWeight": "heavy",
+      "inProcess": false,
+      "pullOnly": false,
+      "ports": [],
+      "pins": {
+        "headlong": "0.4.0"
+      }
+    },
+    {
+      "id": "frontier",
+      "run": "cli-exec",
+      "minWeight": "heavy",
+      "inProcess": false,
+      "pullOnly": false,
+      "ports": [],
+      "pins": {
+        "frontier-agent": "0.1.5",
+        "python": "3.12"
+      }
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "name": "zap-heavy-cursor",
+  "weight": "heavy",
+  "from": "zap-heavy",
+  "description": "zap-heavy overlay with the Cursor CLI agent (cli-exec: agent -p --output-format json).",
+  "channel": "ship",
+  "namedSnapshot": false,
+  "overlay": true,
+  "optIn": true,
+  "harness": "cursor",
+  "units": [
+    "zap-agentd.service"
+  ],
+  "ports": [],
+  "stateDirs": [
+    "~/.cursor",
+    "/zap/fs/.cursor"
+  ],
+  "mcpConfig": {
+    "path": "/zap/fs/.cursor/mcp.json",
+    "format": "json"
+  }
+}

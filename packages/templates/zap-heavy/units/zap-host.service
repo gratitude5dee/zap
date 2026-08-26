@@ -1,0 +1,14 @@
+[Unit]
+Description=Zap host: re-register --private hosted routes after boot/resume
+# Open ports are not captured by snapshots; this oneshot re-runs `host` on
+# every boot and resume so hosted URLs stay live (URLs and tokens are sticky).
+After=zap-agentd.service
+Wants=zap-agentd.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/zap-rehost
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,29 @@
+{
+  "name": "zap-heavy-agno",
+  "weight": "heavy",
+  "from": "zap-heavy",
+  "description": "zap-heavy overlay with an AgentOS app on 7777 behind OS_SECURITY_KEY and a --private route.",
+  "channel": "ship",
+  "namedSnapshot": false,
+  "overlay": true,
+  "optIn": true,
+  "harness": "agno",
+  "units": [
+    "zap-agentd.service",
+    "agno-os.service"
+  ],
+  "ports": [
+    {
+      "port": 7777,
+      "role": "api",
+      "hostPrivate": true
+    }
+  ],
+  "stateDirs": [
+    "/opt/zap/agno"
+  ],
+  "mcpConfig": {
+    "path": "/opt/zap/agno/mcp.json",
+    "format": "json"
+  }
+}

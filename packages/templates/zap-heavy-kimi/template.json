@@ -1,0 +1,29 @@
+{
+  "name": "zap-heavy-kimi",
+  "weight": "heavy",
+  "from": "zap-heavy",
+  "description": "zap-heavy overlay with the Kimi Code harness (kimi web --no-open on 58627 behind a --private route).",
+  "channel": "ship",
+  "namedSnapshot": false,
+  "overlay": true,
+  "optIn": true,
+  "harness": "kimi",
+  "units": [
+    "zap-agentd.service",
+    "kimi-web.service"
+  ],
+  "ports": [
+    {
+      "port": 58627,
+      "role": "api",
+      "hostPrivate": true
+    }
+  ],
+  "stateDirs": [
+    "~/.kimi"
+  ],
+  "mcpConfig": {
+    "path": "~/.kimi/mcp.json",
+    "format": "json"
+  }
+}

@@ -1,0 +1,14 @@
+[Unit]
+Description=Kimi Code web (58627, --private hosted route)
+After=network-online.target zap-openviking.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=%h/.kimi/.env
+ExecStart=/usr/local/bin/kimi web --no-open --port 58627
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

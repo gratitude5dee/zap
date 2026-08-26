@@ -1,0 +1,15 @@
+[Unit]
+Description=AgentOS app (7777, per-box OS_SECURITY_KEY)
+After=network-online.target zap-openviking.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStartPre=/usr/local/bin/agno-render-env
+EnvironmentFile=/opt/zap/agno/.env
+ExecStart=/opt/zap/agno/venv/bin/python -m zap_agno_os
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

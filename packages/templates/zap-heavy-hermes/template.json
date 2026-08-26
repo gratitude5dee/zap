@@ -1,0 +1,21 @@
+{
+  "name": "zap-heavy-hermes",
+  "weight": "heavy",
+  "from": "zap-heavy",
+  "description": "zap-heavy with the Hermes harness: api_server on 0.0.0.0:8642 behind a per-box API_SERVER_KEY and a --private hosted route, dashboard on 9119, filesystem memory on, OpenViking MCP registered.",
+  "channel": "ship",
+  "namedSnapshot": true,
+  "harness": "hermes",
+  "units": [
+    "zap-agentd.service",
+    "hermes-gateway.service",
+    "hermes-dashboard.service",
+    "hermes-host.service"
+  ],
+  "ports": [
+    { "port": 8642, "role": "api", "hostPrivate": true },
+    { "port": 9119, "role": "dashboard", "hostPrivate": true }
+  ],
+  "stateDirs": ["~/.hermes"],
+  "mcpConfig": { "path": "~/.hermes/config.yaml", "format": "yaml" }
+}

@@ -1,0 +1,37 @@
+{
+  "name": "zap-heavy",
+  "weight": "heavy",
+  "from": "zap-med",
+  "description": "zap-med plus on-VM memory (OpenViking), the API store (open-connector, loopback), and the skills store. Base for every zap-heavy-<harness> template.",
+  "channel": "ship",
+  "namedSnapshot": true,
+  "units": [
+    "zap-agentd.service",
+    "zap-openviking.service",
+    "zap-open-connector.service",
+    "zap-host.service"
+  ],
+  "dirs": ["/zap/media", "/zap/fs", "/zap/skills", "/zap/fs/repos"],
+  "envAllowlist": [
+    "OPENROUTER_API_KEY",
+    "AI_GATEWAY_API_KEY",
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY",
+    "XAI_API_KEY",
+    "GMI_API_KEY",
+    "FAL_KEY",
+    "PRODIA_API_KEY",
+    "RUNWARE_API_KEY",
+    "REPLICATE_API_TOKEN",
+    "ZAP_LLM_ROUTE",
+    "ZAP_LLM_OPENROUTER_MODEL",
+    "ZAP_LLM_GATEWAY_MODEL",
+    "ZAP_LLM_OPENAI_MODEL",
+    "ZAP_LLM_ANTHROPIC_MODEL",
+    "ZAP_LLM_XAI_MODEL",
+    "ZAP_LLM_GMI_MODEL",
+    "ZAP_PAYER_MODE",
+    "ZAP_MANAGED_GATEWAY_URL"
+  ],
+  "presetsManifest": "/zap/ffmpeg-presets.json"
+}

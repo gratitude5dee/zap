@@ -1,0 +1,13 @@
+{
+  "name": "zap-heavy-opencode",
+  "weight": "heavy",
+  "from": "zap-heavy",
+  "description": "zap-heavy with the OpenCode harness: `opencode serve` on 0.0.0.0:4096 behind a per-box OPENCODE_SERVER_PASSWORD and a --private hosted route.",
+  "channel": "ship",
+  "namedSnapshot": true,
+  "harness": "opencode",
+  "units": ["zap-agentd.service", "opencode-serve.service"],
+  "ports": [{ "port": 4096, "role": "api", "hostPrivate": true }],
+  "stateDirs": ["~/.config/opencode"],
+  "mcpConfig": { "path": "~/.config/opencode/opencode.json", "format": "json" }
+}

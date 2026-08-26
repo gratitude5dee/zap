@@ -1,0 +1,28 @@
+{
+  "template": "zap-heavy-hermes",
+  "harness": "hermes",
+  "planned": true,
+  "events": [
+    {
+      "type": "run.started",
+      "live": false,
+      "payer": "byok"
+    },
+    {
+      "type": "tool.planned",
+      "tool": "harness.hermes",
+      "input": {
+        "prompt": "list /zap/fs"
+      },
+      "estimate": {
+        "adapter": "http-runs"
+      }
+    },
+    {
+      "type": "run.completed",
+      "usage": {
+        "planned": true
+      }
+    }
+  ]
+}

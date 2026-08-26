@@ -44,6 +44,7 @@ The list below is generated from the discovered command set by
 - `zap finalize <slug> [--token ...] [--api-url ...] [--json]` — Finalize a deployed draft into the gallery.
 - `zap fs <ls|read|write|rm> <runtime-id> <path> [content] [--json]` — Runtime filesystem operations (ls, read, write, rm).
 - `zap gallery [--remote] [--json]` — List local recipes; add --remote for hosted gallery.
+- `zap harness <ls|bake <template>|doctor <id|template>|run <template> --prompt <p>> [--live] [--json]` — List, bake, doctor, and run zap-heavy harness templates.
 - `zap import <hyperframes|openmontage> [--source path] [--limit n] [--force] [--json]` — Import hyperframes or openmontage templates.
 - `zap improve <slug|Zap.md> [--json] [--write]` — Propose a version bump from run and feedback evidence.
 - `zap info [--json]` — Print environment info.

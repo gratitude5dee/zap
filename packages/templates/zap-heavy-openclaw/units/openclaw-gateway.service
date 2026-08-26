@@ -1,0 +1,14 @@
+[Unit]
+Description=OpenClaw gateway (18789, lan bind, per-box auth token)
+After=network-online.target zap-openviking.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStartPre=/usr/local/bin/openclaw-render-config
+ExecStart=/usr/local/bin/openclaw gateway
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

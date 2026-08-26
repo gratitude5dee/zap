@@ -1,0 +1,14 @@
+{
+  "name": "zap-heavy-omg",
+  "weight": "heavy",
+  "from": "zap-heavy",
+  "description": "zap-heavy overlay with the omg harness: omg computer on 127.0.0.1:8766 (ws-jsonrpc), repos under /zap/fs/repos, omg mcp registered into the tmux'd CLIs.",
+  "channel": "ship",
+  "namedSnapshot": false,
+  "overlay": true,
+  "harness": "omg",
+  "units": ["zap-agentd.service", "omg.service"],
+  "ports": [{ "port": 8766, "role": "api", "hostPrivate": true }],
+  "stateDirs": ["~/.omg", "/zap/fs/repos"],
+  "mcpConfig": { "path": "~/.omg/mcp.json", "format": "cli" }
+}

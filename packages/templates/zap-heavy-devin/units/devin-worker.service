@@ -1,0 +1,14 @@
+[Unit]
+Description=Outposts worker (outbound-only)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=%h/.devin/.env
+ExecStart=/usr/local/bin/devin worker start --outpost=${DEVIN_OUTPOST_ID} --token=${DEVIN_OUTPOSTS_TOKEN}
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

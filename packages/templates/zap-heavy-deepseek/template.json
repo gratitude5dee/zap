@@ -1,0 +1,14 @@
+{
+  "name": "zap-heavy-deepseek",
+  "weight": "heavy",
+  "from": "zap-heavy",
+  "description": "zap-heavy overlay with the dsh harness (headless cli-exec, presets standard|code|minimal). Ships as an overlay while dsh is an RC; joins the named snapshots once non-RC.",
+  "channel": "ship",
+  "namedSnapshot": false,
+  "overlay": true,
+  "harness": "deepseek",
+  "units": ["zap-agentd.service"],
+  "ports": [],
+  "stateDirs": ["~/.dsh"],
+  "mcpConfig": { "path": "~/.dsh/config.json", "format": "json" }
+}

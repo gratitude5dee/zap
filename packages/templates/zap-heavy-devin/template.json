@@ -1,0 +1,23 @@
+{
+  "name": "zap-heavy-devin",
+  "weight": "heavy",
+  "from": "zap-heavy",
+  "description": "zap-heavy overlay running an Outposts worker (outbound-only; no hosted port; pull-only).",
+  "channel": "ship",
+  "namedSnapshot": false,
+  "overlay": true,
+  "optIn": true,
+  "harness": "devin",
+  "units": [
+    "zap-agentd.service",
+    "devin-worker.service"
+  ],
+  "ports": [],
+  "stateDirs": [
+    "~/.devin"
+  ],
+  "mcpConfig": {
+    "path": "~/.devin/mcp.json",
+    "format": "json"
+  }
+}
