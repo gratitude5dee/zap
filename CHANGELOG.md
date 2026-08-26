@@ -4,6 +4,9 @@
 
 ### Added
 
+- Auth + pay (Z9): fail-closed payer resolution (`missing | byok | managed`), BYOK key resolution with log redaction, device auth and managed session keys stored `0600` with spend caps, a payment client that refuses charges above the cap, meter units/pricing/ledger/balances with daily caps, and the `pay/x402` plugin body.
+- Zap Cloud (Z9): Hono control API (`/v1/runtimes`, exec, snapshot/fork, events, gateway proxy, `/v1/pay/quote`, meter ledger/balance, sweep, admin ops) with a payment gate settling x402 v2 and MPP through pluggable facilitators (Thirdweb, CDP) with replay protection, tenant isolation, rate limits, runtime-token gateway auth with token metering, a non-forceful sweeper, Vercel (default) and Cloudflare adapters, and a route-mounting convention for external modules.
+- `zap pay` CLI commands (`status`, `login --managed`, `logout`, `quote`), the `/api/cloud/*` app route, and the Studio runtime panel.
 - Gateway (Z6): `gateway.core` in `@wzrdtech/zap-runtime` with six LLM routes (`openrouter`, `gateway`, `openai`, `anthropic`, `xai`, `gmi`), media provider services with plan-only pricing and live-only idempotent submission, a deterministic router preserving 0.3.1 semantics, and a Replicate media adapter (`packages/providers/src/replicate.ts`).
 - Media filesystem (Z6): content-addressed store at `/zap/media/<kind>/<sha[0:2]>/<sha>.<ext>` with zod-validated sidecars, filtered listing, and hardlinking into project directories (`docs/mediafs.md`).
 - FFmpeg presets (Z6): data-defined presets (`transcode-h264`, `extract-audio`, `thumbnail`, `trim`, `scale-720p`, `stitch`, `overlay`, `gen-media-post`) with probe-based CPU-second estimates, executed only through the `ffmpeg` lane and recorded in the media FS.
