@@ -1,0 +1,1 @@
+zap compose [Runtime.md|zap.config.ts] [--dry-run] [--json]

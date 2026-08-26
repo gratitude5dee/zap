@@ -1,0 +1,117 @@
+{
+  "compose": [
+    "dryRun",
+    "entries",
+    "file",
+    "lock",
+    "ok",
+    "quote",
+    "runtime",
+    "sandbox",
+    "source",
+    "weight"
+  ],
+  "doctor": [
+    "checks",
+    "payer",
+    "version"
+  ],
+  "embed": [
+    "iframe",
+    "oembed",
+    "slug"
+  ],
+  "feedback": [
+    "ok"
+  ],
+  "ffmpeg": [
+    "args",
+    "executed",
+    "input",
+    "mode",
+    "ok",
+    "output",
+    "preset"
+  ],
+  "gallery": [
+    "zaps"
+  ],
+  "info": [
+    "cwd",
+    "node",
+    "platform",
+    "version"
+  ],
+  "inspect": [
+    "budget",
+    "defaults",
+    "file",
+    "quoteUsd",
+    "steps",
+    "version",
+    "zap"
+  ],
+  "keys": [
+    "secrets"
+  ],
+  "lint": [
+    "results"
+  ],
+  "logout": [
+    "ok"
+  ],
+  "mcp": [
+    "command",
+    "package",
+    "tools",
+    "transport"
+  ],
+  "media": [
+    "assets"
+  ],
+  "new": [
+    "ok",
+    "skillDir",
+    "slug"
+  ],
+  "run": [
+    "live",
+    "message",
+    "mode",
+    "quoteUsd",
+    "runId",
+    "status",
+    "steps",
+    "zap"
+  ],
+  "runtime": [
+    "runtimes"
+  ],
+  "skills": [
+    "differences",
+    "manifestPath",
+    "ok"
+  ],
+  "status": [
+    "live",
+    "message",
+    "mode",
+    "quoteUsd",
+    "runId",
+    "status",
+    "steps",
+    "zap"
+  ],
+  "telemetry": [
+    "enabled"
+  ],
+  "template": [
+    "templates"
+  ],
+  "upgrade": [
+    "message"
+  ],
+  "validate": [
+    "results"
+  ]
+}

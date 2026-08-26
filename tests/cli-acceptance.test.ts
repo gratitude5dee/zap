@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -59,6 +59,37 @@ describe("zap CLI acceptance", () => {
       expect(runZap(project, ["docs", "zap-spec"])).toContain("# Zap Spec");
       expect(runZap(project, ["docs", "steps"])).toContain("# Steps");
       expect(runZap(project, ["docs", "eve"])).toContain("# Eve");
+    } finally {
+      rmSync(root, { force: true, recursive: true });
+    }
+  });
+
+  it("composes, doctors, and reports payer status in a clean project", { timeout: 120_000 }, () => {
+    const root = mkdtempSync(path.join(tmpdir(), "zap-cli-"));
+    try {
+      runZap(root, ["init", "demo", "--non-interactive"]);
+      const project = path.join(root, "demo");
+      writeFileSync(
+        path.join(project, "Runtime.md"),
+        "---\nruntime: demo\nversion: 1\nweight: light\nsandbox:\n  provider: fake\n---\n# Demo\n",
+      );
+
+      const compose = JSON.parse(runZap(project, ["compose", "--dry-run", "--json"]));
+      expect(compose.ok).toBe(true);
+      expect(compose.dryRun).toBe(true);
+      expect(compose.entries.length).toBeGreaterThan(0);
+      expect(compose.quote.mode).toBe("plan");
+
+      // doctor --json exits 0 (execFileSync throws otherwise) and reports the payer.
+      const doctor = JSON.parse(runZap(project, ["doctor", "--json"]));
+      expect(doctor.payer).toBe("missing");
+
+      // Session H contributes `zap pay`; exercise it once its command module lands.
+      const payModule = path.resolve("packages/cli/src/commands/pay/index.js");
+      if (existsSync(payModule)) {
+        const pay = JSON.parse(runZap(project, ["pay", "status", "--json"]));
+        expect(pay.payer ?? pay.mode ?? pay.status).toBe("missing");
+      }
     } finally {
       rmSync(root, { force: true, recursive: true });
     }
