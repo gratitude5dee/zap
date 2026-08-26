@@ -4,6 +4,11 @@
 
 ### Added
 
+- Gateway (Z6): `gateway.core` in `@wzrdtech/zap-runtime` with six LLM routes (`openrouter`, `gateway`, `openai`, `anthropic`, `xai`, `gmi`), media provider services with plan-only pricing and live-only idempotent submission, a deterministic router preserving 0.3.1 semantics, and a Replicate media adapter (`packages/providers/src/replicate.ts`).
+- Media filesystem (Z6): content-addressed store at `/zap/media/<kind>/<sha[0:2]>/<sha>.<ext>` with zod-validated sidecars, filtered listing, and hardlinking into project directories (`docs/mediafs.md`).
+- FFmpeg presets (Z6): data-defined presets (`transcode-h264`, `extract-audio`, `thumbnail`, `trim`, `scale-720p`, `stitch`, `overlay`, `gen-media-post`) with probe-based CPU-second estimates, executed only through the `ffmpeg` lane and recorded in the media FS.
+- `harness.zap` (Z6): the in-VM step executor (plan-only tool planning, read-only execution, MCP and subagent dispatch) plus the caller-side `http-runs` driver, the `POST /v1/runs` + SSE agentd route, and the `interpreter`/`fx` med harness manifests.
+- Med templates: `packages/templates/zap-med` (named snapshot base) with the `zap-med-genmedia` alias and `zap-med-interpreter`/`zap-med-fx` overlays, plus docs under `docs/templates/` and `docs/providers/`.
 - Seven new workspaces for the composable CPU agent runtime: `@wzrdtech/zap-kernel`, `@wzrdtech/zap-sandbox`, `@wzrdtech/zap-memory`, `@wzrdtech/zap-runtime`, `@wzrdtech/zap-agent`, `@wzrdtech/zap-templates`, and `@wzrdtech/zap-cloud`.
 - Kernel (Z1): plugin lifecycle with `definePlugin`/`createRuntime`, `ctx.effect` inverse disposers, fork/isolate contexts, service injection, event bus, and delta reconciliation, with the full acceptance test suite under `packages/kernel/tests/`.
 - Typed contracts: sandbox provider/handle/lane contract, memory scopes/service, meter units, runtime spec schema, and the agents-as-code public API surface (`defineAgent`, hooks, connections, secrets).
