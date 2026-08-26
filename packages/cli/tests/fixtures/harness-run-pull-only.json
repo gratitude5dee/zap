@@ -1,0 +1,7 @@
+{
+  "error": {
+    "code": "HARNESS_PULL_ONLY",
+    "message": "harness.devin is pull-only: work arrives from its control plane.",
+    "retryable": false
+  }
+}

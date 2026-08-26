@@ -1,0 +1,36 @@
+{
+  "template": "zap-heavy-hermes",
+  "harness": "hermes",
+  "ok": true,
+  "checks": [
+    {
+      "name": "template.json",
+      "ok": true
+    },
+    {
+      "name": "bake.sh",
+      "ok": true
+    },
+    {
+      "name": "doctor.sh",
+      "ok": true
+    },
+    {
+      "name": "manifest",
+      "ok": true
+    },
+    {
+      "name": "pins",
+      "ok": true
+    },
+    {
+      "name": "harness matches template",
+      "ok": true
+    },
+    {
+      "name": "hosted ports private",
+      "ok": true
+    }
+  ],
+  "note": "in-box checks run via doctor.sh on a live box"
+}

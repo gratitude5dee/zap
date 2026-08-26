@@ -1,0 +1,13 @@
+{
+  "planned": true,
+  "template": "zap-heavy-omg",
+  "from": "zap-heavy",
+  "namedSnapshot": false,
+  "mode": "overlay: POST /boxes {from, setupScript} or post-ready /commands",
+  "steps": [
+    "bake zap-heavy-omg/bake.sh",
+    "doctor zap-heavy-omg/doctor.sh",
+    "infra/box/secret-sweep.sh"
+  ],
+  "live": false
+}
