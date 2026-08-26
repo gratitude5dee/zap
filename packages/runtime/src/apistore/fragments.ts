@@ -84,7 +84,7 @@ function renderToml(server: McpServerFragment): string {
 function renderCli(server: McpServerFragment): string {
   const parts = ["mcp", "add", server.id];
   if (server.url) parts.push("--transport", "http", server.url);
-  for (const [key, value] of Object.entries(server.headers ?? {})) parts.push("--header", `${key}: ${value}`);
+  for (const [key, value] of Object.entries(server.headers ?? {})) parts.push("--header", JSON.stringify(`${key}: ${value}`));
   if (server.command) parts.push("--", ...server.command);
   return `${parts.join(" ")}\n`;
 }
