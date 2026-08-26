@@ -1,0 +1,18 @@
+{
+  "name": "zap",
+  "version": "5.0.0-alpha",
+  "description": "Zap composable CPU agent runtime: compose, create, and use plan-only-by-default runtimes via MCP tools and skills.",
+  "author": {
+    "name": "WZRD Tech"
+  },
+  "homepage": "https://zap.wzrd.tech",
+  "repository": "https://github.com/gratitude5dee/zap",
+  "license": "MIT",
+  "skills": "./skills",
+  "mcpServers": {
+    "zap": {
+      "command": "npx",
+      "args": ["-y", "@wzrdtech/zap", "mcp"]
+    }
+  }
+}

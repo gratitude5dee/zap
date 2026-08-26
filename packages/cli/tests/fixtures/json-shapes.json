@@ -14,6 +14,7 @@
   "doctor": [
     "checks",
     "payer",
+    "sandbox",
     "version"
   ],
   "embed": [

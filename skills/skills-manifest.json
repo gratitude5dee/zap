@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-26T01:26:35.214Z",
+  "generatedAt": "2026-08-26T02:39:45.272Z",
   "skills": [
     {
       "fileCount": 1,
@@ -21,9 +21,45 @@
     },
     {
       "fileCount": 1,
+      "hash": "e538d2cf783b62a260a69746fa55d2f604ca0e007563180b34744464a2a0aca9",
+      "path": "skills/zap-compose",
+      "skill": "zap-compose"
+    },
+    {
+      "fileCount": 1,
+      "hash": "40d726fbf88fbf6befc9772ad2421701056e216eb0a97627b26c66cebb8b6183",
+      "path": "skills/zap-lanes",
+      "skill": "zap-lanes"
+    },
+    {
+      "fileCount": 1,
+      "hash": "26fd8908daed832804ede0fe97a78289338109d396e1bfdf6eda212c70babf61",
+      "path": "skills/zap-memory",
+      "skill": "zap-memory"
+    },
+    {
+      "fileCount": 1,
+      "hash": "7fad784eed37a929c7230144954da9f34011bc380cb35865c7c4e7b9ef85d816",
+      "path": "skills/zap-pay",
+      "skill": "zap-pay"
+    },
+    {
+      "fileCount": 1,
       "hash": "b512fdeabcb9c662e8586ffd6083c0df81c08d26017aeed2cfe6bf1bc5841a69",
       "path": "skills/zap-providers",
       "skill": "zap-providers"
+    },
+    {
+      "fileCount": 1,
+      "hash": "62f4722a90071c35a8b66fd3ff1828a52da2129121205c0cf9e60e256d3da286",
+      "path": "skills/zap-runtime",
+      "skill": "zap-runtime"
+    },
+    {
+      "fileCount": 1,
+      "hash": "0a6ada6e703d0875f5108fba24caf72c9f0f8b846009eaac3c7f42be312df9c0",
+      "path": "skills/zap-templates",
+      "skill": "zap-templates"
     },
     {
       "fileCount": 1,
