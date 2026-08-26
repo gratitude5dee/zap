@@ -7,14 +7,16 @@ npm install @wzrdtech/zap-kernel
 ```
 
 ```ts
-import { createRuntime, definePlugin, Service } from "@wzrdtech/zap-kernel";
+import { createRuntime, definePlugin } from "@wzrdtech/zap-kernel";
 
-const greeter = definePlugin("greeter", (ctx) => {
-  ctx.set("greet", (name: string) => `hello ${name}`);
+const greeter = definePlugin({
+  name: "greeter",
+  apply(ctx) {
+    ctx.provide("greet", (name: string) => `hello ${name}`);
+  },
 });
 
-const runtime = createRuntime();
-await runtime.load([{ plugin: greeter }]);
+const runtime = await createRuntime({ weight: "light", plugins: [greeter()] });
 ```
 
 Key exports:
