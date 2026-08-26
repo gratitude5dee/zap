@@ -1,11 +1,17 @@
 {
-  "generatedAt": "2026-08-26T02:39:45.272Z",
+  "generatedAt": "2026-08-26T03:10:13.339Z",
   "skills": [
     {
       "fileCount": 1,
       "hash": "67f0b987b0e2487c9f41b226d0de98ef3d2547d2e51b0c05445b2c82f65717fc",
       "path": "skills/zap",
       "skill": "zap"
+    },
+    {
+      "fileCount": 1,
+      "hash": "575fa9d183c56cd7cb1e0cabc31baa222881e4e3a8d4ed19357ff8ed09cb87c2",
+      "path": "skills/zap-agents",
+      "skill": "zap-agents"
     },
     {
       "fileCount": 1,
