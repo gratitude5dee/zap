@@ -182,10 +182,11 @@ export function driverFromHandle(handle: SandboxHandle): SandboxDriver {
 }
 
 export function eveBackendFromProvider(
-  sandbox: SandboxService | Promise<SandboxService>,
+  sandbox: SandboxService | Promise<SandboxService> | (() => Promise<SandboxService>),
   providerId: SandboxProviderId,
 ): SandboxBackend {
   const prepared = new Map<string, true>();
+  const resolveService = () => (typeof sandbox === "function" ? sandbox() : Promise.resolve(sandbox));
   return {
     name: providerId,
     async prewarm(input) {
@@ -194,7 +195,7 @@ export function eveBackendFromProvider(
       return { reused };
     },
     async create(input: SandboxBackendCreateInput) {
-      const service = await sandbox;
+      const service = await resolveService();
       const existingId = typeof input.existingMetadata?.sandboxId === "string" ? input.existingMetadata.sandboxId : undefined;
       const handle = await service.acquire({
         provider: providerId,
@@ -218,7 +219,8 @@ export function eveBackendFromProvider(
 }
 
 function bridgedBackend(providerId: SandboxProviderId, env: Env): SandboxBackend {
-  return eveBackendFromProvider(bridgeService(providerId, env), providerId);
+  // resolve lazily so selecting the backend never touches credentials
+  return eveBackendFromProvider(() => bridgeService(providerId, env), providerId);
 }
 
 export function withBoxLifecycleCompatibility(backend: SandboxBackend, apiKey: string): SandboxBackend {
