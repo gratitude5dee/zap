@@ -30,7 +30,7 @@ zap --version
 The list below is generated from the discovered command set by
 `node scripts/sync-cli-docs.mjs`; run it after adding or changing commands.
 
-<!-- zap-commands:start -->
+{/* zap-commands:start */}
 - `zap add <registry-name> [--force] [--json]` — Add a registry Zap.
 - `zap compose [Runtime.md|zap.config.ts] [--dry-run] [--json]` — Resolve Runtime.md or zap.config.ts into the runtime plugin tree.
 - `zap deploy <slug|Zap.md> [--finalize] [--json]` — Upload a draft Zap to the hosted API.
@@ -54,7 +54,7 @@ The list below is generated from the discovered command set by
 - `zap logout [--json]` — Remove the stored Zap API token.
 - `zap mcp [--http [--port 3910]] [--json]` — Start the Zap MCP server (stdio by default, --http for HTTP).
 - `zap media <ls|info> [path] [--json]` — Inspect local media outputs under .zap/runs.
-- `zap new <slug> [--force] [--json]` — Scaffold agent/skills/zap-<slug>.
+- `zap new <slug> [--force] [--json]` — Scaffold agent/skills/zap-\<slug>.
 - `zap run <slug|Zap.md> [--input KEY=VALUE] [--budget-cap-usd N] [--live] [--json]` — Plan a Zap by default; use --live to submit providers.
 - `zap runtime <up|down|ps|logs|exec|snapshot|fork|stop|resume|desktop|import-sprite> [...] [--json]` — Manage Zap runtimes (up, down, ps, logs, exec, snapshot, fork, stop, resume, desktop, import-sprite).
 - `zap search <query> [--remote] [--json]` — Search registry templates; add --remote for hosted search.
@@ -65,7 +65,7 @@ The list below is generated from the discovered command set by
 - `zap template <ls|show> [name] [--json]` — List or show runtime templates under .zap/templates.
 - `zap upgrade [--json]` — Print upgrade guidance.
 - `zap validate [Zap.md ...] [--json]` — Validate one or more recipes.
-<!-- zap-commands:end -->
+{/* zap-commands:end */}
 
 ### Recipe workflow
 

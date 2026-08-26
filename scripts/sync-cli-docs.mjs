@@ -18,12 +18,13 @@ async function regenerateCommandList(cliDoc) {
     if (seen.has(command.name) || command.hidden) continue;
     seen.add(command.name);
     const help = commandHelp(command);
-    lines.push(`- \`${help.usage}\` — ${help.summary}.`);
+    const summary = help.summary.replace(/</g, "\\<");
+    lines.push(`- \`${help.usage}\` — ${summary}.`);
   }
   const content = readFileSync(cliDoc, "utf8");
   const updated = content.replace(
-    /<!-- zap-commands:start -->[\s\S]*?<!-- zap-commands:end -->/,
-    `<!-- zap-commands:start -->\n${lines.join("\n")}\n<!-- zap-commands:end -->`,
+    /\{\/\* zap-commands:start \*\/\}[\s\S]*?\{\/\* zap-commands:end \*\/\}/,
+    `{/* zap-commands:start */}\n${lines.join("\n")}\n{/* zap-commands:end */}`,
   );
   writeFileSync(cliDoc, updated);
 }
