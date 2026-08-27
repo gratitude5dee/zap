@@ -10,17 +10,15 @@ import {
   KeyRound,
   Plug,
   ShieldCheck,
-  TerminalSquare,
   Workflow,
 } from "lucide-react";
 import { CodeWindow, Eyebrow, PageShell, SiteNav } from "@/app/_components/zap-chrome";
 import { CopyCommandCta } from "@/app/_components/threeui/copy-command-cta";
 import { CrtBackground } from "@/app/_components/threeui/crt-background";
 import { GlassCta } from "@/app/_components/threeui/glass-cta";
-import { ZapCard } from "@/app/_components/zap-card";
+import { FEATURED_PROVIDERS, PROVIDER_COUNT, ProviderCard } from "@/app/_components/provider-catalog";
 import { ZAP_DOCS_URL } from "@/lib/zap-urls";
 import { ZAP_VERSION } from "@/lib/zap-version";
-import { listCanonicalZapSpecs } from "@/lib/zap-files";
 
 const doctorCommand = `npx @wzrdtech/zap@${ZAP_VERSION} doctor --json`;
 
@@ -50,10 +48,7 @@ const profiles = [
   },
 ];
 
-export default async function Page() {
-  const zaps = await listCanonicalZapSpecs();
-  const featured = zaps.slice(0, 4);
-
+export default function Page() {
   return (
     <PageShell tone="dark">
       <section className="relative overflow-hidden bg-[#03100a]">
@@ -238,15 +233,16 @@ export default async function Page() {
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
             <div>
               <Eyebrow tone="amber">
-                <TerminalSquare className="size-4" />
-                Legacy 0.3.1 · compatible recipes
+                <Plug className="size-4" />
+                Providers · one contract, server-side keys
               </Eyebrow>
               <h2 className="mt-4 font-semibold text-4xl leading-tight">
-                Your media recipes still run on v5.
+                Every provider Zap composes with.
               </h2>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-white/62">
-                Zap 0.3.1 recipe workflows remain supported as a compatibility layer — same plan-first
-                defaults, per-recipe estimates, and hard caps.
+                {PROVIDER_COUNT} providers across sandboxes, LLM routes, media generation, and
+                payment rails — plan-only runs quote against rate tables and never contact a
+                provider; keys stay server-side.
               </p>
             </div>
             <GlassCta href="/providers">
@@ -256,8 +252,8 @@ export default async function Page() {
           </div>
 
           <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {featured.map((zap) => (
-              <ZapCard href={`/zap/${zap.zap}`} key={zap.zap} variant="mini" zap={zap} />
+            {FEATURED_PROVIDERS.map((provider) => (
+              <ProviderCard key={provider.name} provider={provider} />
             ))}
           </div>
 
