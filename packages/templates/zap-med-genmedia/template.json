@@ -6,11 +6,40 @@
   "channel": "ship",
   "namedSnapshot": false,
   "alias": true,
-  "units": ["zap-agentd.service"],
+  "units": [
+    "zap-agentd.service"
+  ],
   "mediaDefaults": {
-    "image.gen": { "provider": "fal", "model": "fal-ai/flux/dev" },
-    "video.gen": { "provider": "gmi", "model": "seedance-2-0-260128" },
-    "audio.gen": { "provider": "replicate", "model": "minimax/speech-02-turbo" }
+    "image.gen": {
+      "provider": "fal",
+      "model": "fal-ai/flux/dev"
+    },
+    "video.gen": {
+      "provider": "gmi",
+      "model": "seedance-2-0-260128"
+    },
+    "audio.gen": {
+      "provider": "replicate",
+      "model": "minimax/speech-02-turbo"
+    }
   },
-  "presets": ["stitch", "overlay", "gen-media-post"]
+  "presets": [
+    "stitch",
+    "overlay",
+    "gen-media-post"
+  ],
+  "pins": {
+    "tailscale": "1.82.0",
+    "cotal": "0.33.1",
+    "sam": "v0.1.0-alpha.7",
+    "mesh-llm": "v0.75.1",
+    "taskrouter-model": "qwen2.5-1.5b-instruct-q4_k_m"
+  },
+  "connectivity": {
+    "tailscale": false,
+    "cotal": false,
+    "taskrouter": false,
+    "samMesh": false,
+    "x402": false
+  }
 }

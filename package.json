@@ -23,6 +23,8 @@
     "docs:sync": "node scripts/sync-cli-docs.mjs",
     "docs:validate": "npm --prefix docs install --no-audit --no-fund && npm --prefix docs run validate",
     "doctor": "node packages/cli/bin/zap.js doctor",
+    "connectivity:check": "node scripts/sync-connectivity.mjs --check",
+    "connectivity:sync": "node scripts/sync-connectivity.mjs",
     "registry:check": "node scripts/generate-zap-index.mjs --check",
     "registry:generate": "node scripts/generate-zap-index.mjs",
     "start": "next start",

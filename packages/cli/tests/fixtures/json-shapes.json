@@ -13,6 +13,7 @@
   ],
   "doctor": [
     "checks",
+    "connectivity",
     "payer",
     "sandbox",
     "version"

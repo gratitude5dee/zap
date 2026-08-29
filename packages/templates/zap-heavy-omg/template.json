@@ -7,8 +7,37 @@
   "namedSnapshot": false,
   "overlay": true,
   "harness": "omg",
-  "units": ["zap-agentd.service", "omg.service"],
-  "ports": [{ "port": 8766, "role": "api", "hostPrivate": true }],
-  "stateDirs": ["~/.omg", "/zap/fs/repos"],
-  "mcpConfig": { "path": "~/.omg/mcp.json", "format": "cli" }
+  "units": [
+    "zap-agentd.service",
+    "omg.service"
+  ],
+  "ports": [
+    {
+      "port": 8766,
+      "role": "api",
+      "hostPrivate": true
+    }
+  ],
+  "stateDirs": [
+    "~/.omg",
+    "/zap/fs/repos"
+  ],
+  "mcpConfig": {
+    "path": "~/.omg/mcp.json",
+    "format": "cli"
+  },
+  "pins": {
+    "tailscale": "1.82.0",
+    "cotal": "0.33.1",
+    "sam": "v0.1.0-alpha.7",
+    "mesh-llm": "v0.75.1",
+    "taskrouter-model": "qwen2.5-1.5b-instruct-q4_k_m"
+  },
+  "connectivity": {
+    "tailscale": false,
+    "cotal": false,
+    "taskrouter": false,
+    "samMesh": false,
+    "x402": false
+  }
 }

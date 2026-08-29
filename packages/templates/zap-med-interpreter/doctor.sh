@@ -10,4 +10,7 @@ if test -s "${HOME}/.openinterpreter/config.toml"; then echo "ok   mcp config"; 
 if test -f /zap/memory-enabled 2>/dev/null; then
   if grep -q "openviking" "${HOME}/.openinterpreter/config.toml"; then echo "ok   mcp-openviking"; else echo "FAIL mcp-openviking"; fail=1; fi
 fi
+# Optional connectivity rows (required:false — never fail the build).
+bash "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/connectivity/doctor.sh" || true
+
 exit "${fail}"

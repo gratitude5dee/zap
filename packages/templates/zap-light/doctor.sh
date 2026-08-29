@@ -39,3 +39,6 @@ if [ "$FAILED" -ne 0 ]; then
   exit 1
 fi
 echo "doctor: OK"
+# Optional connectivity rows (required:false — never fail the build).
+bash "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/connectivity/doctor.sh" || true
+

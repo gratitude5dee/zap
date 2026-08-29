@@ -21,4 +21,7 @@ check "skills /zap/skills" test -d /zap/skills
 check "presets manifest" test -s /zap/ffmpeg-presets.json
 check "gateway env allowlist" test -s /zap/gateway-env-allowlist
 
+# Optional connectivity rows (required:false — never fail the build).
+bash "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/connectivity/doctor.sh" || true
+
 exit "${fail}"

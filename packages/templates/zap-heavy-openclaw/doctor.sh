@@ -43,4 +43,7 @@ if [ "${ZAP_PAYER_MODE:-}" = "managed" ]; then
   check "managed: no provider key on disk" bash -c '! grep -Eq "sk-[A-Za-z0-9]" "${HOME}/.openclaw/openclaw.json"'
 fi
 
+# Optional connectivity rows (required:false — never fail the build).
+bash "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/connectivity/doctor.sh" || true
+
 exit "${fail}"

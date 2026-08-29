@@ -10,4 +10,7 @@ if test -s "${HOME}/.fx/mcp.json"; then echo "ok   mcp config"; else echo "FAIL 
 if test -f /zap/memory-enabled 2>/dev/null; then
   if grep -q "openviking" "${HOME}/.fx/mcp.json"; then echo "ok   mcp-openviking"; else echo "FAIL mcp-openviking"; fail=1; fi
 fi
+# Optional connectivity rows (required:false — never fail the build).
+bash "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/connectivity/doctor.sh" || true
+
 exit "${fail}"
