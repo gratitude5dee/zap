@@ -49,6 +49,10 @@ const EXPECTED_TOOLS = [
   "zap_ffmpeg_preset",
   "zap_template_ls",
   "zap_doctor",
+  // connectivity opt-in surface (default off, credentials via file paths only)
+  "zap_runtime_connectivity_status",
+  "zap_runtime_connectivity_enable",
+  "zap_runtime_connectivity_disable",
 ];
 
 const READ_ONLY_TOOLS = new Set([
@@ -69,6 +73,7 @@ const READ_ONLY_TOOLS = new Set([
   "zap_memory_search",
   "zap_template_ls",
   "zap_doctor",
+  "zap_runtime_connectivity_status",
 ]);
 
 async function exportedTools(): Promise<string[]> {

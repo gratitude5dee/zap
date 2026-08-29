@@ -11,11 +11,13 @@ export const help = `zap memory <subcommand>
 
   status              memory provider health and item counts
   search <query>      search tenant memory (in-VM / self-host only)
+  remember <text>     store a memory item (in-VM / self-host only)
   export              stream every memory item (I6 extraction path)
   forget <uri>        remove one memory item
 
 Flags:
   --json              machine-readable output
+  --ephemeral         remember: session-scoped, not durable (requires --session)
   --tenant <id>       tenant scope (default "self")
   --runtime <id>      runtime scope (default "local")
   --session <id>      session scope
@@ -24,6 +26,7 @@ Flags:
 export const jsonSchema = {
   status: { healthy: "boolean", items: "number", provider: "string", locality: "string" },
   search: { query: "string", results: "MemoryItem[]" },
+  remember: { ok: "boolean", uri: "string", durable: "boolean" },
   export: { items: "MemoryItem[]" },
   forget: { ok: "boolean", uri: "string" },
 };
@@ -56,6 +59,17 @@ export async function run(args, flags, deps = {}) {
       const limit = typeof flags.limit === "string" ? Number(flags.limit) : undefined;
       const results = await service.search(scope, query, limit !== undefined ? { limit } : undefined);
       print({ query, results }, json, (p) => p.results.map((r) => `${r.uri}\t${r.text ?? ""}`).join("\n"));
+      return 0;
+    }
+    case "remember": {
+      const text = args.slice(1).join(" ").trim();
+      if (text === "") throw new Error("zap memory remember requires text");
+      const durable = flags.ephemeral !== true;
+      if (!durable && scope.sessionId === undefined) {
+        throw new Error("zap memory remember --ephemeral requires --session <id> (non-durable memory is session-scoped)");
+      }
+      const item = await service.remember(scope, { durable, text });
+      print({ durable, ok: true, uri: item.uri }, json, (p) => `remembered ${p.uri}${p.durable ? "" : " (ephemeral)"}`);
       return 0;
     }
     case "export": {

@@ -266,22 +266,24 @@ async function runtimeConnectivity({ args, flags }) {
 }
 
 /**
+ * Flag keys are the camelCase spellings produced by `parseArgs`
+ * (`--auth-key-file` arrives as `authKeyFile`).
  * @param {import("@wzrdtech/zap-runtime").ConnectivityBox} box
  * @param {string} feature
  * @param {Record<string, unknown>} flags
  */
-async function enableFeature(box, feature, flags) {
+export async function enableFeature(box, feature, flags) {
   if (feature === "tailscale") {
     return enableTailscale(box, {
-      authKey: await readCredential(flags["auth-key-file"], "ZAP_TAILSCALE_AUTH_KEY", "--auth-key-file"),
+      authKey: await readCredential(flags.authKeyFile, "ZAP_TAILSCALE_AUTH_KEY", "--auth-key-file"),
       hostname: flags.hostname === undefined ? undefined : String(flags.hostname),
     });
   }
   if (feature === "samMesh") {
-    const controlPlaneUrl = flags["control-plane"] === undefined ? "" : String(flags["control-plane"]);
-    const inviteFile = flags["mesh-invite-token-file"];
+    const controlPlaneUrl = flags.controlPlane === undefined ? "" : String(flags.controlPlane);
+    const inviteFile = flags.meshInviteTokenFile;
     return enableSamMesh(box, {
-      bootstrapToken: await readCredential(flags["bootstrap-token-file"], "ZAP_SAM_BOOTSTRAP_TOKEN", "--bootstrap-token-file"),
+      bootstrapToken: await readCredential(flags.bootstrapTokenFile, "ZAP_SAM_BOOTSTRAP_TOKEN", "--bootstrap-token-file"),
       controlPlaneUrl,
       meshInviteToken:
         inviteFile === undefined && process.env.ZAP_MESH_INVITE_TOKEN === undefined

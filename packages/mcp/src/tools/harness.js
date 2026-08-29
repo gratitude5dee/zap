@@ -24,14 +24,12 @@ export function register(server) {
     "zap_harness_doctor",
     {
       title: "Harness Doctor",
-      description: "Check harness health (units, ports, MCP config) in a runtime.",
+      description: "Check harness health (units, ports, MCP config) for a harness or template.",
       inputSchema: {
-        harness: z.string().optional(),
-        runtimeId: z.string().optional(),
+        harness: z.string().optional().describe("Harness id or zap-heavy-* template to inspect (the CLI resolves templates, not runtime ids)."),
       },
       annotations: { readOnlyHint: true },
     },
-    async ({ harness, runtimeId }) =>
-      cliTool(["harness", "doctor", ...(runtimeId ? [runtimeId] : []), ...(harness ? ["--harness", harness] : []), "--json"]),
+    async ({ harness }) => cliTool(["harness", "doctor", ...(harness ? [harness] : []), "--json"]),
   );
 }
