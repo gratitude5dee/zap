@@ -26,10 +26,10 @@ export function register(server) {
     "zap_memory_remember",
     {
       title: "Memory Remember",
-      description: "Store a durable memory item.",
+      description: "Store a memory item. Non-durable items are session-scoped: durable=false requires a session id.",
       inputSchema: {
         durable: z.boolean().default(true),
-        session: z.string().optional().describe("Session scope id."),
+        session: z.string().optional().describe("Session scope id (required when durable is false)."),
         text: z.string(),
       },
       annotations: { destructiveHint: true },

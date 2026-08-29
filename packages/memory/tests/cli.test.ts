@@ -75,12 +75,19 @@ describe("zap memory --json fixtures", () => {
     expect(found.some((item) => item.uri === out.uri)).toBe(true);
   });
 
-  it("memory remember --ephemeral stores a non-durable item", async () => {
+  it("memory remember --ephemeral --session stores a session-scoped item", async () => {
     const service = await seededService();
-    await runMemory(["remember", "scratch note"], { ephemeral: true, json: true }, { service });
-    const out = jsonOut() as { ok: boolean; durable: boolean };
+    await runMemory(["remember", "scratch note"], { ephemeral: true, json: true, session: "s1" }, { service });
+    const out = jsonOut() as { ok: boolean; durable: boolean; uri: string };
     expect(out.ok).toBe(true);
     expect(out.durable).toBe(false);
+    expect(out.uri).toContain("/sessions/s1/");
+  });
+
+  it("memory remember --ephemeral without --session throws instead of storing durably", async () => {
+    await expect(
+      runMemory(["remember", "scratch note"], { ephemeral: true }, { service: await seededService() }),
+    ).rejects.toThrowError(/--ephemeral requires --session/);
   });
 
   it("memory remember without text throws a usage error", async () => {

@@ -17,7 +17,7 @@ export const help = `zap memory <subcommand>
 
 Flags:
   --json              machine-readable output
-  --ephemeral         remember: session-scoped, not durable
+  --ephemeral         remember: session-scoped, not durable (requires --session)
   --tenant <id>       tenant scope (default "self")
   --runtime <id>      runtime scope (default "local")
   --session <id>      session scope
@@ -65,6 +65,9 @@ export async function run(args, flags, deps = {}) {
       const text = args.slice(1).join(" ").trim();
       if (text === "") throw new Error("zap memory remember requires text");
       const durable = flags.ephemeral !== true;
+      if (!durable && scope.sessionId === undefined) {
+        throw new Error("zap memory remember --ephemeral requires --session <id> (non-durable memory is session-scoped)");
+      }
       const item = await service.remember(scope, { durable, text });
       print({ durable, ok: true, uri: item.uri }, json, (p) => `remembered ${p.uri}${p.durable ? "" : " (ephemeral)"}`);
       return 0;

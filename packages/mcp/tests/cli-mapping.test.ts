@@ -52,10 +52,10 @@ describe("zap_harness_doctor maps to the CLI's positional target", () => {
     expect(argv).toEqual(["harness", "doctor", "hermes", "--json"]);
   });
 
-  it("prefers the runtimeId when both are given", async () => {
+  it("does not advertise a runtimeId the CLI cannot resolve", async () => {
     const tools = await load("../src/tools/harness.js");
-    const argv = await argvFor(tools, "zap_harness_doctor", { harness: "hermes", runtimeId: "rt_1" });
-    expect(argv).toEqual(["harness", "doctor", "rt_1", "--json"]);
+    const doctor = tools.get("zap_harness_doctor");
+    expect(Object.keys(doctor?.config.inputSchema ?? {})).toEqual(["harness"]);
   });
 });
 
@@ -66,10 +66,10 @@ describe("zap_memory_remember maps to a real CLI subcommand", () => {
     expect(argv).toEqual(["memory", "remember", "note", "--json"]);
   });
 
-  it("non-durable remember uses --ephemeral (--session takes an id in the CLI)", async () => {
+  it("non-durable remember uses --ephemeral with a session scope", async () => {
     const tools = await load("../src/tools/memory.js");
-    const argv = await argvFor(tools, "zap_memory_remember", { durable: false, text: "note" });
-    expect(argv).toEqual(["memory", "remember", "note", "--json", "--ephemeral"]);
+    const argv = await argvFor(tools, "zap_memory_remember", { durable: false, session: "s1", text: "note" });
+    expect(argv).toEqual(["memory", "remember", "note", "--json", "--ephemeral", "--session", "s1"]);
   });
 
   it("search session scope maps to --session, a flag the CLI parses", async () => {
