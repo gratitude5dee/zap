@@ -1,6 +1,14 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
+/** Coarse, non-secret connectivity state for one feature. */
+const connectivityStatusValue = v.union(
+  v.literal("installed"),
+  v.literal("running"),
+  v.literal("stopped"),
+  v.literal("error"),
+);
+
 export default defineSchema({
   assets: defineTable({
     durationS: v.optional(v.number()),
@@ -130,6 +138,30 @@ export default defineSchema({
     .index("by_author", ["authorId"])
     .index("by_deployment", ["deploymentId"])
     .index("by_slug", ["slug"]),
+
+  // Per-runtime connectivity opt-in state. Metadata only: booleans, enum-like
+  // status strings, and timestamps. Join credentials (Tailscale auth keys, SAM
+  // bootstrap tokens, mesh invite tokens), control-plane URLs, and any message
+  // or provider content never reach this table.
+  runtimeConnectivity: defineTable({
+    authorId: v.string(),
+    cotalEnabled: v.boolean(),
+    cotalStatus: v.optional(connectivityStatusValue),
+    createdAt: v.number(),
+    runtimeId: v.string(),
+    samMeshEnabled: v.boolean(),
+    samMeshStatus: v.optional(connectivityStatusValue),
+    statusAt: v.optional(v.number()),
+    tailscaleEnabled: v.boolean(),
+    tailscaleStatus: v.optional(connectivityStatusValue),
+    taskrouterEnabled: v.boolean(),
+    taskrouterStatus: v.optional(connectivityStatusValue),
+    updatedAt: v.number(),
+    x402Enabled: v.boolean(),
+  })
+    .index("by_runtime", ["runtimeId"])
+    .index("by_author", ["authorId"])
+    .index("by_author_runtime", ["authorId", "runtimeId"]),
 
   zaps: defineTable({
     authorId: v.optional(v.string()),

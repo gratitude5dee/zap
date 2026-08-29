@@ -3,6 +3,8 @@
  * through `redact` — canary classes: Box keys, hosted `_token`, desktop
  * URLs, runtime/bridge tokens, provider keys, Thirdweb/CDP/MPP secrets.
  */
+import { scrub } from "./auth/redact.ts";
+
 export const REDACTED = "[REDACTED]";
 
 interface RedactionRule {
@@ -42,11 +44,19 @@ const RULES: RedactionRule[] = [
   { id: "cdp_key", pattern: /\bcdp_[A-Za-z0-9_-]{8,}\b/g, replace: () => REDACTED },
   { id: "mpp_key", pattern: /\bmpp_[A-Za-z0-9_-]{8,}\b/g, replace: () => REDACTED },
   { id: "upstash_token", pattern: /\bA[A-Za-z0-9]{20,}=(?=\s|$|["'])/g, replace: () => REDACTED },
+  // owner-supplied connectivity join credentials (tailnet, SAM mesh)
+  { id: "tailscale_authkey", pattern: /\btskey-[A-Za-z0-9-]{8,}\b/g, replace: () => REDACTED },
+  keepKeyRule(
+    "connectivity_join",
+    /((?:--auth-key|--authkey|--bootstrap-token|--join|TS_AUTHKEY|ZAP_TAILSCALE_AUTH_KEY|ZAP_SAM_BOOTSTRAP_TOKEN|ZAP_MESH_INVITE_TOKEN)[=:\s]+["']?)[^\s"',}]+/gi,
+  ),
 ];
 
 /** Redacts secret material from one log line. */
 export function redact(text: string): string {
-  let out = text;
+  // The registry runs first: an owner-supplied credential (a mesh invite
+  // token, say) has no recognizable shape for a pattern rule to catch.
+  let out = scrub(text);
   for (const rule of RULES) {
     out = out.replace(rule.pattern, rule.replace as (substring: string, ...args: unknown[]) => string);
   }

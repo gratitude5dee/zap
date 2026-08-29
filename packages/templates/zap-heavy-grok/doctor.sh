@@ -22,4 +22,7 @@ check "xai default route" bash -c 'node -e "
 check "no xai key on disk" bash -c '! grep -rq "xai-" "${HOME}/.config/opencode" "${HOME}/.zap/template.json"'
 
 echo "note xAI-routed; the Grok Bot product has no runtime surface (verify item 11)"
+# Optional connectivity rows (required:false — never fail the build).
+bash "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/connectivity/doctor.sh" || true
+
 exit "${fail}"

@@ -10,7 +10,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { parseRuntimeSpec } from "@wzrdtech/core/runtime-spec";
+import { CONNECTIVITY_DEFAULTS, parseRuntimeSpec } from "@wzrdtech/core/runtime-spec";
 import { configHash } from "@wzrdtech/zap-kernel";
 import { parseDocument } from "yaml";
 import { ZapCliError } from "./errors.js";
@@ -101,6 +101,14 @@ export function resolveComposeTree(spec) {
   plugins.push({ config: {}, name: "tools.core" });
   plugins.push({ config: {}, name: "sessions.core" });
   plugins.push({ config: {}, name: "doctor.core" });
+
+  // Opt-in connectivity: a plugin appears only when the runtime asked for it,
+  // so an undeclared runtime resolves to exactly the tree it resolved before.
+  const connectivity = { ...CONNECTIVITY_DEFAULTS, ...(spec.connectivity ?? {}) };
+  for (const feature of /** @type {const} */ (["tailscale", "cotal", "taskrouter", "samMesh"])) {
+    if (connectivity[feature]) plugins.push({ config: { enabled: true }, name: `connectivity.${feature}` });
+  }
+  if (connectivity.x402) plugins.push({ config: { gate: "managed" }, name: "connectivity.x402" });
 
   if (spec.weight === "med" || spec.weight === "heavy") {
     plugins.push({ config: {}, name: "gateway.core" });

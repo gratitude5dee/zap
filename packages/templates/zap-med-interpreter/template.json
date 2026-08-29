@@ -7,8 +7,36 @@
   "namedSnapshot": false,
   "overlay": true,
   "harness": "interpreter",
-  "units": ["zap-agentd.service", "zap-interpreter.service"],
-  "ports": [{ "port": 9000, "role": "api", "hostPrivate": true }],
-  "stateDirs": ["~/.openinterpreter"],
-  "mcpConfig": { "path": "~/.openinterpreter/config.toml", "format": "toml" }
+  "units": [
+    "zap-agentd.service",
+    "zap-interpreter.service"
+  ],
+  "ports": [
+    {
+      "port": 9000,
+      "role": "api",
+      "hostPrivate": true
+    }
+  ],
+  "stateDirs": [
+    "~/.openinterpreter"
+  ],
+  "mcpConfig": {
+    "path": "~/.openinterpreter/config.toml",
+    "format": "toml"
+  },
+  "pins": {
+    "tailscale": "1.82.0",
+    "cotal": "0.33.1",
+    "sam": "v0.1.0-alpha.7",
+    "mesh-llm": "v0.75.1",
+    "taskrouter-model": "qwen2.5-1.5b-instruct-q4_k_m"
+  },
+  "connectivity": {
+    "tailscale": false,
+    "cotal": false,
+    "taskrouter": false,
+    "samMesh": false,
+    "x402": false
+  }
 }

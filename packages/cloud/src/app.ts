@@ -7,6 +7,7 @@ import type {
   CloudHono,
   CloudMiddleware,
   CloudRouteModule,
+  RuntimeConnectivityFlags,
   RuntimeRow,
 } from "./types.ts";
 
@@ -23,6 +24,17 @@ function newId(prefix: string): string {
 
 function bearerToken(header: string | undefined): string | undefined {
   return header?.startsWith("Bearer ") ? header.slice("Bearer ".length) : undefined;
+}
+
+/** Normalizes an opt-in payload: unknown keys dropped, every feature default off. */
+function connectivityFlags(input: RuntimeConnectivityFlags | undefined): RuntimeConnectivityFlags {
+  return {
+    cotal: input?.cotal === true,
+    samMesh: input?.samMesh === true,
+    tailscale: input?.tailscale === true,
+    taskrouter: input?.taskrouter === true,
+    x402: input?.x402 === true,
+  };
 }
 
 /**
@@ -72,7 +84,11 @@ export function createCloudApp(deps: CloudDeps, options: CreateCloudAppOptions =
         return c.json({ error: { code: "RATE_LIMITED", message: "Runtime creation limit reached." } }, 429);
       }
     }
-    const body = (await c.req.json().catch(() => ({}))) as { weight?: RuntimeRow["weight"]; provider?: string };
+    const body = (await c.req.json().catch(() => ({}))) as {
+      weight?: RuntimeRow["weight"];
+      provider?: string;
+      connectivity?: RuntimeConnectivityFlags;
+    };
     const created = await deps.sandbox.create({ weight: body.weight ?? "light", noEnv: true });
     const row: RuntimeRow = {
       id: newId("rt"),
@@ -84,6 +100,7 @@ export function createCloudApp(deps: CloudDeps, options: CreateCloudAppOptions =
       createdAt: now().toISOString(),
       stopAfter: new Date(now().getTime() + 30 * MINUTE_MS).toISOString(),
       runtimeToken: newId("rtk"),
+      connectivity: connectivityFlags(body.connectivity),
     };
     await deps.runtimes.insert(row);
     await deps.counters.bump("starts");
@@ -107,7 +124,24 @@ export function createCloudApp(deps: CloudDeps, options: CreateCloudAppOptions =
     return c.json({ ok: true });
   });
 
+  // Records opt-in metadata only. Enabling tailscale or samMesh on the box
+  // needs the owner's own join credential, which travels through the runtime's
+  // one-shot secret path (zap runtime connectivity enable), never this API.
+  app.post("/v1/runtimes/:id/connectivity", ownRuntime, async (c) => {
+    const body = (await c.req.json().catch(() => ({}))) as { connectivity?: RuntimeConnectivityFlags };
+    const merged = connectivityFlags({ ...c.get("runtime")?.connectivity, ...body.connectivity });
+    await deps.runtimes.update(c.req.param("id"), { connectivity: merged });
+    return c.json({ connectivity: merged, ok: true });
+  });
+
+  app.get("/v1/runtimes/:id/connectivity", ownRuntime, (c) =>
+    c.json({ connectivity: connectivityFlags(c.get("runtime")?.connectivity) }),
+  );
+
   const gateIfPrompt: CloudMiddleware = async (c, next) => {
+    // An x402-opted-in runtime gates every exec, not just prompts: that opt-in
+    // is what advertises the endpoint as paid. payTo stays the treasury.
+    if (c.get("runtime")?.connectivity?.x402) return gate(c, next);
     const body = (await c.req.json().catch(() => ({}))) as { prompt?: string };
     if (body.prompt !== undefined) return gate(c, next);
     return next();
@@ -220,6 +254,7 @@ export function createCloudApp(deps: CloudDeps, options: CreateCloudAppOptions =
   });
 
   mountGateway(app, deps);
+
 
   for (const module of options.modules ?? []) {
     module.mount(app, { gate, deps });

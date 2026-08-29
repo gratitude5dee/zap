@@ -26,4 +26,7 @@ check "omg pinned" bash -c 'node -e "
   if (!t.pins || !t.pins[\"@omg-dev/cli\"]) process.exit(1);
 "'
 
+# Optional connectivity rows (required:false — never fail the build).
+bash "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/connectivity/doctor.sh" || true
+
 exit "${fail}"

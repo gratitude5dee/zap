@@ -31,6 +31,10 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./connectivity": {
+      "types": "./dist/connectivity/index.d.ts",
+      "import": "./dist/connectivity/index.js"
+    },
     "./sandbox/*": {
       "types": "./dist/sandbox/*.d.ts",
       "import": "./dist/sandbox/*.js"

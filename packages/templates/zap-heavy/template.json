@@ -11,7 +11,12 @@
     "zap-open-connector.service",
     "zap-host.service"
   ],
-  "dirs": ["/zap/media", "/zap/fs", "/zap/skills", "/zap/fs/repos"],
+  "dirs": [
+    "/zap/media",
+    "/zap/fs",
+    "/zap/skills",
+    "/zap/fs/repos"
+  ],
   "envAllowlist": [
     "OPENROUTER_API_KEY",
     "AI_GATEWAY_API_KEY",
@@ -33,5 +38,19 @@
     "ZAP_PAYER_MODE",
     "ZAP_MANAGED_GATEWAY_URL"
   ],
-  "presetsManifest": "/zap/ffmpeg-presets.json"
+  "presetsManifest": "/zap/ffmpeg-presets.json",
+  "pins": {
+    "tailscale": "1.82.0",
+    "cotal": "0.33.1",
+    "sam": "v0.1.0-alpha.7",
+    "mesh-llm": "v0.75.1",
+    "taskrouter-model": "qwen2.5-1.5b-instruct-q4_k_m"
+  },
+  "connectivity": {
+    "tailscale": false,
+    "cotal": false,
+    "taskrouter": false,
+    "samMesh": false,
+    "x402": false
+  }
 }

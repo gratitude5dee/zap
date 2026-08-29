@@ -47,4 +47,7 @@ if [ "${ZAP_PAYER_MODE:-}" = "managed" ]; then
   check "managed: no provider key" bash -c '! grep -Eq "^(OPENAI|ANTHROPIC)_API_KEY=" "${HOME}/.hermes/.env"'
 fi
 
+# Optional connectivity rows (required:false — never fail the build).
+bash "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/connectivity/doctor.sh" || true
+
 exit "${fail}"

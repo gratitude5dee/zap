@@ -2,13 +2,28 @@
   "name": "zap-light",
   "weight": "light",
   "provider": "box",
-  "lanes": ["codegen", "ffmpeg", "media-workflows", "browser"],
+  "lanes": [
+    "codegen",
+    "ffmpeg",
+    "media-workflows",
+    "browser"
+  ],
   "aliases": {
-    "zap-light-ffmpeg": { "lanes": ["ffmpeg"] },
-    "zap-light-code": { "lanes": ["codegen"] }
+    "zap-light-ffmpeg": {
+      "lanes": [
+        "ffmpeg"
+      ]
+    },
+    "zap-light-code": {
+      "lanes": [
+        "codegen"
+      ]
+    }
   },
   "overlays": {
-    "zap-light-browser": { "bake": "BROWSER_OVERLAY=1" }
+    "zap-light-browser": {
+      "bake": "BROWSER_OVERLAY=1"
+    }
   },
   "pins": {
     "node": "24",
@@ -16,7 +31,12 @@
     "bun": "1.2.20",
     "ffmpeg": "apt",
     "playwright": "1.55.0",
-    "browser-use": "0.5.5"
+    "browser-use": "0.5.5",
+    "tailscale": "1.82.0",
+    "cotal": "0.33.1",
+    "sam": "v0.1.0-alpha.7",
+    "mesh-llm": "v0.75.1",
+    "taskrouter-model": "qwen2.5-1.5b-instruct-q4_k_m"
   },
   "envAllowlist": [
     "TENANT_ID",
@@ -25,5 +45,12 @@
     "GATEWAY_URL",
     "GATEWAY_TOKEN",
     "ZAP_ENVIRONMENT"
-  ]
+  ],
+  "connectivity": {
+    "tailscale": false,
+    "cotal": false,
+    "taskrouter": false,
+    "samMesh": false,
+    "x402": false
+  }
 }

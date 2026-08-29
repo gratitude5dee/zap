@@ -1,4 +1,14 @@
 // @ts-check
+import { promises as fs } from "node:fs";
+import {
+  connectivityControls,
+  connectivityStatus,
+  enableCotal,
+  enableSamMesh,
+  enableTailscale,
+  enableTaskrouter,
+  handleConnectivity,
+} from "@wzrdtech/zap-runtime";
 import { loadRuntimeSpecFromFile, resolveComposeTree, resolveRuntimeDefinition } from "../../lib/compose.js";
 import { usageError, ZapCliError } from "../../lib/errors.js";
 import { printJson } from "../../lib/output.js";
@@ -14,7 +24,11 @@ import {
   writeRuntimeState,
 } from "../../lib/runtimes.js";
 
-const USAGE = "zap runtime <up|down|ps|logs|exec|snapshot|fork|stop|resume|desktop|import-sprite> [...] [--json]";
+const USAGE =
+  "zap runtime <up|down|ps|logs|exec|snapshot|fork|stop|resume|desktop|import-sprite|connectivity> [...] [--json]";
+
+const CONNECTIVITY_USAGE =
+  "zap runtime connectivity <status|enable|disable> <id> [tailscale|cotal|taskrouter|samMesh] [--json]";
 
 /** @type {import("../../lib/registry.js").CliCommand} */
 export const command = {
@@ -36,6 +50,7 @@ export const command = {
       case "resume": return runtimeResume(sub);
       case "desktop": return runtimeDesktop(sub);
       case "import-sprite": return runtimeImportSprite(sub);
+      case "connectivity": return runtimeConnectivity(sub);
       default:
         throw usageError(`Usage: ${USAGE}`);
     }
@@ -212,6 +227,84 @@ async function runtimeImportSprite({ args, flags }) {
     message: `Sprite import (${source}) is not available in this build yet.`,
     remediation: "Sprite import lands with the template pipeline (Z4). Track runtime templates with zap template.",
   });
+}
+
+/**
+ * Owner-driven opt-in for the default-off connectivity features. Join
+ * credentials are never CLI arguments: they arrive by file path or env var and
+ * are registered for redaction before any command is built.
+ * @param {import("../../lib/registry.js").CommandContext} ctx
+ */
+async function runtimeConnectivity({ args, flags }) {
+  const [action, runtimeId, feature] = args;
+  if (!action || !runtimeId) throw usageError(`Usage: ${CONNECTIVITY_USAGE}`);
+  const state = await readRuntimeState();
+  const record = findRuntime(state, runtimeId);
+  const handle = peekHandle(runtimeId) ?? await reacquireHandle(record);
+  const box = handleConnectivity(handle);
+
+  if (action === "status") {
+    const status = await connectivityStatus(box);
+    if (flags.json) printJson({ connectivity: status, id: runtimeId });
+    else for (const [name, value] of Object.entries(status)) console.log(`${name} ${JSON.stringify(value)}`);
+    return;
+  }
+  if (action !== "enable" && action !== "disable") throw usageError(`Usage: ${CONNECTIVITY_USAGE}`);
+  if (!feature || !(feature in connectivityControls)) throw usageError(`Usage: ${CONNECTIVITY_USAGE}`);
+  const control = connectivityControls[/** @type {keyof typeof connectivityControls} */ (feature)];
+
+  if (action === "disable") {
+    await control.disable(box);
+    if (flags.json) printJson({ enabled: false, feature, id: runtimeId, ok: true });
+    else console.log(`${feature} disabled on ${runtimeId}`);
+    return;
+  }
+
+  const status = await enableFeature(box, feature, flags);
+  if (flags.json) printJson({ feature, id: runtimeId, ok: true, status });
+  else console.log(`${feature} enabled on ${runtimeId}`);
+}
+
+/**
+ * @param {import("@wzrdtech/zap-runtime").ConnectivityBox} box
+ * @param {string} feature
+ * @param {Record<string, unknown>} flags
+ */
+async function enableFeature(box, feature, flags) {
+  if (feature === "tailscale") {
+    return enableTailscale(box, {
+      authKey: await readCredential(flags["auth-key-file"], "ZAP_TAILSCALE_AUTH_KEY", "--auth-key-file"),
+      hostname: flags.hostname === undefined ? undefined : String(flags.hostname),
+    });
+  }
+  if (feature === "samMesh") {
+    const controlPlaneUrl = flags["control-plane"] === undefined ? "" : String(flags["control-plane"]);
+    const inviteFile = flags["mesh-invite-token-file"];
+    return enableSamMesh(box, {
+      bootstrapToken: await readCredential(flags["bootstrap-token-file"], "ZAP_SAM_BOOTSTRAP_TOKEN", "--bootstrap-token-file"),
+      controlPlaneUrl,
+      meshInviteToken:
+        inviteFile === undefined && process.env.ZAP_MESH_INVITE_TOKEN === undefined
+          ? undefined
+          : await readCredential(inviteFile, "ZAP_MESH_INVITE_TOKEN", "--mesh-invite-token-file"),
+    });
+  }
+  if (feature === "cotal") return enableCotal(box);
+  return enableTaskrouter(box);
+}
+
+/**
+ * Reads a join credential from a file or env var — never from argv, so it
+ * cannot leak through process listings or shell history.
+ * @param {unknown} file
+ * @param {string} envVar
+ * @param {string} flagName
+ */
+async function readCredential(file, envVar, flagName) {
+  if (file !== undefined) return (await fs.readFile(String(file), "utf8")).trim();
+  const fromEnv = process.env[envVar];
+  if (fromEnv) return fromEnv.trim();
+  throw usageError(`Missing join credential. Pass ${flagName} <path> or set ${envVar}.`);
 }
 
 /** @param {string[]} args */

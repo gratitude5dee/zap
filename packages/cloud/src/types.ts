@@ -14,6 +14,20 @@ export interface RuntimeRow {
   createdAt: string;
   stopAfter: string | null;
   runtimeToken: string;
+  /**
+   * Opt-in connectivity metadata for this runtime. Booleans only — join
+   * credentials for tailscale/samMesh never reach the control plane.
+   */
+  connectivity?: RuntimeConnectivityFlags;
+}
+
+export interface RuntimeConnectivityFlags {
+  tailscale?: boolean;
+  cotal?: boolean;
+  taskrouter?: boolean;
+  samMesh?: boolean;
+  /** advertise this runtime's exec endpoint behind the managed x402 gate. */
+  x402?: boolean;
 }
 
 export interface RuntimeStore {

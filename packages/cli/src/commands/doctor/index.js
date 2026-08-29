@@ -1,6 +1,8 @@
 // @ts-check
 import { existsSync } from "node:fs";
+import { promises as fs } from "node:fs";
 import path from "node:path";
+import { CONNECTIVITY_DEFAULTS, parseRuntimeMarkdown, resolveConnectivity } from "@wzrdtech/core/runtime-spec";
 import { printJson } from "../../lib/output.js";
 import { resolvePayerStatus } from "../../lib/payer.js";
 import { canRun, check, hasExecutable, version } from "../../lib/project.js";
@@ -22,12 +24,40 @@ export const command = {
     if (flags.json) {
       const payer = await resolvePayerStatus();
       const sandbox = await listSandboxAdapters();
-      printJson({ checks, payer, sandbox, version });
+      printJson({ checks, connectivity: await connectivityChecks(), payer, sandbox, version });
       return;
     }
     checks.forEach((item) => console.log(`${item.ok ? "ok" : "warn"} ${item.name}: ${item.detail}`));
   },
 };
+
+/**
+ * Optional connectivity rows for `doctor --json`. Every row is required:false:
+ * a runtime that declares nothing is healthy with all features off, so CI
+ * never turns red because a box has no tailnet.
+ */
+async function connectivityChecks() {
+  const file = path.join(process.cwd(), "Runtime.md");
+  /** @type {Record<string, boolean>} */
+  let declared = { ...CONNECTIVITY_DEFAULTS };
+  let detail = "no Runtime.md; all connectivity features default off";
+  if (existsSync(file)) {
+    try {
+      const { spec } = parseRuntimeMarkdown(await fs.readFile(file, "utf8"));
+      declared = resolveConnectivity(spec);
+      detail = "declared in Runtime.md";
+    } catch (error) {
+      detail = `Runtime.md unreadable: ${error instanceof Error ? error.message : String(error)}`;
+    }
+  }
+  return Object.entries(declared).map(([id, enabled]) => ({
+    detail: `${enabled ? "opted in" : "installed, disabled"} (${detail})`,
+    id: `connectivity.${id}`,
+    ok: true,
+    optIn: enabled,
+    required: false,
+  }));
+}
 
 /** Lists sandbox adapters and catalog stubs for `doctor --json`. */
 async function listSandboxAdapters() {

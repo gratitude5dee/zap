@@ -7,6 +7,9 @@ import { defineConnection, defineTool, bearer, useSecret, type AnyTool, type Too
 import { createContext, type Context } from "@wzrdtech/zap-kernel";
 import { registerSecret, resetRedaction, scrub } from "../../src/auth/redact.ts";
 import { createAgentConnections } from "../../src/connections/fetch.ts";
+import { enableSamMesh } from "../../src/connectivity/sam-mesh.ts";
+import { enableTailscale } from "../../src/connectivity/tailscale.ts";
+import type { ConnectivityBox } from "../../src/connectivity/types.ts";
 import { createGatewayService, type LlmStepResult } from "../../src/gateway/index.ts";
 import { executeStep, zapHarnessManifest, type StepCapabilities, type StepEvent } from "../../src/harness/zap.ts";
 import { createRedactingLog, redact, redactDeep, REDACTED } from "../../src/redact.ts";
@@ -60,6 +63,55 @@ describe("log scrubber canaries", () => {
     const odd = "plain-looking-secret-with-no-prefix";
     registerSecret(odd);
     expect(scrub(`resolved ${odd} for tenant`)).not.toContain(odd);
+  });
+});
+
+describe("connectivity join credentials never leak", () => {
+  const AUTH_KEY = "tskey-auth-canary0000000000000000";
+  const BOOTSTRAP = "bt-canary-000000000000111111";
+  const INVITE = "mesh-invite-canary-2222222222";
+
+  it("redact strips tailnet and mesh join credentials", () => {
+    const line = redact(
+      [
+        `tailscale up --auth-key=${AUTH_KEY}`,
+        `sam-node join --bootstrap-token ${BOOTSTRAP}`,
+        `mesh-llm serve --join ${INVITE}`,
+        `ZAP_TAILSCALE_AUTH_KEY=${AUTH_KEY}`,
+      ].join(" | "),
+    );
+    for (const canary of [AUTH_KEY, BOOTSTRAP, INVITE]) expect(line).not.toContain(canary);
+  });
+
+  it("enable() registers the credential so --json payloads and logs are scrubbed", async () => {
+    const commands: string[] = [];
+    const files: Array<{ content: string; path: string }> = [];
+    const box: ConnectivityBox = {
+      async exec(command: string) {
+        commands.push(command);
+        return { exitCode: 0, stderr: "", stdout: "" };
+      },
+      async writeFile(path: string, content: string) {
+        files.push({ content, path });
+      },
+    };
+    await enableTailscale(box, { authKey: AUTH_KEY });
+    await enableSamMesh(box, {
+      bootstrapToken: BOOTSTRAP,
+      controlPlaneUrl: "https://mesh.owner.example",
+      meshInviteToken: INVITE,
+    });
+
+    // The credential reaches the box as a 0600 file, never as an argument.
+    expect(files.some((file) => file.content === AUTH_KEY)).toBe(true);
+    for (const command of commands) {
+      for (const canary of [AUTH_KEY, BOOTSTRAP, INVITE]) expect(command).not.toContain(canary);
+    }
+    // …and once registered, any accidental echo is scrubbed everywhere.
+    for (const canary of [AUTH_KEY, BOOTSTRAP, INVITE]) {
+      expect(scrub(`leaked ${canary}`)).not.toContain(canary);
+      expect(JSON.stringify(redactDeep({ detail: `leaked ${canary}` }))).not.toContain(canary);
+    }
   });
 });
 
