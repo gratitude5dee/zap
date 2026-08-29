@@ -201,7 +201,7 @@ describe("zap pay link", () => {
   it("pay (mpp) forwards the url and approved spend request id", async () => {
     const { code } = await run([
       "pay",
-      "https://merchant.example/resource",
+      "https://93.184.216.34/resource",
       "--spend-request-id",
       "spr_test_123",
       "--test",
@@ -211,7 +211,7 @@ describe("zap pay link", () => {
     const argv = JSON.parse(readFileSync(path.join(dir, "argv.json"), "utf8")) as string[];
     expect(argv).toContain("mpp");
     expect(argv).toContain("pay");
-    expect(argv).toContain("https://merchant.example/resource");
+    expect(argv).toContain("https://93.184.216.34/resource");
     expect(argv).toContain("--spend-request-id=spr_test_123");
     expect(argv).toContain("--test");
   });
@@ -227,6 +227,9 @@ describe("zap pay link", () => {
       "https://internal-host/resource",
       "https://service.internal/resource",
       "https://[::1]/resource",
+      "https://[::ffff:127.0.0.1]/resource",
+      "https://[::ffff:10.0.0.5]/resource",
+      "https://merchant.example/resource",
       "not a url",
     ];
     for (const url of badUrls) {
@@ -237,7 +240,7 @@ describe("zap pay link", () => {
   });
 
   it("pay without a spend request id requires a full --context", async () => {
-    const { code, io } = await run(["pay", "https://merchant.example/resource", "--context", "too short"]);
+    const { code, io } = await run(["pay", "https://93.184.216.34/resource", "--context", "too short"]);
     expect(code).toBe(2);
     expect(io.err[0]).toContain("--context");
   });

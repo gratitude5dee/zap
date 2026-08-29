@@ -18,6 +18,9 @@
  *   zap pay link list [--include-history] [--json]
  *   zap pay link pay <url> [--spend-request-id <id>] [...] [--json]
  */
+import dns from "node:dns/promises";
+import { isIP } from "node:net";
+
 import {
   LinkWalletError,
   linkAuthExists,
@@ -225,13 +228,56 @@ async function payLinkRequest(rest, io, json) {
 }
 
 /**
+ * @param {string} address IPv4 or IPv6 literal (no brackets)
+ * @returns {boolean} true when the address is loopback/private/link-local
+ */
+function isPrivateAddress(address) {
+  let host = address.toLowerCase();
+  if (host.startsWith("::ffff:")) {
+    const mapped = host.slice(7);
+    const hex = /^([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(mapped);
+    if (hex) {
+      const hi = Number.parseInt(hex[1], 16);
+      const lo = Number.parseInt(hex[2], 16);
+      host = `${hi >> 8}.${hi & 0xff}.${lo >> 8}.${lo & 0xff}`;
+    } else {
+      host = mapped;
+    }
+  }
+  if (host.includes(":")) {
+    return (
+      host === "::" ||
+      host === "::1" ||
+      host.startsWith("fe80:") ||
+      host.startsWith("fc") ||
+      host.startsWith("fd")
+    );
+  }
+  const octets = host.split(".").map(Number);
+  if (octets.length !== 4 || octets.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) {
+    return false;
+  }
+  const [a, b] = octets;
+  return (
+    a === 0 ||
+    a === 10 ||
+    a === 127 ||
+    (a === 100 && b >= 64 && b <= 127) ||
+    (a === 169 && b === 254) ||
+    (a === 172 && b >= 16 && b <= 31) ||
+    (a === 192 && b === 168)
+  );
+}
+
+/**
  * Merchant URLs must be public https endpoints: link-cli fetches the URL from
  * this host, so loopback/private/link-local destinations would let a caller
- * point the payment at internal services.
+ * point the payment at internal services. DNS names are resolved and every
+ * resolved address is checked, so internal-resolving names are refused too.
  * @param {string} raw
- * @returns {boolean}
+ * @returns {Promise<boolean>}
  */
-function isPayableMerchantUrl(raw) {
+async function isPayableMerchantUrl(raw) {
   let parsed;
   try {
     parsed = new URL(raw);
@@ -244,23 +290,15 @@ function isPayableMerchantUrl(raw) {
   if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host.endsWith(".internal")) {
     return false;
   }
-  if (host === "::1" || host.startsWith("fe80:") || host.startsWith("fc") || host.startsWith("fd")) return false;
-  const octets = host.split(".").map(Number);
-  if (octets.length === 4 && octets.every((n) => Number.isInteger(n) && n >= 0 && n <= 255)) {
-    const [a, b] = octets;
-    if (
-      a === 0 ||
-      a === 10 ||
-      a === 127 ||
-      (a === 100 && b >= 64 && b <= 127) ||
-      (a === 169 && b === 254) ||
-      (a === 172 && b >= 16 && b <= 31) ||
-      (a === 192 && b === 168)
-    ) {
-      return false;
-    }
+  if (isIP(host)) return !isPrivateAddress(host);
+  /** @type {{ address: string }[]} */
+  let resolved;
+  try {
+    resolved = await dns.lookup(host, { all: true, verbatim: true });
+  } catch {
+    return false;
   }
-  return true;
+  return resolved.length > 0 && resolved.every(({ address }) => !isPrivateAddress(address));
 }
 
 /**
@@ -278,7 +316,7 @@ async function payLinkPay(rest, io, json) {
     io.error("Usage: zap pay link pay <url> [--spend-request-id <id>] [--context <text>] [--amount <cents>] [--method <m>] [--data <body>] [--test] [--json]");
     return 2;
   }
-  if (!isPayableMerchantUrl(url)) {
+  if (!(await isPayableMerchantUrl(url))) {
     io.error("pay requires a public https:// merchant URL (loopback, private, and link-local hosts are refused).");
     return 2;
   }
