@@ -9,7 +9,7 @@
 import { ConnectivityCommandError, type ConnectivityBox, type TaskrouterStatus } from "./types.ts";
 
 const UNIT = "zap-taskrouter.service";
-const PROBE = "curl -fsS --max-time 3 http://127.0.0.1:1917/healthz >/dev/null 2>&1 && echo running || echo stopped";
+const PROBE = "curl -fsS --max-time 3 http://127.0.0.1:1917/health >/dev/null 2>&1 && echo running || echo stopped";
 
 export async function taskrouterStatus(box: ConnectivityBox): Promise<TaskrouterStatus> {
   const installed = await box.exec("test -x /home/user/.zap/taskrouter/run.sh && echo installed || echo missing", 60).catch(() => null);

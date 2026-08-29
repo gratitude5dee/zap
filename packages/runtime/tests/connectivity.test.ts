@@ -2,6 +2,9 @@
 // makes that claim checkable: nothing starts unless an owner enables it,
 // enable/disable are idempotent, the task router stays on loopback, and a
 // mesh join needs the owner's own control plane — there is no fallback URL.
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import type { SandboxHandle } from "@wzrdtech/zap-sandbox";
 import { afterEach, describe, expect, it } from "vitest";
 import { resetRedaction } from "../src/auth/redact.ts";
 import {
@@ -17,6 +20,7 @@ import {
   enableSamMesh,
   enableTailscale,
   enableTaskrouter,
+  handleConnectivity,
   samMeshStatus,
   tailscaleStatus,
   taskrouterStatus,
@@ -133,6 +137,70 @@ describe("taskrouter is advisory and loopback-only", () => {
     const { box } = fakeBox(() => ({ stdout: "" }));
     await expect(disableTaskrouter(box)).resolves.toBeUndefined();
     await expect(disableTaskrouter(box)).resolves.toBeUndefined();
+  });
+
+  it("probes a route the baked router actually serves", async () => {
+    const { box, calls } = fakeBox(() => ({ stdout: "running" }));
+    await taskrouterStatus(box);
+    const probe = calls.map((call) => call.command).find((command) => command.includes("127.0.0.1:1917"));
+    expect(probe).toBeDefined();
+    const routes = readFileSync(path.resolve(import.meta.dirname, "../../../infra/connectivity/taskrouter.py"), "utf8");
+    const probed = probe?.match(/127\.0\.0\.1:1917(\/[a-z]+)/)?.[1] ?? "";
+    expect(routes).toContain(`self.path == "${probed}"`);
+  });
+});
+
+describe("owner-supplied hostnames cannot become tailscale options", () => {
+  it.each(["--advertise-exit-node", "-accept-routes", "  --ssh  ", "host;rm -rf /"])("neutralises %j", async (hostname) => {
+    const { box, calls } = fakeBox(() => ({ stdout: "" }));
+    await enableTailscale(box, { authKey: "tskey-auth-host000000000000000", hostname });
+    const up = calls.map((call) => call.command).find((command) => command.includes("--hostname=")) ?? "";
+    const value = up.match(/--hostname='([^']*)'/)?.[1] ?? "";
+    expect(value).toMatch(/^[a-z0-9][a-z0-9-]*$/);
+    expect(up).not.toContain("--advertise-exit-node");
+    expect(up).not.toContain("rm -rf");
+  });
+});
+
+describe("sandbox handles keep connectivity timeouts", () => {
+  it("converts requested seconds into the adapter's millisecond budget", async () => {
+    const seen: Array<number | undefined> = [];
+    const handle = {
+      exec: async (_command: string, opts?: { timeoutMs?: number }) => {
+        seen.push(opts?.timeoutMs);
+        return { exitCode: 0, stderr: "", stdout: "" };
+      },
+      fs: { resolve: (p: string) => p, write: async () => undefined },
+    } as unknown as SandboxHandle;
+    const box = handleConnectivity(handle);
+    await box.exec("true", 30);
+    await box.exec("true");
+    expect(seen).toEqual([30_000, undefined]);
+  });
+});
+
+describe("credential files land in the runtime user's home", () => {
+  // A relative path would resolve into the sandbox adapter's workspace, where
+  // the baked units never look for it.
+  it("writes every credential to an absolute /home/user path", async () => {
+    const tailnet = fakeBox(() => ({ stdout: "" }));
+    await enableTailscale(tailnet.box, { authKey: "tskey-auth-abs0000000000000000" });
+    const mesh = fakeBox(() => ({ stdout: "" }));
+    await enableSamMesh(mesh.box, {
+      bootstrapToken: "bt-owner-000000000000",
+      controlPlaneUrl: "https://mesh.owner.example",
+      meshInviteToken: "mesh-invite-owner-0000",
+    });
+    const written = [...tailnet.files, ...mesh.files];
+    expect(written.length).toBeGreaterThan(3);
+    for (const file of written) expect(file.path).toMatch(/^\/home\/user\//);
+  });
+
+  it("references the same absolute path it wrote", async () => {
+    const { box, calls, files } = fakeBox(() => ({ stdout: "" }));
+    await enableTailscale(box, { authKey: "tskey-auth-abs1111111111111111" });
+    const keyPath = files[0]?.path ?? "";
+    expect(calls.some((call) => call.command.includes(`--auth-key=file:${keyPath}`))).toBe(true);
   });
 });
 

@@ -57,16 +57,15 @@ export async function enableTailscale(box: ConnectivityBox, options: TailscaleEn
   registerSecret(authKey);
 
   const nonce = randomBytes(8).toString("hex");
-  const relative = `.tailscale/authkey-${nonce}`;
-  const absolute = `/home/user/${relative}`;
+  const absolute = `/home/user/.tailscale/authkey-${nonce}`;
   const hostname = sanitizeHostname(options.hostname ?? "zap-box");
 
   try {
     await box.exec("mkdir -p /home/user/.tailscale && chmod 700 /home/user/.tailscale", 60);
-    await box.writeFile(relative, authKey);
+    await box.writeFile(absolute, authKey);
     await box.exec(`chmod 600 ${absolute}`, 60);
     const result = await box.exec(
-      `sudo systemctl enable --now ${UNIT} && sleep 2 && tailscale --socket=${SOCKET} up --auth-key=file:${absolute} --hostname=${hostname} --accept-dns=false --accept-routes=false --ssh=false --timeout=60s`,
+      `sudo systemctl enable --now ${UNIT} && sleep 2 && tailscale --socket=${SOCKET} up --auth-key=file:${absolute} --hostname='${hostname}' --accept-dns=false --accept-routes=false --ssh=false --timeout=60s`,
       180,
     );
     if (result.exitCode !== 0) {
@@ -86,7 +85,12 @@ export async function disableTailscale(box: ConnectivityBox): Promise<void> {
   await box.exec("rm -f /home/user/.tailscale/authkey-* 2>/dev/null || true", 60).catch(() => undefined);
 }
 
+/** DNS-label safe and never option-like: no leading/trailing hyphen survives. */
 function sanitizeHostname(value: string): string {
-  const cleaned = value.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/^-+|-+$/g, "");
-  return cleaned.length > 0 ? cleaned.slice(0, 63) : "zap-box";
+  const cleaned = value
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "-")
+    .slice(0, 63)
+    .replace(/^-+|-+$/g, "");
+  return cleaned.length > 0 ? cleaned : "zap-box";
 }

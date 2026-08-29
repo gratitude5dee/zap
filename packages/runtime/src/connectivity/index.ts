@@ -40,12 +40,16 @@ export function boxConnectivity(client: BoxClient, boxId: string): ConnectivityB
 /** Binds any sandbox handle (Box, Modal, local, fake) to the same control surface. */
 export function handleConnectivity(handle: SandboxHandle): ConnectivityBox {
   return {
-    async exec(command: string) {
-      const result = await handle.exec(command);
+    async exec(command: string, timeoutSeconds?: number) {
+      const result = await handle.exec(command, {
+        timeoutMs: timeoutSeconds === undefined ? undefined : timeoutSeconds * 1_000,
+      });
       return { exitCode: result.exitCode, stderr: result.stderr, stdout: result.stdout };
     },
     async writeFile(path: string, content: string) {
-      await handle.fs.write(handle.fs.resolve(path), new TextEncoder().encode(content));
+      // Connectivity paths are absolute under the runtime user's home; a
+      // relative path would resolve into the adapter's workspace instead.
+      await handle.fs.write(path, new TextEncoder().encode(content));
     },
   };
 }

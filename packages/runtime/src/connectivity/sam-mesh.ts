@@ -109,11 +109,11 @@ export async function enableSamMesh(box: ConnectivityBox, options: SamMeshEnable
   registerSecret(apiToken);
 
   await box.exec(`mkdir -p ${DIR} && chmod 700 ${DIR}`, 60);
-  await box.writeFile(".zap/sam-mesh/mesh.json", `${JSON.stringify({ controlPlaneUrl, meshInvite: meshInviteToken !== undefined && meshInviteToken !== "" }, null, 2)}\n`);
-  await box.writeFile(".zap/sam-mesh/bootstrap-token", bootstrapToken);
-  await box.writeFile(".zap/sam-mesh/api-token", apiToken);
+  await box.writeFile(`${DIR}/mesh.json`, `${JSON.stringify({ controlPlaneUrl, meshInvite: meshInviteToken !== undefined && meshInviteToken !== "" }, null, 2)}\n`);
+  await box.writeFile(`${DIR}/bootstrap-token`, bootstrapToken);
+  await box.writeFile(`${DIR}/api-token`, apiToken);
   if (meshInviteToken !== undefined && meshInviteToken !== "") {
-    await box.writeFile(".zap/sam-mesh/mesh-invite-token", meshInviteToken);
+    await box.writeFile(`${DIR}/mesh-invite-token`, meshInviteToken);
   }
   await box.exec(`chmod 600 ${DIR}/bootstrap-token ${DIR}/api-token ${DIR}/mesh.json 2>/dev/null || true`, 60);
 
