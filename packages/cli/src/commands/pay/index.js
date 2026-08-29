@@ -6,6 +6,7 @@
  *   zap pay login --managed     wallet auth + scoped session key (0600)
  *   zap pay logout              clear only the managed session key
  *   zap pay quote [--json]      quote the gate price without paying
+ *   zap pay link <sub>          Stripe Link agent wallet (owner-approved agentic payments)
  *
  * Plan-only stays the default everywhere; nothing here spends without an
  * explicit payment. Session keys and BYOK keys are never printed.
@@ -14,6 +15,7 @@ import { payStatus } from "./status.js";
 import { payLogin } from "./login.js";
 import { payLogout } from "./logout.js";
 import { payQuote } from "./quote.js";
+import { payLink } from "./link.js";
 
 export default {
   name: "pay",
@@ -23,12 +25,13 @@ export default {
     login: payLogin,
     logout: payLogout,
     quote: payQuote,
+    link: payLink,
   },
   async run(args, io) {
     const [sub, ...rest] = args;
     const command = this.subcommands[sub];
     if (!command) {
-      io.error(`Unknown pay subcommand "${sub ?? ""}". Try: status, login, logout, quote.`);
+      io.error(`Unknown pay subcommand "${sub ?? ""}". Try: status, login, logout, quote, link.`);
       return 2;
     }
     return command(rest, io);
