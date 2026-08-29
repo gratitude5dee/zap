@@ -64,6 +64,31 @@ describe("zap memory --json fixtures", () => {
     ).resolves.toBeNull();
   });
 
+  it("memory remember --json stores a durable item that search can find", async () => {
+    const service = await seededService();
+    await runMemory(["remember", "the golden path is zap run"], { json: true }, { service });
+    const out = jsonOut() as { ok: boolean; uri: string; durable: boolean };
+    expect(out.ok).toBe(true);
+    expect(out.durable).toBe(true);
+    expect(out.uri).toContain("viking://");
+    const found = await service.search({ tenantId: "self", runtimeId: "local" }, "golden path is zap run");
+    expect(found.some((item) => item.uri === out.uri)).toBe(true);
+  });
+
+  it("memory remember --ephemeral stores a non-durable item", async () => {
+    const service = await seededService();
+    await runMemory(["remember", "scratch note"], { ephemeral: true, json: true }, { service });
+    const out = jsonOut() as { ok: boolean; durable: boolean };
+    expect(out.ok).toBe(true);
+    expect(out.durable).toBe(false);
+  });
+
+  it("memory remember without text throws a usage error", async () => {
+    await expect(runMemory(["remember"], {}, { service: await seededService() })).rejects.toThrowError(
+      /remember requires text/,
+    );
+  });
+
   it("unknown subcommand throws a structured error", async () => {
     await expect(runMemory(["bogus"], {}, { service: await seededService() })).rejects.toThrowError(
       /Unknown memory subcommand/,

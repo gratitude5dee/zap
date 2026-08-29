@@ -15,11 +15,11 @@ export function register(server) {
       description: "Search runtime memory.",
       inputSchema: {
         query: z.string(),
-        scope: z.string().optional(),
+        session: z.string().optional().describe("Session scope id."),
       },
       annotations: { readOnlyHint: true },
     },
-    async ({ query, scope }) => cliTool(["memory", "search", query, ...(scope ? ["--scope", scope] : []), "--json"]),
+    async ({ query, session }) => cliTool(["memory", "search", query, ...(session ? ["--session", session] : []), "--json"]),
   );
 
   server.registerTool(
@@ -29,15 +29,15 @@ export function register(server) {
       description: "Store a durable memory item.",
       inputSchema: {
         durable: z.boolean().default(true),
-        scope: z.string().optional(),
+        session: z.string().optional().describe("Session scope id."),
         text: z.string(),
       },
       annotations: { destructiveHint: true },
     },
-    async ({ durable, scope, text }) => {
+    async ({ durable, session, text }) => {
       const args = ["memory", "remember", text, "--json"];
-      if (!durable) args.push("--session");
-      if (scope) args.push("--scope", scope);
+      if (!durable) args.push("--ephemeral");
+      if (session) args.push("--session", session);
       return cliTool(args);
     },
   );
