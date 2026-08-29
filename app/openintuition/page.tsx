@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import Link from "next/link";
 import type { ReactNode } from "react";
-import { ArrowRight, CheckCircle2, CircleDollarSign, Code2, ExternalLink, LockKeyhole, MessageCircleMore, SearchCheck, Sparkles } from "lucide-react";
+import { ArrowRight, CheckCircle2, CircleDollarSign, Code2, ExternalLink, LockKeyhole, MessageCircleMore, SearchCheck } from "lucide-react";
 import { Eyebrow, PageShell, SiteNav } from "@/app/_components/zap-chrome";
+import { CrtBackground } from "@/app/_components/threeui/crt-background";
 import { GlassCta } from "@/app/_components/threeui/glass-cta";
+import { ZAP_VERSION } from "@/lib/zap-version";
 
 const OPENINTUITION_GITHUB_URL = "https://github.com/WZRD-tech-Inc/OpenIntuiton";
 const OPENINSTINCT_GITHUB_URL = "https://github.com/Merit-Systems/OpenInstinct";
@@ -18,15 +19,21 @@ export default function OpenIntuitionPage() {
   return (
     <PageShell tone="dark">
       <section className="relative overflow-hidden bg-[#03100a]">
-        <div className="mx-auto max-w-7xl px-5 py-5 lg:px-8">
+        <div className="absolute inset-0">
+          <CrtBackground version={ZAP_VERSION} />
+        </div>
+        <div className="relative z-10 mx-auto max-w-7xl px-5 py-5 lg:px-8">
           <SiteNav tone="dark" />
-          <div className="grid gap-10 py-16 lg:grid-cols-[minmax(0,0.86fr)_minmax(440px,0.92fr)] lg:items-center lg:py-24">
+          <div className="pt-10 lg:pt-12">
+            <div aria-label="OpenIntuition and Stripe" className="flex flex-wrap items-center gap-x-5 gap-y-3">
+              <Image alt="OpenIntuition" className="h-auto w-[172px] shrink-0 brightness-0 invert sm:w-[330px]" height={967} priority src="/openintuition/openintuition-logo-transparent.png" width={3604} />
+              <span aria-hidden className="font-mono text-xl text-white/35">×</span>
+              <Image alt="Stripe" className="h-auto w-[90px] shrink-0 sm:w-[136px]" height={400} src="/openintuition/stripe-logo.webp" width={960} />
+            </div>
+          </div>
+          <div className="grid gap-10 pb-14 pt-10 lg:grid-cols-[minmax(0,0.86fr)_minmax(440px,0.92fr)] lg:items-center lg:pb-20 lg:pt-12">
             <div className="max-w-3xl">
-              <Eyebrow tone="amber">
-                <Sparkles className="size-4" />
-                OpenIntuition × Stripe Link
-              </Eyebrow>
-              <p className="mt-8 font-mono text-[12px] tracking-[0.24em] text-[#f6ff00] uppercase">Agent-assisted checkout, with a human in control</p>
+              <p className="font-mono text-[12px] tracking-[0.24em] text-[#f6ff00] uppercase">Agent-assisted checkout, with a human in control</p>
               <h1 className="mt-5 text-balance font-semibold text-[clamp(4.25rem,11vw,8.5rem)] leading-[0.82] text-white tracking-[-0.07em]">
                 Intuition <span className="text-zap-cyan">&gt;</span> Instinct.
               </h1>
@@ -57,17 +64,6 @@ export default function OpenIntuitionPage() {
                 <span>1080P</span>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="bg-[#f4f2ea] text-zap-ink">
-        <div className="mx-auto grid max-w-7xl gap-6 px-5 py-10 sm:grid-cols-2 lg:px-8">
-          <div className="flex min-h-40 items-center rounded-lg border border-black/10 bg-white px-7 shadow-[0_14px_40px_rgba(7,9,13,0.08)]">
-            <Image alt="OpenIntuition logo" className="h-auto w-full max-w-[470px]" height={967} priority src="/openintuition/openintuition-logo.png" width={3604} />
-          </div>
-          <div className="flex min-h-40 items-center justify-center rounded-lg border border-black/10 bg-[#0b0d13] px-10 shadow-[0_14px_40px_rgba(7,9,13,0.12)]">
-            <Image alt="Stripe logo" className="h-auto w-full max-w-[270px]" height={400} src="/openintuition/stripe-logo.webp" width={960} />
           </div>
         </div>
       </section>
