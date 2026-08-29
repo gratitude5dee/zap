@@ -49,6 +49,7 @@ describe("MCP Link wallet tools", () => {
     expect(toolNames).toContain("zap_pay_link_retrieve");
     expect(toolNames).toContain("zap_pay_link_cancel");
     expect(toolNames).toContain("zap_pay_link_list");
+    expect(toolNames).toContain("zap_pay_link_pay");
     expect(toolNames.some((name: string) => name.includes("connect"))).toBe(false);
   });
 
@@ -123,11 +124,32 @@ describe("MCP Link wallet tools", () => {
     ]);
   });
 
-  it("status and list are read-only; request and cancel are destructive", async () => {
+  it("zap_pay_link_pay maps to the CLI mpp pay contract", async () => {
+    const tools = await collect();
+    await tools.get("zap_pay_link_pay")?.handler({
+      spendRequestId: "spr_1",
+      test: true,
+      url: "https://merchant.example/resource",
+    });
+    expect(cliCalls[0]).toEqual([
+      "pay",
+      "link",
+      "pay",
+      "https://merchant.example/resource",
+      "--json",
+      "--spend-request-id",
+      "spr_1",
+      "--test",
+    ]);
+  });
+
+  it("status and list are read-only; request, cancel, and pay are destructive; retrieve is not read-only", async () => {
     const tools = await collect();
     expect(tools.get("zap_pay_link_status")?.config.annotations?.readOnlyHint).toBe(true);
     expect(tools.get("zap_pay_link_list")?.config.annotations?.readOnlyHint).toBe(true);
     expect(tools.get("zap_pay_link_request")?.config.annotations?.destructiveHint).toBe(true);
     expect(tools.get("zap_pay_link_cancel")?.config.annotations?.destructiveHint).toBe(true);
+    expect(tools.get("zap_pay_link_pay")?.config.annotations?.destructiveHint).toBe(true);
+    expect(tools.get("zap_pay_link_retrieve")?.config.annotations?.readOnlyHint).toBe(false);
   });
 });

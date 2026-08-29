@@ -25,6 +25,7 @@ export const toolNames = [
   "zap_pay_link_retrieve",
   "zap_pay_link_cancel",
   "zap_pay_link_list",
+  "zap_pay_link_pay",
 ];
 
 /** @param {import("@modelcontextprotocol/sdk/server/mcp.js").McpServer} server */
@@ -127,7 +128,7 @@ export function register(server) {
         outputFile: z.string().optional().describe("Required when includeCard is true."),
         timeout: z.number().positive().optional().describe("Polling timeout in seconds."),
       },
-      annotations: { readOnlyHint: true },
+      annotations: { destructiveHint: true, readOnlyHint: false },
     },
     async ({ id, includeCard, outputFile, timeout }) => {
       const args = ["pay", "link", "retrieve", id, "--json"];
@@ -162,6 +163,35 @@ export function register(server) {
     async ({ includeHistory }) => {
       const args = ["pay", "link", "list", "--json"];
       if (includeHistory) args.push("--include-history");
+      return payCliTool(args);
+    },
+  );
+
+  server.registerTool(
+    "zap_pay_link_pay",
+    {
+      title: "Link MPP Pay",
+      description:
+        "Complete an HTTP 402 payment with an owner-approved shared payment token (`zap pay link pay`). The token is spent against the merchant URL inside link-cli and never returned.",
+      inputSchema: {
+        amount: z.number().int().positive().optional().describe("Amount in cents (derived from the 402 challenge if omitted)."),
+        context: z.string().min(100).optional().describe("Required when spendRequestId is omitted; the owner reads it when approving."),
+        data: z.string().optional().describe("Request body (implies POST)."),
+        method: z.string().optional().describe("HTTP method."),
+        spendRequestId: z.string().optional().describe("Approved spend request id with credential_type shared_payment_token."),
+        test: z.boolean().default(false).describe("Use Link test mode (no real charge)."),
+        url: z.string().describe("Merchant URL to pay."),
+      },
+      annotations: { destructiveHint: true },
+    },
+    async ({ amount, context, data, method, spendRequestId, test, url }) => {
+      const args = ["pay", "link", "pay", url, "--json"];
+      if (spendRequestId) args.push("--spend-request-id", spendRequestId);
+      if (context) args.push("--context", context);
+      if (amount !== undefined) args.push("--amount", String(amount));
+      if (method) args.push("--method", method);
+      if (data) args.push("--data", data);
+      if (test) args.push("--test");
       return payCliTool(args);
     },
   );

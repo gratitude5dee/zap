@@ -16,6 +16,7 @@
  *   zap pay link retrieve <id> [--output-file <path>] [--include card] [--json]
  *   zap pay link cancel <id> [--json]
  *   zap pay link list [--include-history] [--json]
+ *   zap pay link pay <url> [--spend-request-id <id>] [...] [--json]
  */
 import {
   LinkWalletError,
@@ -79,7 +80,11 @@ export async function payLink(args, io) {
           return 0;
         }
         const payload = await runLinkCli(["auth", "status"]);
-        printSafe(io, payload, json);
+        const safe = safeLinkFields(payload);
+        const details = Array.isArray(safe) ? (safe.at(-1) ?? {}) : safe;
+        const connected = details.authenticated !== false;
+        if (json) io.out(JSON.stringify({ connected, ...details }, null, 2));
+        else printSafe(io, { connected, ...details }, json);
         return 0;
       }
       case "disconnect": {
@@ -109,6 +114,7 @@ export async function payLink(args, io) {
           }
           argv.push("--include=card");
         }
+        if (rest.includes("--force")) argv.push("--force");
         const timeout = flagValue(rest, "--timeout");
         if (timeout) argv.push(`--timeout=${timeout}`);
         const interval = flagValue(rest, "--interval");
@@ -134,8 +140,10 @@ export async function payLink(args, io) {
         printSafe(io, payload, json);
         return 0;
       }
+      case "pay":
+        return payLinkPay(rest, io, json);
       default:
-        io.error(`Unknown pay link subcommand "${sub ?? ""}". Try: connect, status, disconnect, request, retrieve, cancel, list.`);
+        io.error(`Unknown pay link subcommand "${sub ?? ""}". Try: connect, status, disconnect, request, retrieve, cancel, list, pay.`);
         return 2;
     }
   } catch (error) {
@@ -203,6 +211,54 @@ async function payLinkRequest(rest, io, json) {
   if (rest.includes("--test")) argv.push("--test");
   const payload = await runLinkCli(argv, { timeoutMs: 660_000 });
   printSafe(io, payload, json);
-  if (!json) io.out("Approve the spend request in Link; then run `zap pay link retrieve <id>`.");
+  if (!json) {
+    if (credentialType === "card") {
+      const outputFile = flagValue(rest, "--output-file");
+      io.out(
+        `Approve the spend request in Link. If the card file was not written yet, run \`zap pay link retrieve <id> --include card --output-file ${outputFile}\`.`,
+      );
+    } else {
+      io.out("Approve the spend request in Link; then run `zap pay link pay <url> --spend-request-id <id>` to complete the HTTP 402 payment.");
+    }
+  }
+  return 0;
+}
+
+/**
+ * `zap pay link pay` — complete an HTTP 402 payment with a shared payment
+ * token via `link-cli mpp pay`. The token stays inside link-cli: it is spent
+ * against the merchant URL directly and never surfaces on stdout (C24).
+ * @param {string[]} rest
+ * @param {{ out: (m: string) => void, error: (m: string) => void }} io
+ * @param {boolean} json
+ * @returns {Promise<number>}
+ */
+async function payLinkPay(rest, io, json) {
+  const [url] = rest;
+  if (!url || url.startsWith("--")) {
+    io.error("Usage: zap pay link pay <url> [--spend-request-id <id>] [--context <text>] [--amount <cents>] [--method <m>] [--data <body>] [--test] [--json]");
+    return 2;
+  }
+  const argv = ["mpp", "pay", url];
+  const spendRequestId = flagValue(rest, "--spend-request-id");
+  if (spendRequestId) {
+    argv.push(`--spend-request-id=${spendRequestId}`);
+  } else {
+    const context = flagValue(rest, "--context");
+    if (!context || context.length < 100) {
+      io.error("--context (min 100 chars) is required when --spend-request-id is not provided; the owner reads it when approving.");
+      return 2;
+    }
+    argv.push(`--context=${context}`);
+  }
+  const amount = flagValue(rest, "--amount");
+  if (amount) argv.push(`--amount=${amount}`);
+  const method = flagValue(rest, "--method");
+  if (method) argv.push(`--method=${method}`);
+  const data = flagValue(rest, "--data");
+  if (data) argv.push(`--data=${data}`);
+  if (rest.includes("--test")) argv.push("--test");
+  const payload = await runLinkCli(argv, { timeoutMs: 660_000 });
+  printSafe(io, payload, json);
   return 0;
 }
