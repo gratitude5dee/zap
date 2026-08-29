@@ -10,6 +10,7 @@ import {
   KeyRound,
   Plug,
   ShieldCheck,
+  Sparkles,
   Workflow,
 } from "lucide-react";
 import { CodeWindow, Eyebrow, PageShell, SiteNav } from "@/app/_components/zap-chrome";
@@ -123,6 +124,44 @@ export default function Page() {
               value="Agent secrets resolve only inside declared HTTPS connections and never appear in bundles, events, or --json output."
             />
           </div>
+        </div>
+      </section>
+
+      <section className="relative bg-[#05080c]/80 text-white">
+        <div className="mx-auto grid max-w-7xl gap-8 px-5 py-14 lg:grid-cols-[minmax(0,0.78fr)_minmax(440px,0.98fr)] lg:items-center lg:px-8">
+          <div className="max-w-xl">
+            <Eyebrow tone="amber">
+              <Sparkles className="size-4" />
+              Featured launch film
+            </Eyebrow>
+            <p className="mt-5 font-mono text-[12px] tracking-[0.2em] text-zap-cyan uppercase">OpenIntuition × Stripe Link · 00:38</p>
+            <h2 className="mt-4 text-balance font-semibold text-4xl leading-tight sm:text-5xl">Intuition &gt; Instinct.</h2>
+            <p className="mt-5 text-pretty text-lg leading-8 text-white/62">
+              A concept film for a simple interaction: ask in iMessage, let an agent do the legwork, then approve an exact total before the checkout happens.
+            </p>
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+              <GlassCta href="/openintuition" tone="sulfur">
+                Explore OpenIntuition
+                <ArrowRight className="size-4" />
+              </GlassCta>
+              <a className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md border border-white/15 px-5 font-medium text-white transition hover:bg-white/10" href="https://github.com/WZRD-tech-Inc/OpenIntuiton" rel="noreferrer" target="_blank">
+                View source
+                <ArrowRight className="size-4" />
+              </a>
+            </div>
+          </div>
+
+          <figure className="zap-gradient-frame overflow-hidden rounded-lg bg-black shadow-[0_28px_80px_rgba(0,0,0,0.5)]">
+            <video aria-label="OpenIntuition launch film" className="aspect-video h-auto w-full bg-black" controls playsInline poster="/openintuition/intuition-over-instinct-poster.jpg" preload="metadata">
+              <source src="/openintuition/intuition-over-instinct.mp4" type="video/mp4" />
+              <track default kind="captions" label="English" src="/openintuition/intuition-over-instinct.en.vtt" srcLang="en" />
+              Your browser does not support the video tag.
+            </video>
+            <figcaption className="flex items-center justify-between gap-4 px-4 py-3 font-mono text-[11px] text-white/50">
+              <span>INTUITION_OVER_INSTINCT.MP4</span>
+              <span>38 SEC</span>
+            </figcaption>
+          </figure>
         </div>
       </section>
 
