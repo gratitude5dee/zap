@@ -75,7 +75,9 @@ export async function linkAuthExists() {
     const parsed = JSON.parse(raw);
     if (typeof parsed !== "object" || parsed === null) return false;
     const auth = /** @type {{ auth?: unknown }} */ (parsed).auth;
-    return typeof auth === "object" && auth !== null && !Array.isArray(auth);
+    if (typeof auth !== "object" || auth === null || Array.isArray(auth)) return false;
+    const accessToken = /** @type {{ access_token?: unknown }} */ (auth).access_token;
+    return typeof accessToken === "string" && accessToken.length > 0;
   } catch {
     return false;
   }

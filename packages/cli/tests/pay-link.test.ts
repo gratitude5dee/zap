@@ -71,7 +71,7 @@ describe("zap pay link", () => {
 
   it("status with stored auth always carries a stable connected field", async () => {
     mkdirSync(path.join(dir, "auth"), { recursive: true });
-    writeFileSync(path.join(dir, "auth", "auth.json"), JSON.stringify({ auth: { session: "s" } }));
+    writeFileSync(path.join(dir, "auth", "auth.json"), JSON.stringify({ auth: { access_token: "tok_test" } }));
     process.env.ZAP_LINK_CLI_ENTRY = fakeCli(
       `console.log(JSON.stringify({ authenticated: true, account_label: "owner@example.com" }));`,
     );
@@ -84,7 +84,16 @@ describe("zap pay link", () => {
 
   it("status treats a malformed auth file as disconnected", async () => {
     mkdirSync(path.join(dir, "auth"), { recursive: true });
-    for (const bad of ["not json", JSON.stringify({ auth: null }), JSON.stringify({ auth: true }), JSON.stringify({ auth: "x" })]) {
+    const badFiles = [
+      "not json",
+      JSON.stringify({ auth: null }),
+      JSON.stringify({ auth: true }),
+      JSON.stringify({ auth: "x" }),
+      JSON.stringify({ auth: {} }),
+      JSON.stringify({ auth: { access_token: 5 } }),
+      JSON.stringify({ auth: { access_token: "" } }),
+    ];
+    for (const bad of badFiles) {
       writeFileSync(path.join(dir, "auth", "auth.json"), bad);
       const { code, io } = await run(["status", "--json"]);
       expect(code).toBe(0);
@@ -207,6 +216,26 @@ describe("zap pay link", () => {
     expect(argv).toContain("--test");
   });
 
+  it("pay refuses non-public merchant URLs before spawning", async () => {
+    const badUrls = [
+      "http://merchant.example/resource",
+      "https://localhost/resource",
+      "https://127.0.0.1/resource",
+      "https://10.0.0.5/resource",
+      "https://192.168.1.2/resource",
+      "https://169.254.169.254/latest/meta-data",
+      "https://internal-host/resource",
+      "https://service.internal/resource",
+      "https://[::1]/resource",
+      "not a url",
+    ];
+    for (const url of badUrls) {
+      const { code, io } = await run(["pay", url, "--spend-request-id", "spr_test_123"]);
+      expect(code, url).toBe(2);
+      expect(io.err[0]).toContain("public https");
+    }
+  });
+
   it("pay without a spend request id requires a full --context", async () => {
     const { code, io } = await run(["pay", "https://merchant.example/resource", "--context", "too short"]);
     expect(code).toBe(2);
@@ -244,8 +273,8 @@ describe("resolveLinkCliEntry", () => {
         }
       });
     `;
-    const env: Record<string, string | undefined> = { ...process.env, ZAP_LINK_CLI_ENTRY: override };
-    delete env.VITEST;
+    const { VITEST: _vitest, ...baseEnv } = process.env;
+    const env = { ...baseEnv, ZAP_LINK_CLI_ENTRY: override };
     const output = execFileSync(process.execPath, ["--input-type=module", "-e", script], {
       encoding: "utf8",
       env,

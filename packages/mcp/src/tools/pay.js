@@ -180,7 +180,7 @@ export function register(server) {
         method: z.string().optional().describe("HTTP method."),
         spendRequestId: z.string().optional().describe("Approved spend request id with credential_type shared_payment_token."),
         test: z.boolean().default(false).describe("Use Link test mode (no real charge)."),
-        url: z.string().describe("Merchant URL to pay."),
+        url: z.string().url().describe("Public https merchant URL to pay (loopback/private hosts are refused)."),
       },
       annotations: { destructiveHint: true },
     },

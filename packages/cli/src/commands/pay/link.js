@@ -225,6 +225,45 @@ async function payLinkRequest(rest, io, json) {
 }
 
 /**
+ * Merchant URLs must be public https endpoints: link-cli fetches the URL from
+ * this host, so loopback/private/link-local destinations would let a caller
+ * point the payment at internal services.
+ * @param {string} raw
+ * @returns {boolean}
+ */
+function isPayableMerchantUrl(raw) {
+  let parsed;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    return false;
+  }
+  if (parsed.protocol !== "https:") return false;
+  const host = parsed.hostname.replace(/^\[|\]$/g, "").toLowerCase();
+  if (!host.includes(".") && !host.includes(":")) return false;
+  if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host.endsWith(".internal")) {
+    return false;
+  }
+  if (host === "::1" || host.startsWith("fe80:") || host.startsWith("fc") || host.startsWith("fd")) return false;
+  const octets = host.split(".").map(Number);
+  if (octets.length === 4 && octets.every((n) => Number.isInteger(n) && n >= 0 && n <= 255)) {
+    const [a, b] = octets;
+    if (
+      a === 0 ||
+      a === 10 ||
+      a === 127 ||
+      (a === 100 && b >= 64 && b <= 127) ||
+      (a === 169 && b === 254) ||
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 192 && b === 168)
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
  * `zap pay link pay` — complete an HTTP 402 payment with a shared payment
  * token via `link-cli mpp pay`. The token stays inside link-cli: it is spent
  * against the merchant URL directly and never surfaces on stdout (C24).
@@ -237,6 +276,10 @@ async function payLinkPay(rest, io, json) {
   const [url] = rest;
   if (!url || url.startsWith("--")) {
     io.error("Usage: zap pay link pay <url> [--spend-request-id <id>] [--context <text>] [--amount <cents>] [--method <m>] [--data <body>] [--test] [--json]");
+    return 2;
+  }
+  if (!isPayableMerchantUrl(url)) {
+    io.error("pay requires a public https:// merchant URL (loopback, private, and link-local hosts are refused).");
     return 2;
   }
   const argv = ["mpp", "pay", url];
