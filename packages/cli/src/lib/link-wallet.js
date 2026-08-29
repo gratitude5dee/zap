@@ -22,6 +22,8 @@ import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
 const MAX_OUTPUT_BYTES = 2_097_152;
+// Snapshotted at module load, before any project .env can reach process.env.
+const IS_TEST_RUNNER = Boolean(process.env.VITEST);
 
 /** Structured, safe failure — the message never embeds raw CLI output. */
 export class LinkWalletError extends Error {
@@ -71,7 +73,11 @@ export async function linkAuthExists() {
   try {
     const raw = await fs.readFile(linkAuthFile(), "utf8");
     const parsed = JSON.parse(raw);
-    return typeof parsed === "object" && parsed !== null && Boolean(/** @type {{ auth?: unknown }} */ (parsed).auth);
+    if (typeof parsed !== "object" || parsed === null) return false;
+    const auth = /** @type {{ auth?: unknown }} */ (parsed).auth;
+    if (typeof auth !== "object" || auth === null || Array.isArray(auth)) return false;
+    const accessToken = /** @type {{ access_token?: unknown }} */ (auth).access_token;
+    return typeof accessToken === "string" && accessToken.length > 0;
   } catch {
     return false;
   }
@@ -87,8 +93,11 @@ let cachedEntry;
 
 /** @returns {string} entry path of the link-cli, or throws CLI_UNAVAILABLE */
 export function resolveLinkCliEntry() {
+  // The entry override is a test-only seam: honoring it outside the test
+  // runner would let a project-level .env swap in a CLI that reads the
+  // owner's wallet session.
   const override = process.env.ZAP_LINK_CLI_ENTRY;
-  if (override) return override;
+  if (override && IS_TEST_RUNNER) return override;
   if (cachedEntry) return cachedEntry;
   try {
     const packagePath = require.resolve("@stripe/link-cli/package.json");
@@ -215,6 +224,7 @@ const SAFE_FIELDS = new Set([
   "amount",
   "approval_url",
   "cancelled_at",
+  "connected",
   "context",
   "created",
   "created_at",
