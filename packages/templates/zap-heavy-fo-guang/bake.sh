@@ -19,13 +19,18 @@ ABOT_RECON_REF="0962a31c35b483361adef178ff9f641fa8651890"
 ONNXRUNTIME_PIN="1.29.0"
 HIDAPI_PIN="0.14.0.post4"
 TORCH_PIN="2.5.1"
-if [ -n "${FO_GUANG_CPU_ONLY:-}" ]; then
-  CPU_ONLY="${FO_GUANG_CPU_ONLY}"
-elif command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi >/dev/null 2>&1; then
-  CPU_ONLY=0
-else
-  CPU_ONLY=1
-fi
+case "${FO_GUANG_CPU_ONLY:-auto}" in
+  1) CPU_ONLY=1 ;;
+  0) CPU_ONLY=0 ;;
+  auto)
+    if command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi >/dev/null 2>&1; then
+      CPU_ONLY=0
+    else
+      CPU_ONLY=1
+    fi
+    ;;
+  *) echo "FO_GUANG_CPU_ONLY must be 0 or 1" >&2; exit 2 ;;
+esac
 
 install -d -m 0755 /zap/fs/robot
 
