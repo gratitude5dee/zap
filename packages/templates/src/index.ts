@@ -30,6 +30,15 @@ export const templates: readonly TemplateManifest[] = [
     units: ["zap-agentd.service", "zap-openviking.service"],
     skills: [],
   },
+  {
+    name: "zap-heavy-fo-guang",
+    weight: "heavy",
+    description:
+      "zap-heavy overlay with the fo-guang robotics profile: Unitree G1 sim2sim, God's Eye View telemetry, ABot-Recon reconstruction.",
+    harness: "fo-guang",
+    units: ["zap-agentd.service"],
+    skills: ["fo-guang"],
+  },
 ];
 
 export function getTemplate(name: string): TemplateManifest | undefined {

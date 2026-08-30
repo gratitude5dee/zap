@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import {
   ArrowRight,
   BookOpen,
+  Bot,
   Boxes,
   Braces,
   Cpu,
@@ -30,6 +31,9 @@ Provider cost                               quoted — $0.42, cap $1.50
 Live execution                              waiting for explicit approval`;
 
 const mcpCommand = `npx -y @wzrdtech/zap@${ZAP_VERSION} mcp`;
+
+const foGuangCommands = `zap harness bake zap-heavy-fo-guang    # plan-only
+zap harness doctor zap-heavy-fo-guang`;
 
 const profiles = [
   {
@@ -124,6 +128,41 @@ export default function Page() {
               value="Agent secrets resolve only inside declared HTTPS connections and never appear in bundles, events, or --json output."
             />
           </div>
+        </div>
+      </section>
+
+      <section className="relative bg-zap-ink/80 text-white">
+        <div className="mx-auto grid max-w-7xl gap-8 px-5 py-14 lg:grid-cols-[minmax(0,0.9fr)_minmax(400px,0.9fr)] lg:items-center lg:px-8">
+          <div className="max-w-xl">
+            <Eyebrow tone="amber">
+              <Bot className="size-4" />
+              Featured template · fo-guang robotics profile
+            </Eyebrow>
+            <h2 className="mt-4 text-balance font-semibold text-4xl leading-tight sm:text-5xl">
+              A humanoid robotics workbench in one template.
+            </h2>
+            <p className="mt-5 text-pretty text-lg leading-8 text-white/62">
+              <span className="font-mono text-zap-cyan">zap-heavy-fo-guang</span> overlays{" "}
+              <span className="font-mono text-zap-cyan">zap-heavy</span> with the Unitree G1
+              sim2sim stack: MuJoCo Playground MJX/PPO training, ONNX policy playback, the
+              God&apos;s Eye View telemetry bridge, and ABot-Recon reconstruction from the G1
+              head camera. GPU boxes train; CPU-only boxes replay and reconstruct. Telemetry is
+              inbound-only and no secret is ever baked.
+            </p>
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+              <GlassCta href={`${ZAP_DOCS_URL}/templates/zap-heavy-fo-guang`} tone="sulfur">
+                Explore the template
+                <ArrowRight className="size-4" />
+              </GlassCta>
+              <a className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md border border-white/15 px-5 font-medium text-white transition hover:bg-white/10" href="https://github.com/gratitude5dee/zap/tree/main/packages/templates/zap-heavy-fo-guang" rel="noreferrer" target="_blank">
+                View source
+                <ArrowRight className="size-4" />
+              </a>
+            </div>
+          </div>
+          <CodeWindow label="fork the robotics workbench" status="plan-safe">
+            {foGuangCommands}
+          </CodeWindow>
         </div>
       </section>
 
