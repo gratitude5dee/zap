@@ -15,6 +15,13 @@
       "title": "Caught By The Cam"
     },
     {
+      "estimateUsd": 0.75,
+      "file": "<repo>/agent/skills/zap-unitree-g1/Zap.md",
+      "slug": "unitree-g1",
+      "steps": 3,
+      "title": "Unitree G1"
+    },
+    {
       "estimateUsd": 7.5,
       "file": "<repo>/agent/skills/zap-world-cup-entrance/Zap.md",
       "slug": "world-cup-entrance",
