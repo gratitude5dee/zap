@@ -107,6 +107,7 @@ local docs (this site): https://zap.wzrd.tech/docs
 - /docs/harnesses/cursor
 - /docs/harnesses/deepseek
 - /docs/harnesses/devin
+- /docs/harnesses/fo-guang
 - /docs/harnesses/frontier
 - /docs/harnesses/fx
 - /docs/harnesses/grok

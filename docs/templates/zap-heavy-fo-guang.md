@@ -7,7 +7,7 @@ bridge, and ABot-Recon reconstruction from the G1 head camera.
 | field | value |
 | --- | --- |
 | kind | overlay of `zap-heavy` |
-| harness | `fo-guang` |
+| harness | [`fo-guang`](../harnesses/fo-guang.md) |
 | ports | none (the telemetry bridge speaks over a UNIX socket) |
 | units | `zap-agentd.service` |
 | state | `~/mujoco_playground`, `~/gods-eye-view`, `~/ABot-Recon`, `/zap/fs/robot` |
@@ -39,11 +39,12 @@ only, and `infra/box/secret-sweep.sh` keeps keys out of every baked surface.
 ## GPU and CPU-only modes
 
 A GPU box gets `jax[cuda12]` layered over Playground's CPU-only JAX pin, which
-MJX/PPO training requires. Bake with `FO_GUANG_CPU_ONLY=1` to skip that step and
-record `cpuOptimized: true` in `~/.zap/template.json`; `doctor.sh` reports the
-mode. CPU-only still supports sim2sim playback of an exported policy and
-ABot-Recon CPU inference — around 0.31 FPS at 504×280 on 8 cores with
-`--device cpu --amp-dtype fp32`, where `--quantize` (dynamic INT8, CPU-only)
+MJX/PPO training requires. `bake.sh` detects the mode from the box
+(`nvidia-smi`); set `FO_GUANG_CPU_ONLY=1` (or `=0`) to override. CPU-only mode
+skips the CUDA step and records `cpuOptimized: true` in `~/.zap/template.json`;
+`doctor.sh` reports the mode. CPU-only still supports sim2sim playback of an
+exported policy and ABot-Recon CPU inference — around 0.31 FPS at 504×280 on
+8 cores with `--device cpu`, where `--quantize` (dynamic INT8, CPU-only)
 saves weight memory rather than time (see the ABot-Recon README's CPU
 throughput table).
 

@@ -5,8 +5,10 @@
 # bridge, and ABot-Recon. No secrets baked: GEV_ROBOT_INGEST_TOKEN, XAI_API_KEY
 # and friends arrive at runtime through the BYOK/env allowlist only (C6).
 #
-# Set FO_GUANG_CPU_ONLY=1 to skip the CUDA JAX layer (sim2sim playback and
-# ABot-Recon CPU inference only; MJX/PPO training needs a GPU box).
+# GPU vs CPU-only mode is detected from the box (nvidia-smi); set
+# FO_GUANG_CPU_ONLY=1 or =0 to override. CPU-only skips the CUDA JAX layer
+# (sim2sim playback and ABot-Recon CPU inference only; MJX/PPO training needs
+# a GPU box).
 set -euo pipefail
 
 TEMPLATE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -17,7 +19,13 @@ ABOT_RECON_REF="0962a31c35b483361adef178ff9f641fa8651890"
 ONNXRUNTIME_PIN="1.29.0"
 HIDAPI_PIN="0.14.0.post4"
 TORCH_PIN="2.5.1"
-CPU_ONLY="${FO_GUANG_CPU_ONLY:-0}"
+if [ -n "${FO_GUANG_CPU_ONLY:-}" ]; then
+  CPU_ONLY="${FO_GUANG_CPU_ONLY}"
+elif command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi >/dev/null 2>&1; then
+  CPU_ONLY=0
+else
+  CPU_ONLY=1
+fi
 
 install -d -m 0755 /zap/fs/robot
 
@@ -37,7 +45,7 @@ pip install -e "${HOME}/mujoco_playground" "onnxruntime==${ONNXRUNTIME_PIN}" "hi
 # Playground pins CPU-only JAX, so PPO trains on the CPU unless the CUDA
 # wheels are layered over it — GPU boxes only.
 if [ "${CPU_ONLY}" = "1" ]; then
-  echo "bake: FO_GUANG_CPU_ONLY=1 — skipping jax[cuda12]; sim2sim playback and CPU inference only"
+  echo "bake: CPU-only mode — skipping jax[cuda12]; sim2sim playback and CPU inference only"
 else
   pip install -U "jax[cuda12]"
 fi
@@ -49,6 +57,18 @@ npm --prefix "${HOME}/gods-eye-view" install
 # ── Reconstruction: ABot-Recon over the G1 head camera ───────────────────
 clone_at https://github.com/gratitude5dee/ABot-Recon.git "${HOME}/ABot-Recon" "${ABOT_RECON_REF}"
 pip install -e "${HOME}/ABot-Recon"
+
+# ── Skill: register the rollout runbook in the inherited skills store ─────
+install -d -m 0755 /zap/skills/fo-guang
+install -m 0644 "${TEMPLATE_DIR}/skills/fo-guang/SKILL.md" /zap/skills/fo-guang/SKILL.md
+node -e '
+  const fs = require("node:fs");
+  const file = "/zap/skills/index.json";
+  const index = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")) : { skills: [] };
+  index.skills ??= [];
+  if (!index.skills.includes("fo-guang")) index.skills.push("fo-guang");
+  fs.writeFileSync(file, JSON.stringify(index, null, 2) + "\n");
+'
 
 # Installed refs and pins recorded as non-secret metadata (C30) so doctor can
 # report the GPU vs CPU-only mode.

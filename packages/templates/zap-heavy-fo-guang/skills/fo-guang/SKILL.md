@@ -36,7 +36,9 @@ hand:
    run's logdir.
 3. **Export.** Convert the policy to ONNX per
    `~/mujoco_playground/mujoco_playground/experimental/sim2sim/README.md` and
-   copy it beside the play script as `g1_policy.onnx`.
+   save it as
+   `~/mujoco_playground/mujoco_playground/experimental/sim2sim/onnx/g1_policy.onnx`
+   (the play script loads from its `onnx/` subdirectory).
 4. **Stream.** Start the bridge and the rollout:
 
    ```
@@ -54,10 +56,10 @@ hand:
 
    ```
    python ~/ABot-Recon/demo.py --image-dir /zap/fs/robot/frames \
-       --device cpu --amp-dtype fp32 --no-loop-closure [--quantize]
+       --device cpu --no-loop-closure [--quantize]
    ```
 
-   `--amp-dtype fp32` is the only meaningful CPU precision, and `--quantize`
+   `--quantize`
    (dynamic INT8, CPU-only) buys weight memory, not throughput — CPU runs about
    0.3 FPS against the H100 baseline. Load the resulting PLY into God's Eye View
    and fly to the reconstruction anchor.

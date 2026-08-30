@@ -12,7 +12,8 @@ ABot-Recon reconstruction from the G1 head camera.
 - `gratitude5dee/ABot-Recon` → `~/ABot-Recon` (`pip install -e`)
 
 Modes: GPU boxes get `jax[cuda12]` layered over Playground's CPU-only JAX pin
-for MJX/PPO training. `FO_GUANG_CPU_ONLY=1` skips that step and records
+for MJX/PPO training. `bake.sh` detects the mode from the box (`nvidia-smi`);
+`FO_GUANG_CPU_ONLY=1` (or `=0`) overrides. CPU-only skips that step and records
 `cpuOptimized: true` in `~/.zap/template.json`; sim2sim playback of an exported
 policy and ABot-Recon CPU inference still work. Telemetry is inbound-only and
 socket-based, so the template hosts no port. No secrets are baked.
