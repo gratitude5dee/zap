@@ -150,8 +150,8 @@ export default function Page() {
               inbound-only and no secret is ever baked.
             </p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-              <GlassCta href={`${ZAP_DOCS_URL}/templates/zap-heavy-fo-guang`} tone="sulfur">
-                Explore the template
+              <GlassCta href="/foguang" tone="sulfur">
+                Explore fo-guang
                 <ArrowRight className="size-4" />
               </GlassCta>
               <a className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md border border-white/15 px-5 font-medium text-white transition hover:bg-white/10" href="https://github.com/gratitude5dee/zap/tree/main/packages/templates/zap-heavy-fo-guang" rel="noreferrer" target="_blank">
