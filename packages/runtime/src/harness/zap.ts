@@ -34,7 +34,8 @@ export class HarnessError extends Error {
 export interface HarnessManifest {
   id:
     | "zap" | "hermes" | "openclaw" | "opencode" | "deepseek" | "grok" | "omg" | "pi" | "cursor"
-    | "devin" | "kimi" | "interpreter" | "agno" | "prime" | "headlong" | "frontier" | "fx";
+    | "devin" | "kimi" | "interpreter" | "agno" | "prime" | "headlong" | "frontier" | "fx"
+    | "fo-guang";
   minWeight: "light" | "med" | "heavy";
   inProcess?: true;
   pullOnly?: true;

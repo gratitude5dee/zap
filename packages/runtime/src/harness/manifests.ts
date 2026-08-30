@@ -19,6 +19,7 @@ import { agnoHarnessManifest } from "./agno.ts";
 import { primeHarnessManifest } from "./prime.ts";
 import { headlongHarnessManifest } from "./headlong.ts";
 import { frontierHarnessManifest } from "./frontier.ts";
+import { foGuangHarnessManifest } from "./fo-guang.ts";
 
 export { createHarnessDriver, type HarnessTransport } from "./adapters.ts";
 export { createHermesHarnessService, hermesHarnessManifest } from "./hermes.ts";
@@ -35,7 +36,10 @@ export { createAgnoHarnessService, agnoHarnessManifest } from "./agno.ts";
 export { createPrimeHarnessService, primeHarnessManifest } from "./prime.ts";
 export { createHeadlongHarnessService, headlongHarnessManifest } from "./headlong.ts";
 export { createFrontierHarnessService, frontierHarnessManifest } from "./frontier.ts";
+export { foGuangHarnessManifest } from "./fo-guang.ts";
 
+// Heavy LLM harnesses (managed-mode gateway wiring applies to these).
+// fo-guang is a heavy robotics profile with no model surface, so it is not one.
 const HEAVY_IDS: ReadonlyArray<HarnessManifest["id"]> = [
   "hermes", "openclaw", "opencode", "deepseek", "grok", "omg",
   "pi", "cursor", "devin", "kimi", "agno", "prime", "headlong", "frontier",
@@ -59,6 +63,7 @@ const FACTORIES: ReadonlyArray<() => HarnessManifest> = [
   primeHarnessManifest,
   headlongHarnessManifest,
   frontierHarnessManifest,
+  foGuangHarnessManifest,
 ];
 
 export function allHarnessManifests(): HarnessManifest[] {

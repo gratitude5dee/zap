@@ -308,6 +308,7 @@ The **lane executor** (`packages/runtime/src/lanes/`, ported from airv2 `zap-exe
 | `zap-heavy-prime` | heavy | `zap-heavy` | prime-agent (`--mode rpc`, IPython kernel) | opt-in | no |
 | `zap-heavy-headlong` | heavy | `zap-heavy` | headlong daemon + dashboard `:8080` (needs Docker-in-VM ✓) | opt-in | no |
 | `zap-heavy-frontier` | heavy | `zap-heavy` | FrontierAgent (`frontier-agent -p --no-tui`) | opt-in | no |
+| `zap-heavy-fo-guang` | heavy | `zap-heavy` | fo-guang robotics profile: Unitree G1 sim2sim (MuJoCo Playground + ONNX policy) + God's Eye View telemetry bridge (inbound-only, UNIX socket) + ABot-Recon reconstruction; `FO_GUANG_CPU_ONLY=1` skips the CUDA JAX layer | opt-in | no (overlay) |
 | `env-omarchy` | any | applied over `zap-light` … `zap-heavy-*` | Environment overlay (not a harness): Arch userland + Hyprland headless desktop (airv2 `template-omarchy`); `Runtime.md sandbox.environment: omarchy` | opt-in | no (uses slots 7–10 only if a customer needs it) |
 | `env-macos` | any | Namespace macOS | Environment: native Mac + bridge (airv2 `template-macos`); `sandbox.environment: macos` | opt-in, Namespace only | n/a (bootstrap script, no snapshot) |
 

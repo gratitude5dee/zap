@@ -22,6 +22,7 @@ const RUN_TABLE: Record<HarnessManifest["id"], HarnessManifest["run"]> = {
   headlong: "cli-exec",
   frontier: "cli-exec",
   deepseek: "cli-exec",
+  "fo-guang": "cli-exec",
   grok: "http-runs",
   interpreter: "ws-jsonrpc",
   omg: "ws-jsonrpc",

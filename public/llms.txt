@@ -49,6 +49,7 @@ local docs (this site): https://zap.wzrd.tech/docs
 - /docs/templates/zap-heavy-cursor
 - /docs/templates/zap-heavy-deepseek
 - /docs/templates/zap-heavy-devin
+- /docs/templates/zap-heavy-fo-guang
 - /docs/templates/zap-heavy-frontier
 - /docs/templates/zap-heavy-grok
 - /docs/templates/zap-heavy-headlong

@@ -1,0 +1,44 @@
+{
+  "name": "zap-heavy-fo-guang",
+  "weight": "heavy",
+  "from": "zap-heavy",
+  "description": "Overlay on zap-heavy with the fo-guang robotics profile: the Unitree G1 sim2sim stack (MuJoCo Playground + ONNX policy playback), the God's Eye View telemetry bridge, and ABot-Recon reconstruction from the G1 head camera. Telemetry is inbound-only; a CPU-only mode skips the CUDA JAX layer.",
+  "channel": "ship",
+  "namedSnapshot": false,
+  "overlay": true,
+  "harness": "fo-guang",
+  "units": [
+    "zap-agentd.service"
+  ],
+  "ports": [],
+  "stateDirs": [
+    "~/mujoco_playground",
+    "~/gods-eye-view",
+    "~/ABot-Recon",
+    "/zap/fs/robot"
+  ],
+  "mcpConfig": {
+    "path": "~/.zap/fo-guang/mcp.json",
+    "format": "json"
+  },
+  "pins": {
+    "mujoco_playground": "0f946c4d9c5f4cc45a7ef094895b67183475c512",
+    "gods-eye-view": "cf9874ab20cbf036c7180beb77cd6ee49d9e414a",
+    "ABot-Recon": "0962a31c35b483361adef178ff9f641fa8651890",
+    "onnxruntime": "1.29.0",
+    "hidapi": "0.14.0.post4",
+    "torch": "2.5.1",
+    "tailscale": "1.82.0",
+    "cotal": "0.33.1",
+    "sam": "v0.1.0-alpha.7",
+    "mesh-llm": "v0.75.1",
+    "taskrouter-model": "qwen2.5-1.5b-instruct-q4_k_m"
+  },
+  "connectivity": {
+    "tailscale": false,
+    "cotal": false,
+    "taskrouter": false,
+    "samMesh": false,
+    "x402": false
+  }
+}
