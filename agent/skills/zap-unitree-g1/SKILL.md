@@ -28,10 +28,17 @@ configured; without `--live`, report the plan and the quote and stop.
 
    ```
    git clone https://github.com/gratitude5dee/mujoco_playground.git ~/mujoco_playground
-   pip install -e ~/mujoco_playground onnxruntime
+   pip install -e ~/mujoco_playground onnxruntime hidapi
+   # GPU box only: Playground pins CPU-only JAX, so PPO trains on the CPU
+   # unless the CUDA wheels are installed over it.
+   pip install -U "jax[cuda12]"
    git clone https://github.com/gratitude5dee/gods-eye-view.git ~/gods-eye-view
    npm --prefix ~/gods-eye-view install
    ```
+
+   `hidapi` is not optional: the play script imports `gamepad_reader`, which
+   imports `hid` at module scope, so playback exits before the sim starts
+   without it.
 
 3. **Train.** `train-jax-ppo --env_name {TERRAIN}` where `{TERRAIN}` is
    `G1JoystickFlatTerrain` or `G1JoystickRoughTerrain`. Checkpoints land in the
