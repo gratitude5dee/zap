@@ -22,22 +22,30 @@ configured; without `--live`, report the plan and the quote and stop.
    enough for sim2sim playback of an already-exported policy. The Sprite preset
    (`agent/sprites/unitree-g1/Sprite.md`) is `daytona-standard`, never
    `box-standard`.
-2. **Install.** In the runtime: `pip install mujoco mujoco-mjx brax playground`
-   (or clone `mujoco_playground` and `pip install -e .`), plus `onnxruntime`
-   for the sim2sim controller.
+2. **Install.** Neither the sim nor the telemetry bridge lives in this repo, so
+   the runtime has to fetch both; the paths in step 5 are relative to these
+   clones:
+
+   ```
+   git clone https://github.com/gratitude5dee/mujoco_playground.git ~/mujoco_playground
+   pip install -e ~/mujoco_playground onnxruntime
+   git clone https://github.com/gratitude5dee/gods-eye-view.git ~/gods-eye-view
+   npm --prefix ~/gods-eye-view install
+   ```
+
 3. **Train.** `train-jax-ppo --env_name {TERRAIN}` where `{TERRAIN}` is
    `G1JoystickFlatTerrain` or `G1JoystickRoughTerrain`. Checkpoints land in the
    run's logdir.
 4. **Export.** Convert the policy to ONNX as described in
-   `mujoco_playground/experimental/sim2sim/README.md`, then copy it beside the
-   play script as `g1_policy.onnx`.
+   `~/mujoco_playground/mujoco_playground/experimental/sim2sim/README.md`, then
+   copy it beside the play script as `g1_policy.onnx`.
 5. **Stream.** Start the God's Eye View bridge and the rollout:
 
    ```
-   node tools/robot-bridge/bridge.mjs --provider mujoco-g1 \
+   node ~/gods-eye-view/tools/robot-bridge/bridge.mjs --provider mujoco-g1 \
        --socket /tmp/g1-telemetry.sock --ingest {RELAY_URL} &
-   python play_g1_joystick.py --telemetry /tmp/g1-telemetry.sock \
-       --telemetry_robot_id {ROBOT_ID}
+   python ~/mujoco_playground/mujoco_playground/experimental/sim2sim/play_g1_joystick.py \
+       --telemetry /tmp/g1-telemetry.sock --telemetry_robot_id {ROBOT_ID}
    ```
 
    The bridge authenticates with `GEV_ROBOT_INGEST_TOKEN`. Frames carry

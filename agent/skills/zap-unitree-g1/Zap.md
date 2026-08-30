@@ -42,7 +42,7 @@ steps:
     model: seedance-2-0-260128
     provider: gmi
     duration_s: 10
-    reference_images: [plate]
+    reference_images: [plate, user.capture]
     prompt: prompts/rollout-gen.md
   - id: finalize
     kind: stitch
