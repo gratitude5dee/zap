@@ -8,6 +8,7 @@ import {
   Cpu,
   ExternalLink,
   Eye,
+  FileText,
   Gamepad2,
   GraduationCap,
   KeyRound,
@@ -20,6 +21,7 @@ import { GlassCta } from "@/app/_components/threeui/glass-cta";
 import { ZAP_DOCS_URL } from "@/lib/zap-urls";
 import { ZAP_VERSION } from "@/lib/zap-version";
 
+const FO_GUANG_PAPER_URL = "/foguang/foguang.pdf";
 const FO_GUANG_SOURCE_URL = "https://github.com/gratitude5dee/zap/tree/main/packages/templates/zap-heavy-fo-guang";
 
 const foGuangCommands = `zap harness bake zap-heavy-fo-guang    # plan-only
@@ -67,6 +69,15 @@ export default function FoGuangPage() {
                   Read the template docs
                   <ArrowRight className="size-4" />
                 </GlassCta>
+                <a
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md border border-white/15 px-5 font-medium text-white transition hover:bg-white/10"
+                  href={FO_GUANG_PAPER_URL}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  <FileText className="size-4" />
+                  Read Paper
+                </a>
                 <a
                   className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md border border-white/15 px-5 font-medium text-white transition hover:bg-white/10"
                   href={FO_GUANG_SOURCE_URL}
