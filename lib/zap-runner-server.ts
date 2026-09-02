@@ -28,7 +28,7 @@ import type { ZapCredentialMode } from "./zap-run-auth";
 import { reserveWzrdCloudSpend, settleWzrdCloudSpend } from "./wzrd-cloud-meter";
 import type { GenRequest, ProviderId, ProviderPollResult, ProviderSecrets } from "./provider-types";
 import { toZapErrorPayload, ZapRunError } from "./zap-errors";
-import type { ZapSpec, ZapStep } from "./zap-schema";
+import { isCommerceStep, type ZapSpec, type ZapStep } from "./zap-schema";
 
 export type RunZapInput = {
   byokSecrets?: ProviderSecrets;
@@ -1002,7 +1002,7 @@ function quoteForStep(zap: ZapSpec, runId: string, step: ZapStep, inputs: Record
 }
 
 function isLocalStep(step: ZapStep) {
-  return step.kind === "stitch" || step.kind === "keyframes";
+  return step.kind === "stitch" || step.kind === "keyframes" || isCommerceStep(step);
 }
 
 async function prepareProviderConditioning({

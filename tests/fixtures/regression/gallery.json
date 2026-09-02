@@ -15,6 +15,20 @@
       "title": "Caught By The Cam"
     },
     {
+      "estimateUsd": 0.05,
+      "file": "<repo>/agent/skills/zap-event-ticket/Zap.md",
+      "slug": "event-ticket",
+      "steps": 2,
+      "title": "Event Ticket"
+    },
+    {
+      "estimateUsd": 0.05,
+      "file": "<repo>/agent/skills/zap-merch-drop/Zap.md",
+      "slug": "merch-drop",
+      "steps": 2,
+      "title": "Merch Drop"
+    },
+    {
       "estimateUsd": 0.75,
       "file": "<repo>/agent/skills/zap-unitree-g1/Zap.md",
       "slug": "unitree-g1",

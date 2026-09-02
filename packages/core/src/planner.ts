@@ -1,4 +1,4 @@
-import type { ZapSpec, ZapStep } from "./schema.ts";
+import { isCommerceStep, type ZapListing, type ZapSpec, type ZapStep } from "./schema.ts";
 
 const SEEDANCE_FAST_MODEL = "seedance-2-0-fast-260128";
 const SEEDANCE_FAST_RATE_ENVIRONMENT_VARIABLE = "GMI_SEEDANCE_FAST_USD_PER_SECOND";
@@ -27,7 +27,7 @@ const modelRates: Record<string, { perSecond?: number; perRequest?: number }> = 
 };
 
 export function planZapRun(zap: ZapSpec, extendCount: number): ZapPlan {
-  const steps = expandRepeatSteps(zap, extendCount);
+  const steps = orderCommerceSteps(expandRepeatSteps(zap, extendCount));
   const estimateUsd = steps.reduce((sum, step) => sum + quoteStep(step), 0);
   return {
     budgetCapUsd: zap.budget.cap_usd,
@@ -53,7 +53,79 @@ export function validateRequiredInputs(zap: ZapSpec, inputs: Record<string, unkn
 }
 
 export function isLocalStep(step: ZapStep) {
-  return step.kind === "stitch" || step.kind === "keyframes";
+  return step.kind === "stitch" || step.kind === "keyframes" || isCommerceStep(step);
+}
+
+/**
+ * Commerce steps consume media produced earlier and spend nothing themselves,
+ * so they always run after every provider/local media step. Their relative
+ * order is preserved.
+ */
+export function orderCommerceSteps<T extends ZapStep>(steps: T[]): T[] {
+  const media = steps.filter((step) => !isCommerceStep(step));
+  const commerce = steps.filter((step) => isCommerceStep(step));
+  return [...media, ...commerce];
+}
+
+export type StagedListingPreview = {
+  action: "stage_listing";
+  charges: false;
+  imageFrom: string | null;
+  inventory: number | null | string;
+  key: string;
+  kind: ZapListing["kind"];
+  name: string;
+  priceCents: number | string;
+  requiresOwnerApproval: true;
+};
+
+/** Describe what a commerce.stage_listing step WOULD stage — never performs it. */
+export function describeStagedListing(step: ZapStep, inputs: Record<string, unknown> = {}): StagedListingPreview {
+  if (step.kind !== "commerce.stage_listing" || !step.listing) {
+    throw new Error(`Step ${step.id} is not a commerce.stage_listing step.`);
+  }
+  const listing = step.listing;
+  const name = interpolateInputs(listing.name, inputs);
+  return {
+    action: "stage_listing",
+    charges: false,
+    imageFrom: listing.image ?? null,
+    inventory: resolveListingRef(listing.inventory ?? null, inputs, null),
+    key: listing.key ?? listingKey(name),
+    kind: listing.kind,
+    name,
+    priceCents: resolveListingRef(listing.priceCents, inputs),
+    requiresOwnerApproval: true,
+  };
+}
+
+export function listingKey(name: string) {
+  const key = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 64)
+    .replace(/-+$/g, "");
+  return key || "item";
+}
+
+export function interpolateInputs(template: string, inputs: Record<string, unknown>) {
+  return template.replace(/\{([A-Z0-9_]+)\}/g, (_, variable: string) => {
+    const value = inputs[variable];
+    return value === undefined || value === null ? "" : String(value);
+  });
+}
+
+function resolveListingRef<T extends number | null>(
+  ref: T | string,
+  inputs: Record<string, unknown>,
+  whenUnset: T | string = ref,
+): T | number | string {
+  if (typeof ref !== "string") return ref;
+  const value = inputs[ref.slice("user.".length)];
+  if (value === undefined || value === null || value === "") return whenUnset;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : ref;
 }
 
 export function quoteStep(step: ZapStep) {
