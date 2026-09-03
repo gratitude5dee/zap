@@ -90,8 +90,10 @@ Each live run:
    repeated runs reuse it (`decisionReused: true`). Because of that, a request whose reply
    is lost is retried once; if it times out again the run fails with
    `COMMERCE_STAGE_TIMEOUT` and says air may already hold the decision — running again
-   converges on it and nothing is charged. `commerce.payment_request` is never retried on a
-   timeout, since a repeat would file a second request; check Needs You first.
+   converges on it and nothing is charged. `commerce.payment_request` is never retried, since
+   a repeat would file a second request: any lost reply — a timeout, a dropped connection, or a
+   `200` whose body never arrives — is reported as possibly filed and is not marked
+   retryable; check Needs You first.
 
 ## Writing a listing
 
@@ -114,9 +116,9 @@ steps:
 ```
 
 Constraints mirror air's `sanitizeCatalogItem`: `key` is derived from the name unless set
-(`^[a-z0-9][a-z0-9_-]{0,63}$`), names are ≤200 chars, descriptions ≤2000. Commerce steps
-are always ordered after the media steps in the Zap, so `image` can point at any image
-step regardless of where the listing appears in the file.
+(`^[a-z0-9][a-z0-9_-]{0,63}$`), names are ≤200 chars, descriptions ≤2000. `image` must
+reference an image step that appears earlier in the file, or a declared `type: image`
+input; validation rejects a reference to a later step.
 
 ## Bundled recipes
 

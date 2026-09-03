@@ -44,8 +44,8 @@ Two step kinds exist, and both only file an owner decision:
 
 Everything else is off limits. There is no step that creates a checkout, calls
 Stripe, edits `storefront_products`, or approves a decision. The hosted runner
-at `zap.wzrd.tech` refuses commerce steps outright; staging belongs to the box
-that owns the catalog.
+at `zap.wzrd.tech` refuses live commerce runs (plan-only runs still work there);
+staging belongs to the box that owns the catalog.
 
 ## The catalog entry
 
@@ -182,8 +182,9 @@ air's `sanitizeCatalogItem`):
   `shop_publish` decision and does not repeat the note — and if the reply is
   lost again the edits are rolled back and the error (`COMMERCE_STAGE_TIMEOUT`)
   says air may already hold the decision; staging again converges on it.
-  `payment_request` is never retried on a timeout, because a repeat would file
-  a second request: check Needs You first.
+  `payment_request` is never retried, because a repeat would file a second
+  request: a timeout, a dropped connection, or a reply whose body never arrives
+  is reported as possibly filed and is not retryable; check Needs You first.
 
 `zap listings update` plans by default (prints the diff and the guardrail
 result, exit 1 if blocked). `--live` merges the edit and POSTs
