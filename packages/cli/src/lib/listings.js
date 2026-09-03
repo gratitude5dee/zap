@@ -14,6 +14,8 @@ import { ZapCliError } from "./errors.js";
 import {
   assertCommerceEnvironment,
   CATALOG_KEY_RE,
+  DEFAULT_AIR_MEDIA_BASE,
+  isAirMediaUrl,
   MAX_PRICE_CENTS,
   postCommerceAction,
   readCatalogDocument,
@@ -41,6 +43,11 @@ export const LISTING_GUARDRAILS = /** @type {const} */ ({
  * @typedef {{ key: string, kind: string, name: string, description?: string, imageUrl?: string | null, priceCents: number, inventory?: number | null, active?: boolean, source?: unknown }} CatalogListing
  * @typedef {{ target: string, field: string, before?: unknown, after: unknown }} ChangeItem
  * @typedef {{ code: string, impact: number, message: string, fix: string }} AuditFinding
+ * @typedef {{ description: string, kind: string, name: string }} ContentSnapshot
+ *   The content record as it was read (every editable field, not only the one being
+ *   edited), keyed by lower-cased listing key in `ContentSnapshots`.
+ * @typedef {Record<string, ContentSnapshot>} ContentSnapshots
+ * @typedef {{ mediaBase?: string }} CatalogContract air-side limits the catalog must already meet.
  */
 
 /**
@@ -50,9 +57,10 @@ export const LISTING_GUARDRAILS = /** @type {const} */ ({
  * sanitizeCatalogItem, otherwise a content edit would republish an entry air
  * drops. Hand-edited catalogs are the usual source.
  * @param {unknown} item
+ * @param {CatalogContract} [contract]
  * @returns {string | null}
  */
-export function describeMalformedListing(item) {
+export function describeMalformedListing(item, { mediaBase = DEFAULT_AIR_MEDIA_BASE } = {}) {
   if (typeof item !== "object" || item === null || Array.isArray(item)) return "entry is not an object";
   const record = /** @type {Record<string, unknown>} */ (item);
   if (typeof record.key !== "string" || record.key.trim() === "") return "missing string `key`";
@@ -66,15 +74,19 @@ export function describeMalformedListing(item) {
   if (record.inventory !== undefined && record.inventory !== null && (typeof record.inventory !== "number" || !Number.isInteger(record.inventory) || record.inventory < 0)) {
     return "`inventory` must be a non-negative integer or null; re-run the Zap with a valid INVENTORY";
   }
+  if (record.imageUrl !== undefined && record.imageUrl !== null && record.imageUrl !== "" && !isAirMediaUrl(record.imageUrl, mediaBase)) {
+    return `\`imageUrl\` is not under air's media lane (${mediaBase}), so approval would drop the image; re-run the Zap with a local image so it is uploaded`;
+  }
   return null;
 }
 
 /**
  * @param {unknown} item
+ * @param {CatalogContract} [contract]
  * @returns {item is CatalogListing}
  */
-export function isCatalogListing(item) {
-  return describeMalformedListing(item) === null;
+export function isCatalogListing(item, contract) {
+  return describeMalformedListing(item, contract) === null;
 }
 
 /**
@@ -209,11 +221,15 @@ function kindContradiction(kind, copy) {
 /**
  * Operator-readable messages for every guardrail the items break; empty when
  * the change may proceed. Ported from commerce-agents `check_guardrails`.
+ * `snapshots` are the records as the caller read them: a target whose current
+ * content differs from its snapshot in any editable field is stale, whether or
+ * not that field is being edited.
  * @param {ChangeItem[]} items
  * @param {CatalogListing[]} listings
+ * @param {ContentSnapshots} [snapshots]
  * @returns {string[]}
  */
-export function checkListingUpdateGuardrails(items, listings) {
+export function checkListingUpdateGuardrails(items, listings, snapshots = {}) {
   /** @type {string[]} */
   const violations = [];
   if (items.length === 0) violations.push("a listing update needs at least one field change");
@@ -224,9 +240,11 @@ export function checkListingUpdateGuardrails(items, listings) {
   const blocked = new Set(LISTING_GUARDRAILS.blockedFields.map((field) => field.toLowerCase()));
   const editable = new Set(LISTING_GUARDRAILS.editableFields.map((field) => field.toLowerCase()));
   const seen = new Set();
+  const staleTargets = new Set();
   for (const item of items) {
     const field = item.field.toLowerCase();
-    const pair = `${item.target}\u0000${field}`;
+    const target = item.target.toLowerCase();
+    const pair = `${target}\u0000${field}`;
     if (seen.has(pair)) violations.push(`'${item.field}' on ${item.target} appears more than once in this change — stage one line per item`);
     seen.add(pair);
     if (protectedFields.has(field)) {
@@ -260,8 +278,28 @@ export function checkListingUpdateGuardrails(items, listings) {
     if (item.before !== undefined && item.before !== (current ?? "")) {
       violations.push(`'${item.field}' on ${item.target} has changed since it was read (expected ${JSON.stringify(item.before)}); read it again before staging`);
     }
+    const snapshot = snapshots[target];
+    if (snapshot && !staleTargets.has(target)) {
+      const changed = staleContentFields(listing, snapshot);
+      if (changed.length) {
+        staleTargets.add(target);
+        violations.push(`${item.target} has changed since it was read (${changed.join(", ")} differ); read it again before staging`);
+      }
+    }
   }
   return violations;
+}
+
+/**
+ * Editable fields whose current value differs from the read snapshot.
+ * @param {CatalogListing} listing
+ * @param {ContentSnapshot} snapshot
+ */
+function staleContentFields(listing, snapshot) {
+  return LISTING_GUARDRAILS.editableFields.filter((field) => {
+    const current = /** @type {Record<string, unknown>} */ (listing)[field] ?? "";
+    return current !== snapshot[field];
+  });
 }
 
 /**
@@ -284,9 +322,10 @@ export function previewListingUpdate(items, listings) {
  * lower-cased), so a later case-variant duplicate is skipped rather than
  * silently shadowed by the first.
  * @param {unknown[]} items
+ * @param {CatalogContract} [contract]
  * @returns {{ listings: CatalogListing[], skipped: Array<{ index: number, key?: string, reason: string }> }}
  */
-export function partitionCatalogItems(items) {
+export function partitionCatalogItems(items, contract = {}) {
   /** @type {CatalogListing[]} */
   const listings = [];
   /** @type {Array<{ index: number, key?: string, reason: string }>} */
@@ -294,7 +333,7 @@ export function partitionCatalogItems(items) {
   /** @type {Map<string, string>} */
   const seen = new Map();
   items.forEach((item, index) => {
-    let reason = describeMalformedListing(item);
+    let reason = describeMalformedListing(item, contract);
     const key = item && typeof item === "object" && typeof (/** @type {Record<string, unknown>} */ (item).key) === "string"
       ? String(/** @type {Record<string, unknown>} */ (item).key)
       : undefined;
@@ -317,9 +356,10 @@ export function partitionCatalogItems(items) {
  * @returns {Promise<{ catalogPath: string, listings: CatalogListing[], skipped: Array<{ index: number, key?: string, reason: string }> }>}
  */
 export async function loadStagedListings({ catalogPath, env } = {}) {
-  const resolvedPath = catalogPath ?? resolveCommerceEnvironment(env).catalogPath;
+  const environment = resolveCommerceEnvironment(env);
+  const resolvedPath = catalogPath ?? environment.catalogPath;
   const catalog = await readCatalogDocument(resolvedPath);
-  return { catalogPath: resolvedPath, ...partitionCatalogItems(catalog.items) };
+  return { catalogPath: resolvedPath, ...partitionCatalogItems(catalog.items, environment) };
 }
 
 /**
@@ -329,9 +369,9 @@ export async function loadStagedListings({ catalogPath, env } = {}) {
  * publish over edits whose own request has not yet succeeded; a refused
  * publish rolls the edits back before the lock is released. The storefront
  * changes only after the owner approves in air.
- * @param {{ environment?: import("./commerce.js").CommerceEnvironment, items: ChangeItem[], note: string, dryRun?: boolean }} options
+ * @param {{ environment?: import("./commerce.js").CommerceEnvironment, items: ChangeItem[], note: string, dryRun?: boolean, snapshots?: ContentSnapshots }} options
  */
-export async function stageListingUpdate({ environment = resolveCommerceEnvironment(), items: rawItems, note, dryRun = false }) {
+export async function stageListingUpdate({ environment = resolveCommerceEnvironment(), items: rawItems, note, dryRun = false, snapshots = {} }) {
   const items = normalizeChangeItems(rawItems);
   if (!note || !note.trim()) {
     throw new ZapCliError({
@@ -340,8 +380,8 @@ export async function stageListingUpdate({ environment = resolveCommerceEnvironm
       remediation: "Pass --note \"...\" (CLI) or `note` (tool).",
     });
   }
-  const { listings } = await loadStagedListings({ catalogPath: environment.catalogPath });
-  const violations = checkListingUpdateGuardrails(items, listings);
+  const { listings } = partitionCatalogItems((await readCatalogDocument(environment.catalogPath)).items, environment);
+  const violations = checkListingUpdateGuardrails(items, listings, snapshots);
   if (violations.length) {
     throw new ZapCliError({
       code: "LISTING_UPDATE_GUARDRAIL",
@@ -368,8 +408,8 @@ export async function stageListingUpdate({ environment = resolveCommerceEnvironm
   const { applied, decision } = await withCatalogLock(environment.catalogPath, async () => {
     const catalog = await readCatalogDocument(environment.catalogPath);
     const preimage = JSON.stringify(catalog);
-    const current = partitionCatalogItems(catalog.items).listings;
-    const lockedViolations = checkListingUpdateGuardrails(items, current);
+    const current = partitionCatalogItems(catalog.items, environment).listings;
+    const lockedViolations = checkListingUpdateGuardrails(items, current, snapshots);
     if (lockedViolations.length) {
       throw new ZapCliError({
         code: "LISTING_UPDATE_GUARDRAIL",

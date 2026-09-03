@@ -99,7 +99,10 @@ aliases exist for hand-edited catalogs.
 
 The image URL comes from `POST /api/media/publish`, which the live step calls
 before writing the entry. If the upload is refused, the entry is still staged
-with `imageUrl: null` and the run reports why in `imageNote`.
+with `imageUrl: null` and the run reports why in `imageNote`. A remote image URL
+passed as the input is kept only when it is already under air's media base
+(`ZAP_AIR_MEDIA_BASE`, default `https://media.wzrd.tech`); any other host stages
+as `imageUrl: null` up front rather than being silently dropped at approval.
 
 ## What air does after staging
 
@@ -161,11 +164,26 @@ air's `sanitizeCatalogItem`):
 - `priceCents` and `inventory` are refused — re-run the Zap with new
   `PRICE_CENTS` / `INVENTORY` inputs. `key`, `imageUrl`, `active`, `source` are
   protected.
-- ≤ 25 lines per change, one line per (listing, field), a staging note is
-  required, and `stage_listing_update` refuses a target the agent has not read
-  with `get_listing` this session.
+- ≤ 25 lines per change, one line per (listing, field) — keys compare
+  case-insensitively, so `Show-Night` and `show-night` are one listing — a
+  staging note is required, and `stage_listing_update` refuses a target the
+  agent has not read with `get_listing` this session. The read is the whole
+  content record: if `name`, `description`, or `kind` moved since the read,
+  the stage is refused even when the edit touches a different field.
+- Entries that air would refuse or strip at approval (bad `key`, `priceCents`,
+  `inventory`, or an `imageUrl` off the media base) are reported as skipped and
+  cannot be edited; a copy edit must never republish an entry that loses its
+  image. Set `ZAP_AIR_MEDIA_BASE` when air runs with a non-default
+  `R2_PUBLIC_BASE_URL`.
 - Guardrails are re-checked under the catalog lock before the write; a
   violation stages nothing and calls air nothing.
+- The lock spans the `publish_catalog` request. A refused publish rolls the
+  edits back. A lost reply (timeout) is retried once — air reuses the pending
+  `shop_publish` decision and does not repeat the note — and if the reply is
+  lost again the edits are rolled back and the error (`COMMERCE_STAGE_TIMEOUT`)
+  says air may already hold the decision; staging again converges on it.
+  `payment_request` is never retried on a timeout, because a repeat would file
+  a second request: check Needs You first.
 
 `zap listings update` plans by default (prints the diff and the guardrail
 result, exit 1 if blocked). `--live` merges the edit and POSTs

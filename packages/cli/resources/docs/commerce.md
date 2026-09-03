@@ -87,7 +87,11 @@ Each live run:
    cannot drop each other's listings, and a catalog that exists but cannot be read or parsed
    aborts the run (`COMMERCE_CATALOG_UNREADABLE`) instead of being overwritten.
 3. Files `publish_catalog`. air deduplicates an already-pending `shop_publish` decision, so
-   repeated runs reuse it (`decisionReused: true`).
+   repeated runs reuse it (`decisionReused: true`). Because of that, a request whose reply
+   is lost is retried once; if it times out again the run fails with
+   `COMMERCE_STAGE_TIMEOUT` and says air may already hold the decision — running again
+   converges on it and nothing is charged. `commerce.payment_request` is never retried on a
+   timeout, since a repeat would file a second request; check Needs You first.
 
 ## Writing a listing
 

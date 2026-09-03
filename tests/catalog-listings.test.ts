@@ -202,12 +202,40 @@ describe("catalog-listings reasoning port", () => {
       { after: "A", field: "name", target: "show-night" },
       { after: "B", field: "name", target: "show-night" },
     ], listings)).toContainEqual(expect.stringMatching(/appears more than once/));
+    expect(checkListingUpdateGuardrails([
+      { after: "A", field: "name", target: "Show-Night" },
+      { after: "B", field: "Name", target: "show-night" },
+    ], listings)).toContainEqual(expect.stringMatching(/appears more than once/));
     expect(checkListingUpdateGuardrails([{ after: "A", before: "Old name", field: "name", target: "show-night" }], listings)[0]).toMatch(/changed since it was read/);
     expect(checkListingUpdateGuardrails([], listings)[0]).toMatch(/at least one/);
     const tooMany = Array.from({ length: LISTING_GUARDRAILS.maxItemsPerChange + 1 }, (_, index) => ({
       after: "x", field: "name", target: `k${index}`,
     }));
     expect(checkListingUpdateGuardrails(tooMany, listings)[0]).toMatch(/limit is 25 per change/);
+  });
+
+  it("guardrails: a read snapshot makes the whole content record the stale check, not just the edited field", () => {
+    const read = { description: show.description, kind: show.kind, name: show.name };
+    const item = { after: "event_ticket", field: "kind", target: "Show-Night" };
+    expect(checkListingUpdateGuardrails([item], [show], { "show-night": read })).toEqual([]);
+    const moved = { ...show, description: "Doors open 9pm." };
+    expect(checkListingUpdateGuardrails([item, { after: "Show", field: "name", target: "show-night" }], [moved], { "show-night": read })).toEqual([
+      expect.stringMatching(/Show-Night has changed since it was read \(description differ\)/),
+    ]);
+  });
+
+  it("entries whose image air would drop are not listings the skill can edit", async () => {
+    const hotlinked = { ...clean, imageUrl: "https://evil.example/mix.png", key: "hotlinked" };
+    const mirrored = { ...clean, imageUrl: "https://cdn.example/u/casey/mix.png", key: "mirrored" };
+    writeFileSync(catalogPath, JSON.stringify({ items: [tee, hotlinked, mirrored] }));
+    const skipped = (await loadStagedListings({ catalogPath, env: {} })).skipped;
+    expect(skipped).toEqual([
+      { index: 1, key: "hotlinked", reason: expect.stringMatching(/imageUrl.*media lane \(https:\/\/media\.wzrd\.tech\)/) },
+      { index: 2, key: "mirrored", reason: expect.stringMatching(/imageUrl/) },
+    ]);
+    const custom = await loadStagedListings({ catalogPath, env: { ZAP_AIR_MEDIA_BASE: "https://cdn.example" } });
+    expect(custom.listings.map((listing) => listing.key)).toEqual(["merch-drop-neon-wolf", "mirrored"]);
+    expect(custom.skipped.map((entry) => entry.key)).toEqual(["hotlinked"]);
   });
 });
 
@@ -397,6 +425,46 @@ describe("stageListingUpdate", () => {
     expect(updated).not.toHaveProperty("Name");
   });
 
+  it("a lost publish_catalog reply is retried once (air reuses the decision), then rolled back with the ambiguity spelled out", async () => {
+    const { environment, requests } = await startAir();
+    const originalFetch = globalThis.fetch;
+    let timeouts = 1;
+    globalThis.fetch = ((...args: Parameters<typeof fetch>) => {
+      if (timeouts > 0) {
+        timeouts -= 1;
+        return Promise.reject(Object.assign(new Error("The operation was aborted due to timeout"), { name: "TimeoutError" }));
+      }
+      return originalFetch(...args);
+    }) as typeof fetch;
+    cleanups.push(() => { globalThis.fetch = originalFetch; });
+
+    const staged = await stageListingUpdate({
+      environment,
+      items: [{ after: "event_ticket", field: "kind", target: "show-night" }],
+      note: "copy says ticket",
+    });
+    expect(staged).toMatchObject({ decisionId: "dec_9", status: "staged" });
+    expect(requests).toHaveLength(1);
+    expect(readCatalog().items.find((entry) => entry.key === "show-night")?.kind).toBe("event_ticket");
+
+    timeouts = 2;
+    const before = readCatalog();
+    await expect(stageListingUpdate({
+      environment,
+      items: [{ after: "Show night", field: "name", target: "show-night" }],
+      note: "shorter title",
+    })).rejects.toMatchObject({
+      code: "COMMERCE_STAGE_TIMEOUT",
+      message: expect.stringMatching(/may have filed the decision.*1 edit\(s\) were rolled back/),
+      remediation: expect.stringMatching(/reuses the pending shop_publish decision/),
+      retryable: true,
+    });
+    expect(timeouts).toBe(0);
+    expect(requests).toHaveLength(1);
+    expect(readCatalog().items).toEqual(before.items);
+    expect(existsSync(`${catalogPath}.lock`)).toBe(false);
+  });
+
   it("a missing catalog reads as empty; a corrupt one fails closed", async () => {
     rmSync(catalogPath);
     expect((await loadStagedListings({ catalogPath })).listings).toEqual([]);
@@ -486,7 +554,18 @@ describe("Eve catalog tools", () => {
     } as never, {} as never)).rejects.toMatchObject({ code: "LISTING_UPDATE_GUARDRAIL", message: expect.stringMatching(/changed since it was read/) });
     expect(readCatalog().items.find((entry) => entry.key === "show-night")?.kind).toBe("digital");
 
+    // Any content field moving since the read is stale, not only the one being edited.
     snapshots["show-night"].kind = "digital";
+    if (item) item.description = "Doors open 9pm.";
+    writeFileSync(catalogPath, JSON.stringify(catalog));
+    await expect(stage.execute({
+      dryRun: false,
+      items: [{ after: "event_ticket", field: "kind", target: "show-night" }],
+      note: "copy says ticket",
+    } as never, {} as never)).rejects.toMatchObject({ code: "LISTING_UPDATE_GUARDRAIL", message: expect.stringMatching(/changed since it was read \(description differ\)/) });
+    expect(readCatalog().items.find((entry) => entry.key === "show-night")?.kind).toBe("digital");
+
+    snapshots["show-night"].description = "Doors open 9pm.";
     const staged = await stage.execute({
       dryRun: false,
       items: [
@@ -496,7 +575,7 @@ describe("Eve catalog tools", () => {
       note: "copy says ticket",
     } as never, {} as never);
     expect(staged).toMatchObject({ applied: 2, status: "staged" });
-    expect(snapshots["show-night"]).toEqual({ description: show.description, kind: "event_ticket", name: "Show night ticket" });
+    expect(snapshots["show-night"]).toEqual({ description: "Doors open 9pm.", kind: "event_ticket", name: "Show night ticket" });
   });
 
   it("stage_listing_update needs approval, a prior get_listing, and writes nothing on refusal", async () => {

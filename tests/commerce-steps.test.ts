@@ -21,6 +21,7 @@ import {
   resolveCommerceEnvironment,
   resolvePublishableImage,
   stageListing,
+  stagePaymentRequest,
   upsertCatalogEntry,
 } from "../packages/cli/src/lib/commerce.js";
 
@@ -197,6 +198,7 @@ describe("commerce live executor", () => {
     expect(resolveCommerceEnvironment({ OPENAI_API_KEY: "sk-real", OPENAI_BASE_URL: "https://api.openai.com/v1" }, home)).toEqual({
       apiBase: undefined,
       catalogPath: path.join(home, ".hermes", "miniapps", "shop", "catalog.json"),
+      mediaBase: "https://media.wzrd.tech",
       token: undefined,
     });
     expect(resolveCommerceEnvironment({
@@ -207,7 +209,8 @@ describe("commerce live executor", () => {
       ZAP_AIR_API_BASE: "http://localhost:3000/",
       ZAP_AIR_CATALOG_PATH: "~/shop.json",
       ZAP_AIR_GATEWAY_TOKEN: "t",
-    }, home)).toEqual({ apiBase: "http://localhost:3000", catalogPath: path.join(home, "shop.json"), token: "t" });
+    }, home)).toEqual({ apiBase: "http://localhost:3000", catalogPath: path.join(home, "shop.json"), mediaBase: "https://media.wzrd.tech", token: "t" });
+    expect(resolveCommerceEnvironment({ ZAP_AIR_MEDIA_BASE: "https://cdn.example/" }, home)).toMatchObject({ mediaBase: "https://cdn.example" });
   });
 
   it("never sends the box gateway token to an overridden API base", () => {
@@ -389,6 +392,44 @@ describe("commerce live executor", () => {
       imageUrl: "https://media.wzrd.tech/u/casey/media/x.png",
     });
     expect(calls).toEqual(["https://app.wzrd.tech/api/media/publish"]);
+
+    // Remote URLs pass through only when air would keep them.
+    await expect(publishListingImage(environment, "https://media.wzrd.tech/u/casey/media/y.png", roots)).resolves.toMatchObject({
+      imageUrl: "https://media.wzrd.tech/u/casey/media/y.png",
+    });
+    await expect(publishListingImage(environment, "https://evil.example/y.png", roots)).resolves.toMatchObject({ imageUrl: null, note: /air keeps only https:\/\/media\.wzrd\.tech/ });
+    await expect(publishListingImage({ ...environment, mediaBase: "https://cdn.example" }, "https://cdn.example/y.png", roots)).resolves.toMatchObject({
+      imageUrl: "https://cdn.example/y.png",
+    });
+    expect(calls).toHaveLength(1);
+  });
+
+  it("a lost payment_request reply is never retried and is reported as possibly filed", async () => {
+    const attempts: string[] = [];
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = ((url: string | URL | Request) => {
+      attempts.push(String(url));
+      return Promise.reject(Object.assign(new Error("The operation was aborted due to timeout"), { name: "TimeoutError" }));
+    }) as typeof fetch;
+    cleanups.push(() => { globalThis.fetch = originalFetch; });
+    const spec = parseZapMarkdown(recipe(`
+  - id: pay
+    kind: commerce.payment_request
+    payment_request:
+      amount: user.AMOUNT
+      payee: "{PAYEE}"
+`, "  AMOUNT: { type: number, required: true }\n  PAYEE: { type: string, required: true }\n"));
+    await expect(stagePaymentRequest({
+      environment: { apiBase: "https://app.wzrd.tech", catalogPath: path.join(tmpdir(), "never.json"), token: "t" },
+      inputs: { AMOUNT: 25, PAYEE: "studio" },
+      step: spec.steps[0]!,
+    })).rejects.toMatchObject({
+      code: "COMMERCE_STAGE_TIMEOUT",
+      message: /may have filed the decision/,
+      remediation: /Check Needs you.*before staging it again/,
+      retryable: false,
+    });
+    expect(attempts).toEqual(["https://app.wzrd.tech/api/miniapps/commerce"]);
   });
 
   it("refuses to stage when no air gateway is configured", async () => {
