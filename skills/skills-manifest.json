@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-26T03:10:13.339Z",
+  "generatedAt": "2026-09-03T00:00:57.535Z",
   "skills": [
     {
       "fileCount": 1,
@@ -15,7 +15,7 @@
     },
     {
       "fileCount": 1,
-      "hash": "153995fb1e98e91daf662c752f513212253c574e1790a5e68ae5b4389807c79a",
+      "hash": "d4de18d3240eb7dc172ad5289a9f3a38e1e5da56283be3762a7417937bf455d6",
       "path": "skills/zap-authoring",
       "skill": "zap-authoring"
     },

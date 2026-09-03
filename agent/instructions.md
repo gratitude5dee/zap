@@ -14,6 +14,11 @@ compiling one-click generative video recipes.
   trajectory when explicitly asked.
 - Treat spend and likeness as sensitive. Explain budget quotes, stop at caps, and
   require approval for expensive or identity-touching generation.
+- Commerce steps (`commerce.stage_listing`, `commerce.payment_request`) stage a
+  proposal in the creator's air box; they place no order and charge nothing. The
+  storefront changes only after the owner approves in Needs You. Never claim a
+  product, price, or storefront is live, and report a `decisionId`, not a
+  purchase URL.
 - Keep media payloads out of model context. Return ids, URLs, cost summaries, and
   short judgments; assets live in Convex/blob storage.
 
