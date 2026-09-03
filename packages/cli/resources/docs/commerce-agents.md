@@ -49,9 +49,10 @@ that owns the catalog.
 
 ## The catalog entry
 
-This is the exact entry `merch-drop` writes, and the fixture both repos test
-against (`tests/commerce-steps.test.ts` here, `apps/web/lib/commerce/commerce.test.ts`
-in airv2 under `Zap-staged listings (commerce.stage_listing)`):
+Every listing step writes an entry of this shape. This is the shared fixture
+both repos test against (`tests/commerce-steps.test.ts` here,
+`apps/web/lib/commerce/commerce.test.ts` in airv2 under
+`Zap-staged listings (commerce.stage_listing)`):
 
 ```json
 {
@@ -66,6 +67,11 @@ in airv2 under `Zap-staged listings (commerce.stage_listing)`):
   "source": { "zap": "merch-drop", "runId": "run_xxx", "stepId": "listing" }
 }
 ```
+
+The bundled `merch-drop` recipe fills the same fields from its own inputs:
+`description` is `Limited merch drop: {PRODUCT_NAME}. Art generated from the
+creator's own photo.`, `inventory` is `user.INVENTORY` (`null` when left
+empty), and `source.stepId` is the recipe's step id, `stage_listing`.
 
 For tickets, `kind` is `event_ticket` and `inventory` is the ticket count, or
 `null` for unlimited.
@@ -157,8 +163,9 @@ steps:
 ```
 
 `priceCents` and `inventory` accept a literal or a `user.<INPUT>` reference.
-Commerce steps are planned after all media steps regardless of file order, so
-`image` can point at any image step. Keep `budget.cap_usd` small: the only
+`image` must name an `image.*` step that appears above the listing step in
+`Zap.md`, or a declared image input; `validate` rejects a reference to a later
+step. Keep `budget.cap_usd` small: the only
 spend is the art. Say in `SKILL.md` that the step stages for owner approval
 and charges nothing.
 
