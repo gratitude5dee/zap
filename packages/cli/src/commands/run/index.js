@@ -3,6 +3,13 @@ import { createHash } from "node:crypto";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { defaultModelFor, getProviderAdapter } from "@wzrdtech/providers";
+import {
+  assertCommerceEnvironment,
+  defaultImageRoots,
+  resolveCommerceEnvironment,
+  stageListing,
+  stagePaymentRequest,
+} from "../../lib/commerce.js";
 import { printJson } from "../../lib/output.js";
 import { requirePayer } from "../../lib/payer.js";
 import {
@@ -58,7 +65,7 @@ export const command = {
         quoteUsd,
         runId,
         status: "planned",
-        steps: steps.map((step) => plannedStep(spec, step)),
+        steps: steps.map((step) => plannedStep(spec, step, inputs)),
         zap: spec.zap,
       };
     await fs.mkdir(path.join(process.cwd(), ".zap", "runs", runId), { recursive: true });
@@ -74,7 +81,28 @@ async function runLiveZap({ file, inputs, runId, spec, steps }) {
   const runDir = path.join(process.cwd(), ".zap", "runs", runId);
   const results = [];
 
+  const commerceEnvironment = resolveCommerceEnvironment();
+  if (steps.some((step) => step.kind.startsWith("commerce."))) assertCommerceEnvironment(commerceEnvironment);
   for (const step of steps) {
+    if (step.kind === "commerce.stage_listing") {
+      const imageAsset = resolveListingImage(step, inputs, assetUrls);
+      const staged = await stageListing({
+        environment: commerceEnvironment,
+        imageAsset,
+        imageRoots: defaultImageRoots({ runDir }),
+        inputs,
+        runId,
+        spec,
+        step,
+      });
+      results.push({ ...plannedStep(spec, step, inputs), ...staged, status: "staged" });
+      continue;
+    }
+    if (step.kind === "commerce.payment_request") {
+      const staged = await stagePaymentRequest({ environment: commerceEnvironment, inputs, step });
+      results.push({ ...plannedStep(spec, step, inputs), ...staged, status: "staged" });
+      continue;
+    }
     if (isLocalStep(step)) {
       const inputUrls = resolveStepInputUrls(step, inputs, assetUrls);
       const zapUrl = inputUrls.at(-1);
@@ -119,9 +147,12 @@ async function runLiveZap({ file, inputs, runId, spec, steps }) {
     });
   }
 
+  const stagedListings = results.filter((step) => step.status === "staged");
   return {
     live: true,
-    message: "Live Zap run completed.",
+    message: stagedListings.length > 0
+      ? `Live Zap run completed. ${stagedListings.length} commerce item(s) staged for owner approval; nothing was charged.`
+      : "Live Zap run completed.",
     mode: "live",
     quoteUsd: estimateUsd(spec, steps),
     runId,
@@ -130,4 +161,14 @@ async function runLiveZap({ file, inputs, runId, spec, steps }) {
     zap: spec.zap,
     zapUrl: assetUrls.get(steps.at(-1)?.id) ?? Array.from(assetUrls.values()).at(-1),
   };
+}
+
+function resolveListingImage(step, inputs, assetUrls) {
+  const ref = step.listing?.image;
+  if (!ref) return undefined;
+  if (ref.startsWith("user.")) {
+    const value = inputs[ref.slice("user.".length)];
+    return typeof value === "string" ? value : undefined;
+  }
+  return assetUrls.get(ref);
 }

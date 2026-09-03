@@ -60,7 +60,7 @@ The list below is generated from the discovered command set by
 - `zap new <slug> [--force] [--json]` — Scaffold agent/skills/zap-\<slug>.
 - `zap pay <subcommand> [--json]` — Payer status, managed wallet login/logout, and payment quotes.
 - `zap run <slug|Zap.md> [--input KEY=VALUE] [--budget-cap-usd N] [--live] [--json]` — Plan a Zap by default; use --live to submit providers.
-- `zap runtime <up|down|ps|logs|exec|snapshot|fork|stop|resume|desktop|import-sprite> [...] [--json]` — Manage Zap runtimes (up, down, ps, logs, exec, snapshot, fork, stop, resume, desktop, import-sprite).
+- `zap runtime <up|down|ps|logs|exec|snapshot|fork|stop|resume|desktop|import-sprite|connectivity> [...] [--json]` — Manage Zap runtimes (up, down, ps, logs, exec, snapshot, fork, stop, resume, desktop, import-sprite).
 - `zap search <query> [--remote] [--json]` — Search registry templates; add --remote for hosted search.
 - `zap secret <set|list|remove|sync> [NAME] [--agent <id>] [--env <alias>] [--stdin] [--json]` — Set, list, remove, and sync write-only agent secrets.
 - `zap session --agent <id>[@<alias>] [--session <id>] [--live] [--verbose|--json] "..."` — Run a turn against a durable agent session (plan-only by default).

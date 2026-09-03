@@ -26,7 +26,44 @@ export const zapStepKindSchema = z.enum([
   "audio.sfx",
   "keyframes",
   "stitch",
+  "commerce.stage_listing",
+  "commerce.payment_request",
 ]);
+
+/**
+ * Commerce step kinds are staging-only: they never charge a card or move
+ * money. They write a draft (catalog entry / payment request) that the
+ * storefront owner approves through a decision before anything goes live.
+ */
+export const COMMERCE_STEP_KINDS = ["commerce.stage_listing", "commerce.payment_request"] as const;
+
+export const zapListingKindSchema = z.enum(["physical", "digital", "service", "event_ticket"]);
+export type ZapListingKind = z.infer<typeof zapListingKindSchema>;
+
+/**
+ * Mirrors the field constraints of the storefront catalog sanitizer
+ * (air: sanitizeCatalogItem): 1c..$100k prices, integer inventory or null
+ * for unlimited, 200-char names, 2000-char descriptions. Template
+ * variables ({NAME}) may appear in string fields and resolve at run time;
+ * the price may also be a `user.<input>` reference resolved against a
+ * number/string input.
+ */
+export const zapListingSchema = z.object({
+  description: z.string().max(2000).optional(),
+  image: z.string().min(1).optional(),
+  inventory: z.union([z.number().int().min(0), z.null(), z.string().regex(/^user\.[A-Za-z0-9_]+$/)]).optional(),
+  key: z.string().regex(/^[a-z0-9][a-z0-9_-]{0,63}$/).optional(),
+  kind: zapListingKindSchema,
+  name: z.string().min(1).max(200),
+  priceCents: z.union([z.number().int().min(1).max(100_000_00), z.string().regex(/^user\.[A-Za-z0-9_]+$/)]),
+});
+
+export const zapPaymentRequestSchema = z.object({
+  amount: z.union([z.number().positive(), z.string().regex(/^user\.[A-Za-z0-9_]+$/)]),
+  currency: z.enum(["usd", "usdc"]).default("usd"),
+  memo: z.string().max(500).optional(),
+  payee: z.string().min(1),
+});
 
 export const zapProviderSchema = z.enum(["gmi", "fal", "prodia", "runware", "vertex", "aws"]);
 export type ZapProvider = z.infer<typeof zapProviderSchema>;
@@ -51,7 +88,9 @@ export const zapStepSchema = z.object({
   judge: z.record(z.string(), z.unknown()).optional(),
   keyframes: z.record(z.string(), z.unknown()).optional(),
   kind: zapStepKindSchema,
+  listing: zapListingSchema.optional(),
   model: z.string().optional(),
+  payment_request: zapPaymentRequestSchema.optional(),
   prompt: z.string().optional(),
   provider: zapProviderSchema.optional(),
   reference_images: z.array(z.string()).optional(),
@@ -109,6 +148,12 @@ export const zapSpecSchema = z.object({
 export type ZapInput = z.infer<typeof zapInputSchema>;
 export type ZapStep = z.infer<typeof zapStepSchema>;
 export type ZapStepKind = z.infer<typeof zapStepKindSchema>;
+export type ZapListing = z.infer<typeof zapListingSchema>;
+export type ZapPaymentRequest = z.infer<typeof zapPaymentRequestSchema>;
+
+export function isCommerceStep(step: Pick<ZapStep, "kind">) {
+  return (COMMERCE_STEP_KINDS as readonly string[]).includes(step.kind);
+}
 export type ZapSpec = z.infer<typeof zapSpecSchema>;
 export type PublicZapSpec = ZapSpec & { title: string };
 
@@ -149,6 +194,47 @@ function validateSpec(spec: ZapSpec) {
   validateStepRefs(spec);
   validateVideoDurations(spec);
   validateInlineVariables(spec);
+  validateCommerceSteps(spec);
+}
+
+function validateCommerceSteps(spec: ZapSpec) {
+  const declaredInputs = new Set(Object.keys(spec.inputs));
+  const mediaSteps = new Set<string>();
+  for (const step of spec.steps) {
+    if (step.kind === "commerce.stage_listing") {
+      if (!step.listing) throw new ZapSchemaError(`Commerce step ${step.id} is missing its listing.`);
+      const imageRef = step.listing.image;
+      if (imageRef !== undefined) {
+        if (imageRef.startsWith("user.")) {
+          validateRef({ declaredInputs, priorSteps: mediaSteps, ref: imageRef, stepId: step.id });
+          const inputType = spec.inputs[imageRef.slice("user.".length)]?.type;
+          if (inputType !== "image") {
+            throw new ZapSchemaError(
+              `Commerce step ${step.id} listing.image references ${imageRef}, which is a ${inputType} input; it must be declared with type: image.`,
+            );
+          }
+        } else if (!mediaSteps.has(imageRef)) {
+          throw new ZapSchemaError(
+            `Commerce step ${step.id} listing.image must reference an earlier image step or user input, got ${imageRef}.`,
+          );
+        }
+      }
+      for (const ref of [step.listing.priceCents, step.listing.inventory]) {
+        if (typeof ref === "string") validateRef({ declaredInputs, priorSteps: new Set(), ref, stepId: step.id });
+      }
+      for (const text of [step.listing.name, step.listing.description ?? ""]) {
+        validateTemplateVariables(spec, step.id, text);
+      }
+    } else if (step.kind === "commerce.payment_request") {
+      if (!step.payment_request) throw new ZapSchemaError(`Commerce step ${step.id} is missing its payment_request.`);
+      if (typeof step.payment_request.amount === "string") {
+        validateRef({ declaredInputs, priorSteps: new Set(), ref: step.payment_request.amount, stepId: step.id });
+      }
+      validateTemplateVariables(spec, step.id, step.payment_request.memo ?? "");
+    } else if (step.kind.startsWith("image.")) {
+      mediaSteps.add(step.id);
+    }
+  }
 }
 
 function validateInlineVariables(spec: ZapSpec) {

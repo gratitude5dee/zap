@@ -8,7 +8,7 @@ import { promisify } from "node:util";
 import { persistDataUrlAsset, persistLocalFileAsset } from "./blob-store";
 import { renderHyperframesStitch } from "./hyperframes-stitch";
 import { ZapRunError } from "./zap-errors";
-import type { ZapStep } from "./zap-schema";
+import { isCommerceStep, type ZapStep } from "./zap-schema";
 
 const execFileAsync = promisify(execFile);
 
@@ -36,6 +36,14 @@ export async function executeLocalMediaStep({
   }
   if (step.kind === "keyframes") {
     return extractKeyframes({ inputUrls, runId, step });
+  }
+  if (isCommerceStep(step)) {
+    throw new ZapRunError({
+      code: "LOCAL_STEP_FAILED",
+      message: `Commerce step ${step.id} (${step.kind}) cannot run from the hosted runner: it stages into the creator's air box catalog.`,
+      remediation: "Run this Zap with the CLI inside your air box: `zap run <slug> --live`. Plan-only runs still describe what would be staged.",
+      retryable: false,
+    });
   }
   throw new ZapRunError({
     code: "LOCAL_STEP_FAILED",

@@ -19,6 +19,8 @@ Supported step kinds:
 - `audio.sfx`: generate sound effects.
 - `keyframes`: extract, score, or prepare frames for the next step.
 - `stitch`: combine assets into the final Zap artifact.
+- `commerce.stage_listing`: stage a storefront listing built from an earlier image step. Staging-only: it quotes $0, writes the creator's air box catalog, and files a `shop_publish` decision for owner approval. It never charges a card. See [Commerce](./commerce.md).
+- `commerce.payment_request`: stage a `payment_request` decision for owner approval. Staging-only, never charges.
 
 Use `inputs` to name upstream step dependencies:
 

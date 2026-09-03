@@ -7,7 +7,8 @@ import { createZapRunTicket, startZapRunExecution } from "../../lib/zap-runner-s
 import { zapBudget } from "../lib/budget.js";
 
 export default defineTool({
-  description: "Submit a Zap recipe run, or dry-run it, and return a fast run ticket with quote and status URL.",
+  description:
+    "Submit a Zap recipe run, or dry-run it, and return a fast run ticket with quote and status URL. Commerce steps in a recipe only stage a listing or payment request for owner approval; they place no order and charge nothing.",
   inputSchema: z.object({
     dryRun: z.boolean().default(false),
     credentialMode: z.enum(["byok", "wzrd-cloud"]).optional(),

@@ -2,7 +2,8 @@
 import { existsSync } from "node:fs";
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { parseZapMarkdown, validateZapPromptTemplates } from "@wzrdtech/core/schema";
+import { describeStagedListing, orderCommerceSteps } from "@wzrdtech/core/planner";
+import { isCommerceStep, parseZapMarkdown, validateZapPromptTemplates } from "@wzrdtech/core/schema";
 import { defaultModelFor, getProviderAdapter, listProviderAdapters } from "@wzrdtech/providers";
 import { extensionFromUrl, sleep, slugify } from "./project.js";
 
@@ -60,7 +61,9 @@ export function withPlanInputDefaults(spec, inputs, live) {
   const next = { ...inputs };
   for (const [name, input] of Object.entries(spec.inputs ?? {})) {
     if (input.required && next[name] === undefined) {
-      next[name] = input.type === "image" ? `https://example.com/${name}.png` : `example-${name.toLowerCase()}`;
+      next[name] = input.type === "image"
+        ? `https://example.com/${name}.png`
+        : input.type === "number" ? "1" : `example-${name.toLowerCase()}`;
     }
   }
   return next;
@@ -73,21 +76,27 @@ export function lintSpec(spec) {
     warnings.push(`defaults.provider must be one of ${providers.join(", ")}.`);
   }
   if (Number(spec.budget?.cap_usd ?? 0) <= 0) warnings.push("budget.cap_usd should be positive.");
-  if (!spec.steps.some((step) => step.kind === "stitch")) warnings.push("Zap should end with a stitch step.");
+  if (!spec.steps.some((step) => step.kind === "stitch" || isCommerceStep(step))) {
+    warnings.push("Zap should end with a stitch step or a commerce staging step.");
+  }
+  const commerceSteps = spec.steps.filter((step) => isCommerceStep(step));
+  if (commerceSteps.length > 0 && Number(spec.budget?.cap_usd ?? 0) > 25) {
+    warnings.push("Commerce Zaps should keep budget.cap_usd small (<= $25); staging itself costs $0.");
+  }
   return warnings;
 }
 
 export function expandSteps(spec, extendCount) {
-  return spec.steps.flatMap((step) => {
+  return orderCommerceSteps(spec.steps.flatMap((step) => {
     if (step.kind !== "video.extend") return [step];
     const max = step.repeat?.max ?? 64;
     const count = Math.max(step.repeat?.min ?? 0, Math.min(extendCount, max));
     return Array.from({ length: count }, (_, index) => ({ ...step, id: `${step.id}_${index + 1}` }));
-  });
+  }));
 }
 
 export function quoteStep(spec, step) {
-  if (step.kind === "stitch" || step.kind === "keyframes") return 0;
+  if (isLocalStep(step)) return 0;
   const provider = step.provider ?? spec.defaults?.provider ?? "fal";
   const model = step.model ?? spec.defaults?.models?.[step.kind] ?? defaultModelFor(provider, step.kind);
   const rates = getProviderAdapter(provider);
@@ -139,17 +148,17 @@ export function interpolate(template, inputs) {
 }
 
 export function isLocalStep(step) {
-  return step.kind === "stitch" || step.kind === "keyframes";
+  return step.kind === "stitch" || step.kind === "keyframes" || isCommerceStep(step);
 }
 
 export function supportedProviderIds() {
   return listProviderAdapters().map((adapter) => adapter.id).sort();
 }
 
-export function plannedStep(spec, step) {
-  const provider = isLocalStep(step) ? "local" : step.provider ?? spec.defaults?.provider ?? "fal";
+export function plannedStep(spec, step, inputs = {}) {
+  const provider = isCommerceStep(step) ? "air" : isLocalStep(step) ? "local" : step.provider ?? spec.defaults?.provider ?? "fal";
   const model = isLocalStep(step) ? step.model ?? "local" : step.model ?? spec.defaults?.models?.[step.kind] ?? defaultModelFor(provider, step.kind);
-  return {
+  const planned = {
     kind: step.kind,
     model,
     provider,
@@ -157,6 +166,16 @@ export function plannedStep(spec, step) {
     status: "planned",
     stepId: step.id,
   };
+  if (step.kind === "commerce.stage_listing") {
+    return { ...planned, wouldStage: describeStagedListing(step, inputs) };
+  }
+  if (step.kind === "commerce.payment_request") {
+    return {
+      ...planned,
+      wouldStage: { action: "payment_request", charges: false, requiresOwnerApproval: true, ...step.payment_request },
+    };
+  }
+  return planned;
 }
 
 export async function pollProviderUntilDone(adapter, requestId, secrets) {

@@ -28,6 +28,8 @@
         "pages": [
           "zap-spec",
           "steps",
+          "commerce",
+          "commerce-agents",
           "providers",
           "sandboxes",
           "budget",
