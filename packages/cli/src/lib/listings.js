@@ -279,7 +279,10 @@ export function previewListingUpdate(items, listings) {
 
 /**
  * Splits a catalog into the listings the skill can work on and the entries it
- * skips, so one hand-edited item never aborts a whole audit.
+ * skips, so one hand-edited item never aborts a whole audit. Keys are one
+ * listing regardless of case (reads, edits, and air's projection all compare
+ * lower-cased), so a later case-variant duplicate is skipped rather than
+ * silently shadowed by the first.
  * @param {unknown[]} items
  * @returns {{ listings: CatalogListing[], skipped: Array<{ index: number, key?: string, reason: string }> }}
  */
@@ -288,15 +291,22 @@ export function partitionCatalogItems(items) {
   const listings = [];
   /** @type {Array<{ index: number, key?: string, reason: string }>} */
   const skipped = [];
+  /** @type {Map<string, string>} */
+  const seen = new Map();
   items.forEach((item, index) => {
-    const reason = describeMalformedListing(item);
+    let reason = describeMalformedListing(item);
+    const key = item && typeof item === "object" && typeof (/** @type {Record<string, unknown>} */ (item).key) === "string"
+      ? String(/** @type {Record<string, unknown>} */ (item).key)
+      : undefined;
+    if (reason === null && key !== undefined) {
+      const first = seen.get(key.toLowerCase());
+      if (first !== undefined) reason = `duplicates key "${first}" (keys are case-insensitive); the first entry is the listing`;
+      else seen.set(key.toLowerCase(), key);
+    }
     if (reason === null) {
       listings.push(/** @type {CatalogListing} */ (item));
       return;
     }
-    const key = item && typeof item === "object" && typeof (/** @type {Record<string, unknown>} */ (item).key) === "string"
-      ? String(/** @type {Record<string, unknown>} */ (item).key)
-      : undefined;
     skipped.push(key === undefined ? { index, reason } : { index, key, reason });
   });
   return { listings, skipped };
@@ -313,9 +323,12 @@ export async function loadStagedListings({ catalogPath, env } = {}) {
 }
 
 /**
- * Stage content edits: re-check the guardrails under the catalog lock, merge
- * the edits, write atomically, then file/refresh the shop_publish decision.
- * The storefront changes only after the owner approves in air.
+ * Stage content edits: under the catalog lock, re-check the guardrails, merge
+ * the edits, write atomically, and file/refresh the shop_publish decision.
+ * The lock spans the publish request so no other writer can read, extend, or
+ * publish over edits whose own request has not yet succeeded; a refused
+ * publish rolls the edits back before the lock is released. The storefront
+ * changes only after the owner approves in air.
  * @param {{ environment?: import("./commerce.js").CommerceEnvironment, items: ChangeItem[], note: string, dryRun?: boolean }} options
  */
 export async function stageListingUpdate({ environment = resolveCommerceEnvironment(), items: rawItems, note, dryRun = false }) {
@@ -352,8 +365,7 @@ export async function stageListingUpdate({ environment = resolveCommerceEnvironm
   assertCommerceEnvironment(environment);
 
   await fs.mkdir(path.dirname(environment.catalogPath), { recursive: true });
-  /** @type {CatalogWrite} */
-  const written = await withCatalogLock(environment.catalogPath, async () => {
+  const { applied, decision } = await withCatalogLock(environment.catalogPath, async () => {
     const catalog = await readCatalogDocument(environment.catalogPath);
     const preimage = JSON.stringify(catalog);
     const current = partitionCatalogItems(catalog.items).listings;
@@ -374,17 +386,17 @@ export async function stageListingUpdate({ environment = resolveCommerceEnvironm
       applied += 1;
     }
     const { raw, revision } = await writeCatalogDocument(environment.catalogPath, catalog);
-    return { applied, preimage, raw, revision };
+    /** @type {CatalogWrite} */
+    const written = { applied, preimage, raw, revision };
+    try {
+      return { applied, decision: await postCommerceAction(environment, { action: "publish_catalog", note }) };
+    } catch (error) {
+      throw await rollbackListingUpdate(environment.catalogPath, written, error);
+    }
   });
 
-  let decision;
-  try {
-    decision = await postCommerceAction(environment, { action: "publish_catalog", note });
-  } catch (error) {
-    throw await rollbackListingUpdate(environment.catalogPath, written, error);
-  }
   return {
-    applied: written.applied,
+    applied,
     catalogPath: environment.catalogPath,
     charges: false,
     decisionId: typeof decision.decisionId === "string" ? decision.decisionId : undefined,
@@ -405,12 +417,11 @@ export async function stageListingUpdate({ environment = resolveCommerceEnvironm
 
 /**
  * air refused the publish_catalog request after the edits were written, so
- * a later unrelated publish would otherwise carry them. Under the lock, put
- * the pre-edit document back only if the file is still byte-for-byte the one
- * this update wrote (same revision stamp). Any later writer — even one that
- * wrote the same values — leaves a different revision, and its own publish
- * covers the catalog as it now stands, so the file is left alone and the
- * outcome is folded into the error either way.
+ * a later unrelated publish would otherwise carry them. The caller still
+ * holds the catalog lock; put the pre-edit document back only if the file is
+ * still byte-for-byte the one this update wrote (same revision stamp). A
+ * writer that bypassed the lock (a hand edit) leaves a different document,
+ * so the file is left alone; the outcome is folded into the error either way.
  * @param {string} catalogPath
  * @param {CatalogWrite} written
  * @param {unknown} cause
@@ -423,16 +434,13 @@ async function rollbackListingUpdate(catalogPath, written, cause) {
   /** @type {string} */
   let outcome;
   try {
-    const restored = await withCatalogLock(catalogPath, async () => {
-      const raw = await fs.readFile(catalogPath, "utf8");
-      const catalog = await readCatalogDocument(catalogPath);
-      if (raw !== written.raw || catalog.revision !== written.revision) return false;
-      await writeCatalogDocument(catalogPath, JSON.parse(written.preimage));
-      return true;
-    });
+    const raw = await fs.readFile(catalogPath, "utf8");
+    const catalog = await readCatalogDocument(catalogPath);
+    const restored = raw === written.raw && catalog.revision === written.revision;
+    if (restored) await writeCatalogDocument(catalogPath, JSON.parse(written.preimage));
     outcome = restored
       ? `The ${written.applied} edit(s) were rolled back from the catalog; nothing is pending approval from this update.`
-      : `The catalog was written again by another update after these ${written.applied} edit(s) landed, so they were left in place; that update's shop_publish decision covers the catalog as it now stands.`;
+      : `The catalog was edited outside the lock after these ${written.applied} edit(s) landed, so they were left in place; the next publish_catalog would include them.`;
   } catch (error) {
     outcome = `Rolling the edits back also failed (${error instanceof Error ? error.message : String(error)}); the catalog at ${catalogPath} still holds them and the next publish_catalog would include them.`;
   }

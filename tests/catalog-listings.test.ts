@@ -128,14 +128,16 @@ describe("catalog-listings reasoning port", () => {
   });
 
   it("skips malformed catalog entries with a reason instead of aborting the audit", async () => {
-    writeFileSync(catalogPath, JSON.stringify({ items: [tee, { key: "broken" }, "junk", { key: "nokind", name: "X", priceCents: 1 }, clean] }));
+    writeFileSync(catalogPath, JSON.stringify({ items: [tee, { key: "broken" }, "junk", { key: "nokind", name: "X", priceCents: 1 }, clean, { ...tee, key: "Merch-Drop-Neon-Wolf", name: "Shadow" }] }));
     const loaded = await loadStagedListings({ catalogPath });
     expect(loaded.listings.map((listing) => listing.key)).toEqual(["merch-drop-neon-wolf", "mix-session"]);
     expect(loaded.skipped).toEqual([
       { index: 1, key: "broken", reason: "missing string `name`" },
       { index: 2, reason: "entry is not an object" },
       { index: 3, key: "nokind", reason: "missing string `kind`" },
+      { index: 5, key: "Merch-Drop-Neon-Wolf", reason: "duplicates key \"merch-drop-neon-wolf\" (keys are case-insensitive); the first entry is the listing" },
     ]);
+    expect(getListing(loaded.listings, "MERCH-DROP-NEON-WOLF").listing.name).toBe("Tee");
     expect(searchListings(loaded.listings, { quality: true }).map((row) => row.key)).toEqual(["merch-drop-neon-wolf"]);
   });
 
@@ -296,34 +298,9 @@ describe("stageListingUpdate", () => {
     expect(readCatalog().items).toEqual(before.items);
     expect(existsSync(`${catalogPath}.lock`)).toBe(false);
 
-    // A concurrent update that wrote the SAME value and whose publish succeeded
-    // must keep its edit: the loser's rollback sees a different revision.
-    const { environment: winner, requests: winnerRequests } = await startAir();
-    const { environment: loser } = await startAir({ status: 500 });
-    const originalFetch = globalThis.fetch;
-    globalThis.fetch = async (...args) => {
-      globalThis.fetch = originalFetch;
-      await stageListingUpdate({
-        environment: winner,
-        items: [{ after: "event_ticket", field: "kind", target: "show-night" }],
-        note: "copy says ticket",
-      });
-      return originalFetch(...args);
-    };
-    try {
-      await expect(stageListingUpdate({
-        environment: loser,
-        items: [{ after: "event_ticket", field: "kind", target: "show-night" }],
-        note: "copy says ticket",
-      })).rejects.toMatchObject({ message: expect.stringMatching(/written again by another update.*1 edit\(s\) landed, so they were left in place.*shop_publish decision covers the catalog/) });
-    } finally {
-      globalThis.fetch = originalFetch;
-    }
-    expect(winnerRequests).toHaveLength(1);
-    expect(readCatalog().items.find((entry) => entry.key === "show-night")?.kind).toBe("event_ticket");
-
-    // A hand edit that keeps the revision stamp is still "someone else wrote".
+    // A hand edit that bypasses the lock is still "someone else wrote".
     const { environment: racing } = await startAir({ status: 500 });
+    const originalFetch = globalThis.fetch;
     globalThis.fetch = async (...args) => {
       const catalog = readCatalog();
       const item = catalog.items.find((entry) => entry.key === "merch-drop-neon-wolf");
@@ -341,6 +318,56 @@ describe("stageListingUpdate", () => {
       globalThis.fetch = originalFetch;
     }
     expect(readCatalog().items.find((entry) => entry.key === "merch-drop-neon-wolf")?.name).toBe("Hand-edited tee");
+  });
+
+  it("a concurrent update waits for the first publish, so a refused update's edits never ride another update's decision", async () => {
+    // air answers by note: the first update's publish is slow and refused,
+    // the second's is accepted. Without the lock spanning the publish, the
+    // second would read+republish the first's edits before its refusal.
+    const requests: Array<{ note: string; catalog: ReturnType<typeof readCatalog> }> = [];
+    const server = createServer((request, response) => {
+      let raw = "";
+      request.on("data", (chunk) => { raw += chunk; });
+      request.on("end", () => {
+        const body = JSON.parse(raw) as { note: string };
+        requests.push({ catalog: readCatalog(), note: body.note });
+        const refuse = body.note === "first";
+        setTimeout(() => {
+          response.statusCode = refuse ? 503 : 200;
+          response.setHeader("content-type", "application/json");
+          response.end(refuse ? JSON.stringify({ error: "gateway down" }) : JSON.stringify({ decisionId: "dec_2", ok: true, staged: true }));
+        }, refuse ? 150 : 0);
+      });
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    cleanups.push(() => server.close());
+    const address = server.address();
+    if (!address || typeof address === "string") throw new Error("no address");
+    const environment = { apiBase: `http://127.0.0.1:${address.port}`, catalogPath, token: "gw_token" };
+
+    const first = stageListingUpdate({
+      environment,
+      items: [{ after: "Screen-printed Neon Wolf art.", field: "description", target: "merch-drop-neon-wolf" }],
+      note: "first",
+    });
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    const second = stageListingUpdate({
+      environment,
+      items: [{ after: "event_ticket", field: "kind", target: "show-night" }],
+      note: "second",
+    });
+
+    await expect(first).rejects.toMatchObject({ code: "COMMERCE_STAGE_FAILED", message: expect.stringMatching(/1 edit\(s\) were rolled back/) });
+    await expect(second).resolves.toMatchObject({ applied: 1, decisionId: "dec_2", status: "staged" });
+
+    expect(requests.map((request) => request.note)).toEqual(["first", "second"]);
+    // The second publish saw the catalog after the first's rollback: its own edit, not the refused one.
+    const seenBySecond = requests[1]?.catalog.items ?? [];
+    expect(seenBySecond.find((entry) => entry.key === "merch-drop-neon-wolf")?.description).toBe("");
+    expect(seenBySecond.find((entry) => entry.key === "show-night")?.kind).toBe("event_ticket");
+    expect(readCatalog().items.find((entry) => entry.key === "merch-drop-neon-wolf")?.description).toBe("");
+    expect(readCatalog().items.find((entry) => entry.key === "show-night")?.kind).toBe("event_ticket");
+    expect(existsSync(`${catalogPath}.lock`)).toBe(false);
   });
 
   it("reports when the rollback itself fails instead of pretending the catalog is clean", async () => {

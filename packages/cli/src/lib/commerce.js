@@ -25,7 +25,9 @@ const AIR_GATEWAY_SUFFIX = "/api/gateway/v1";
 export const MAX_PRICE_CENTS = 100_000_00;
 export const CATALOG_KEY_RE = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 const LOCK_STALE_MS = 30_000;
-const LOCK_WAIT_MS = 10_000;
+const LOCK_WAIT_MS = 20_000;
+/** Bounded so a publish held under the catalog lock cannot outlive LOCK_STALE_MS. */
+const COMMERCE_REQUEST_MS = 15_000;
 const IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".webp", ".gif"]);
 
 export const COMMERCE_REMEDIATION = [
@@ -345,11 +347,23 @@ export async function publishListingImage(environment, asset, allowedRoots = def
  */
 export async function postCommerceAction(environment, action) {
   assertCommerceEnvironment(environment);
-  const response = await fetch(`${environment.apiBase}/api/miniapps/commerce`, {
-    body: JSON.stringify(action),
-    headers: { authorization: `Bearer ${environment.token}`, "content-type": "application/json" },
-    method: "POST",
-  });
+  /** @type {Response} */
+  let response;
+  try {
+    response = await fetch(`${environment.apiBase}/api/miniapps/commerce`, {
+      body: JSON.stringify(action),
+      headers: { authorization: `Bearer ${environment.token}`, "content-type": "application/json" },
+      method: "POST",
+      signal: AbortSignal.timeout(COMMERCE_REQUEST_MS),
+    });
+  } catch (error) {
+    throw new ZapCliError({
+      code: "COMMERCE_STAGE_FAILED",
+      message: `air did not answer ${String(action.action)}: ${error instanceof Error ? error.message : String(error)}`,
+      remediation: "Check that the box gateway is reachable; nothing was charged.",
+      retryable: true,
+    });
+  }
   const body = /** @type {Record<string, unknown>} */ (await response.json().catch(() => ({})));
   if (!response.ok) {
     throw new ZapCliError({
