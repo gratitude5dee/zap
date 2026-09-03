@@ -489,6 +489,38 @@ describe("commerce live executor", () => {
     expect(bodyReads).toBe(2);
   });
 
+  it("a 200 whose body is empty or not a JSON object confirms nothing", async () => {
+    const home = mkdtempSync(path.join(tmpdir(), "zap-home-"));
+    cleanups.push(() => rmSync(home, { force: true, recursive: true }));
+    const originalFetch = globalThis.fetch;
+    cleanups.push(() => { globalThis.fetch = originalFetch; });
+    const spec = parseZapMarkdown(recipe(merchSteps));
+    for (const text of ["", "<html>gateway</html>", "[]", "null"]) {
+      globalThis.fetch = (async () => ({ ok: true, status: 200, text: async () => text })) as unknown as typeof fetch;
+      await expect(stageListing({
+        environment: { apiBase: "https://app.wzrd.tech", catalogPath: path.join(home, "catalog.json"), token: "t" },
+        inputs: { NAME: "X", PRICE_CENTS: "100" },
+        runId: "r",
+        spec,
+        step: spec.steps[1]!,
+      })).rejects.toMatchObject({ code: "COMMERCE_STAGE_FAILED", message: /unreadable 200 body/, retryable: true });
+    }
+    // payment_request: same shape, but never retryable.
+    globalThis.fetch = (async () => ({ ok: true, status: 200, text: async () => "" })) as unknown as typeof fetch;
+    const pay = parseZapMarkdown(recipe(`
+  - id: pay
+    kind: commerce.payment_request
+    payment_request:
+      amount: user.AMOUNT
+      payee: "{PAYEE}"
+`, "  AMOUNT: { type: number, required: true }\n  PAYEE: { type: string, required: true }\n"));
+    await expect(stagePaymentRequest({
+      environment: { apiBase: "https://app.wzrd.tech", catalogPath: path.join(home, "catalog.json"), token: "t" },
+      inputs: { AMOUNT: 25, PAYEE: "studio" },
+      step: pay.steps[0]!,
+    })).rejects.toMatchObject({ code: "COMMERCE_STAGE_FAILED", remediation: /Check Needs you/, retryable: false });
+  });
+
   it("refuses to stage when no air gateway is configured", async () => {
     const spec = parseZapMarkdown(recipe(merchSteps));
     await expect(stageListing({

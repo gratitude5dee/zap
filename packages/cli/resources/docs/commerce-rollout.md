@@ -80,10 +80,12 @@ storefront: a rejected listing or image (`COMMERCE_INVALID_LISTING`), a
 missing gateway (`COMMERCE_UNCONFIGURED`), or an unreadable catalog
 (`COMMERCE_CATALOG_UNREADABLE`) all stop before `publish_catalog` is sent. A
 lost reply (`COMMERCE_STAGE_TIMEOUT`, or a `COMMERCE_STAGE_FAILED` that says
-"may have filed the decision") is the one exception: the catalog edit is rolled
-back, but air may already hold the pending `shop_publish` decision, so check
-**Needs you** before retrying. The storefront is unchanged in every failure
-case.
+"may have filed the decision") is the one exception: the listing stays in
+`catalog.json` (the Zap upserts by key, so a rerun updates it rather than
+duplicating it), and air may already hold the pending `shop_publish` decision,
+so check **Needs you** before retrying. Only the `catalog-listings` agent's
+content edits roll back on a lost reply. The storefront is unchanged in every
+failure case.
 
 ## Stage 2 — Content edits through the agent
 

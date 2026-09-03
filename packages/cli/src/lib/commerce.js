@@ -426,20 +426,33 @@ export async function postCommerceAction(environment, action) {
     }
   }
   if (response === undefined) throw new Error("unreachable");
-  /** @type {Record<string, unknown>} */
-  let body = {};
+  /** @type {unknown} */
+  let parsed;
   try {
-    const parsed = /** @type {unknown} */ (JSON.parse(text));
-    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) body = /** @type {Record<string, unknown>} */ (parsed);
+    parsed = JSON.parse(text);
   } catch {
-    // air always answers JSON; a non-JSON body falls through to the status check.
+    parsed = undefined;
   }
+  const body = parsed && typeof parsed === "object" && !Array.isArray(parsed)
+    ? /** @type {Record<string, unknown>} */ (parsed)
+    : undefined;
   if (!response.ok) {
     throw new ZapCliError({
       code: "COMMERCE_STAGE_FAILED",
-      message: `air refused ${String(action.action)} (${response.status}): ${String(body.error ?? "unknown error")}`,
+      message: `air refused ${name} (${response.status}): ${String(body?.error ?? "unknown error")}`,
       remediation: "Check the box gateway token and that the owner has a storefront; nothing was charged.",
       retryable: response.status >= 500,
+    });
+  }
+  if (body === undefined) {
+    // A 2xx whose body is not air's JSON object confirms nothing: it is a lost
+    // reply, not a staged decision with no id.
+    throw lostReplyError({
+      attempts,
+      error: new Error(`unreadable ${response.status} body${text ? ` (${text.slice(0, 80)})` : ""}`),
+      idempotent,
+      name,
+      timedOut: false,
     });
   }
   return body;
