@@ -4,8 +4,8 @@ export type ListingSnapshot = { description: string; kind: string; name: string 
 
 /**
  * Content fields as `get_listing` last returned them, by lower-cased key.
- * `stage_listing_update` requires a snapshot per target and uses it as the
- * `before` value so an edit proposed against stale copy is refused.
+ * `stage_listing_update` requires a snapshot per target and refuses the edit
+ * when any content field of the record has moved since the read.
  */
 export const catalogReads = defineState("zap.catalogReads", () => ({
   snapshots: {} as Record<string, ListingSnapshot>,

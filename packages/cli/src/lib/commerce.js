@@ -24,10 +24,20 @@ const AIR_GATEWAY_SUFFIX = "/api/gateway/v1";
 /** air's sanitizeCatalogItem limits: price 1c..$100k, key slug. */
 export const MAX_PRICE_CENTS = 100_000_00;
 export const CATALOG_KEY_RE = /^[a-z0-9][a-z0-9_-]{0,63}$/;
+/** air's default R2_PUBLIC_BASE_URL; any image not under the media lane is dropped by sanitizeCatalogItem. */
+export const DEFAULT_AIR_MEDIA_BASE = "https://media.wzrd.tech";
 const LOCK_STALE_MS = 30_000;
 const LOCK_WAIT_MS = 20_000;
-/** Bounded so a publish held under the catalog lock cannot outlive LOCK_STALE_MS. */
-const COMMERCE_REQUEST_MS = 15_000;
+/** Bounded so every attempt of a publish held under the catalog lock fits inside LOCK_STALE_MS. */
+const COMMERCE_REQUEST_MS = 12_000;
+/**
+ * Actions air answers the same way when repeated (publish_catalog reuses the
+ * one pending shop_publish decision and de-duplicates the note), so a lost
+ * reply may be retried. payment_request files a new request each time and
+ * must not be.
+ */
+const IDEMPOTENT_ACTIONS = new Set(["publish_catalog"]);
+const IDEMPOTENT_ATTEMPTS = 2;
 const IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".webp", ".gif"]);
 
 export const COMMERCE_REMEDIATION = [
@@ -36,7 +46,7 @@ export const COMMERCE_REMEDIATION = [
 ];
 
 /**
- * @typedef {{ apiBase?: string, catalogPath: string, token?: string }} CommerceEnvironment
+ * @typedef {{ apiBase?: string, catalogPath: string, mediaBase?: string, token?: string }} CommerceEnvironment
  */
 
 /**
@@ -59,7 +69,18 @@ export function resolveCommerceEnvironment(env = process.env, home = os.homedir(
   const explicitToken = (hermes.ZAP_AIR_GATEWAY_TOKEN ?? "").trim();
   const gatewayToken = apiBase && apiBase === gatewayApiBase ? (hermes.OPENAI_API_KEY ?? "").trim() : "";
   const token = explicitToken || gatewayToken;
-  return { apiBase: apiBase || undefined, catalogPath, token: token || undefined };
+  const mediaBase = ((hermes.ZAP_AIR_MEDIA_BASE ?? "").trim() || DEFAULT_AIR_MEDIA_BASE).replace(/\/+$/, "");
+  return { apiBase: apiBase || undefined, catalogPath, mediaBase, token: token || undefined };
+}
+
+/**
+ * Whether air's sanitizeCatalogItem keeps this image URL (it nulls any other
+ * host at approval). `mediaBase` is air's R2_PUBLIC_BASE_URL.
+ * @param {unknown} imageUrl
+ * @param {string} [mediaBase]
+ */
+export function isAirMediaUrl(imageUrl, mediaBase = DEFAULT_AIR_MEDIA_BASE) {
+  return typeof imageUrl === "string" && imageUrl.length > mediaBase.length && imageUrl.startsWith(`${mediaBase.replace(/\/+$/, "")}/`);
 }
 
 /**
@@ -323,7 +344,12 @@ export async function resolvePublishableImage(asset, allowedRoots) {
  */
 export async function publishListingImage(environment, asset, allowedRoots = defaultImageRoots()) {
   if (!asset) return { imageUrl: null, note: "listing has no image input" };
-  if (/^https?:\/\//.test(asset)) return { imageUrl: asset, note: "remote image passed through; air keeps only R2-hosted URLs" };
+  if (/^https?:\/\//.test(asset)) {
+    const mediaBase = environment.mediaBase ?? DEFAULT_AIR_MEDIA_BASE;
+    return isAirMediaUrl(asset, mediaBase)
+      ? { imageUrl: asset, note: "air media URL passed through" }
+      : { imageUrl: null, note: `remote image dropped: air keeps only ${mediaBase} URLs; pass a local file so it is uploaded to the media lane` };
+  }
   const resolved = await resolvePublishableImage(asset, allowedRoots);
   if ("reason" in resolved) return { imageUrl: null, note: resolved.reason };
   const absolute = resolved.path;
@@ -347,22 +373,42 @@ export async function publishListingImage(environment, asset, allowedRoots = def
  */
 export async function postCommerceAction(environment, action) {
   assertCommerceEnvironment(environment);
-  /** @type {Response} */
+  const name = String(action.action);
+  const idempotent = IDEMPOTENT_ACTIONS.has(name);
+  const attempts = idempotent ? IDEMPOTENT_ATTEMPTS : 1;
+  /** @type {Response | undefined} */
   let response;
-  try {
-    response = await fetch(`${environment.apiBase}/api/miniapps/commerce`, {
-      body: JSON.stringify(action),
-      headers: { authorization: `Bearer ${environment.token}`, "content-type": "application/json" },
-      method: "POST",
-      signal: AbortSignal.timeout(COMMERCE_REQUEST_MS),
-    });
-  } catch (error) {
-    throw new ZapCliError({
-      code: "COMMERCE_STAGE_FAILED",
-      message: `air did not answer ${String(action.action)}: ${error instanceof Error ? error.message : String(error)}`,
-      remediation: "Check that the box gateway is reachable; nothing was charged.",
-      retryable: true,
-    });
+  for (let attempt = 1; response === undefined; attempt++) {
+    try {
+      response = await fetch(`${environment.apiBase}/api/miniapps/commerce`, {
+        body: JSON.stringify(action),
+        headers: { authorization: `Bearer ${environment.token}`, "content-type": "application/json" },
+        method: "POST",
+        signal: AbortSignal.timeout(COMMERCE_REQUEST_MS),
+      });
+    } catch (error) {
+      const timedOut = error instanceof Error && error.name === "TimeoutError";
+      if (timedOut && attempt < attempts) continue;
+      if (timedOut) {
+        // air may have committed before the reply was lost, so this is not a
+        // plain failure: say so, and only call it retryable when a repeat
+        // cannot file a second decision.
+        throw new ZapCliError({
+          code: "COMMERCE_STAGE_TIMEOUT",
+          message: `air did not answer ${name} within ${COMMERCE_REQUEST_MS}ms${attempts > 1 ? ` (${attempts} attempts)` : ""}; it may have filed the decision before the reply was lost.`,
+          remediation: idempotent
+            ? "Stage again: publish_catalog reuses the pending shop_publish decision and does not repeat the note. Nothing was charged."
+            : "Check Needs you in air for a pending payment request before staging it again; a blind retry could file a duplicate. Nothing was charged.",
+          retryable: idempotent,
+        });
+      }
+      throw new ZapCliError({
+        code: "COMMERCE_STAGE_FAILED",
+        message: `air did not answer ${name}: ${error instanceof Error ? error.message : String(error)}`,
+        remediation: "Check that the box gateway is reachable; nothing was charged.",
+        retryable: true,
+      });
+    }
   }
   const body = /** @type {Record<string, unknown>} */ (await response.json().catch(() => ({})));
   if (!response.ok) {

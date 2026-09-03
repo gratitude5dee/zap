@@ -34,7 +34,7 @@ export default defineTool({
       });
     }
     const items = input.items.map((item) => ({ ...item, before: snapshots[item.target.toLowerCase()][item.field] }));
-    const result = await stageListingUpdate({ ...input, items });
+    const result = await stageListingUpdate({ ...input, items, snapshots });
     if (!result.dryRun) {
       const refreshed: Record<string, ListingSnapshot> = {};
       for (const item of items) {
