@@ -366,6 +366,34 @@ export async function publishListingImage(environment, asset, allowedRoots = def
 }
 
 /**
+ * A request whose reply never arrived (or arrived without a body). air may
+ * have committed before the connection died, so this is not a plain failure:
+ * say so, and only call it retryable when a repeat cannot file a second
+ * decision. Only a timeout on an idempotent action was retried inline.
+ * @param {{ attempts: number, error: unknown, idempotent: boolean, name: string, timedOut: boolean }} options
+ */
+function lostReplyError({ attempts, error, idempotent, name, timedOut }) {
+  const detail = error instanceof Error ? error.message : String(error);
+  const remediation = idempotent
+    ? "Stage again: publish_catalog reuses the pending shop_publish decision and does not repeat the note. Nothing was charged."
+    : "Check Needs you in air for a pending payment request before staging it again; a blind retry could file a duplicate. Nothing was charged.";
+  if (timedOut) {
+    return new ZapCliError({
+      code: "COMMERCE_STAGE_TIMEOUT",
+      message: `air did not answer ${name} within ${COMMERCE_REQUEST_MS}ms${attempts > 1 ? ` (${attempts} attempts)` : ""}; it may have filed the decision before the reply was lost.`,
+      remediation,
+      retryable: idempotent,
+    });
+  }
+  return new ZapCliError({
+    code: "COMMERCE_STAGE_FAILED",
+    message: `air did not answer ${name}: ${detail}${idempotent ? "" : "; it may have filed the decision before the connection dropped."}`,
+    remediation: idempotent ? `Check that the box gateway is reachable. ${remediation}` : remediation,
+    retryable: idempotent,
+  });
+}
+
+/**
  * File the owner decision. `publish_catalog` reuses an open shop_publish
  * decision; `payment_request` creates a pending request + decision.
  * @param {CommerceEnvironment} environment
@@ -378,7 +406,9 @@ export async function postCommerceAction(environment, action) {
   const attempts = idempotent ? IDEMPOTENT_ATTEMPTS : 1;
   /** @type {Response | undefined} */
   let response;
-  for (let attempt = 1; response === undefined; attempt++) {
+  /** @type {string | undefined} */
+  let text;
+  for (let attempt = 1; text === undefined; attempt++) {
     try {
       response = await fetch(`${environment.apiBase}/api/miniapps/commerce`, {
         body: JSON.stringify(action),
@@ -386,37 +416,43 @@ export async function postCommerceAction(environment, action) {
         method: "POST",
         signal: AbortSignal.timeout(COMMERCE_REQUEST_MS),
       });
+      // The body shares the request deadline: a 200 whose body never arrives
+      // is as lost as one whose headers never did.
+      text = await response.text();
     } catch (error) {
       const timedOut = error instanceof Error && error.name === "TimeoutError";
       if (timedOut && attempt < attempts) continue;
-      if (timedOut) {
-        // air may have committed before the reply was lost, so this is not a
-        // plain failure: say so, and only call it retryable when a repeat
-        // cannot file a second decision.
-        throw new ZapCliError({
-          code: "COMMERCE_STAGE_TIMEOUT",
-          message: `air did not answer ${name} within ${COMMERCE_REQUEST_MS}ms${attempts > 1 ? ` (${attempts} attempts)` : ""}; it may have filed the decision before the reply was lost.`,
-          remediation: idempotent
-            ? "Stage again: publish_catalog reuses the pending shop_publish decision and does not repeat the note. Nothing was charged."
-            : "Check Needs you in air for a pending payment request before staging it again; a blind retry could file a duplicate. Nothing was charged.",
-          retryable: idempotent,
-        });
-      }
-      throw new ZapCliError({
-        code: "COMMERCE_STAGE_FAILED",
-        message: `air did not answer ${name}: ${error instanceof Error ? error.message : String(error)}`,
-        remediation: "Check that the box gateway is reachable; nothing was charged.",
-        retryable: true,
-      });
+      throw lostReplyError({ attempts, error, idempotent, name, timedOut });
     }
   }
-  const body = /** @type {Record<string, unknown>} */ (await response.json().catch(() => ({})));
+  if (response === undefined) throw new Error("unreachable");
+  /** @type {unknown} */
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    parsed = undefined;
+  }
+  const body = parsed && typeof parsed === "object" && !Array.isArray(parsed)
+    ? /** @type {Record<string, unknown>} */ (parsed)
+    : undefined;
   if (!response.ok) {
     throw new ZapCliError({
       code: "COMMERCE_STAGE_FAILED",
-      message: `air refused ${String(action.action)} (${response.status}): ${String(body.error ?? "unknown error")}`,
+      message: `air refused ${name} (${response.status}): ${String(body?.error ?? "unknown error")}`,
       remediation: "Check the box gateway token and that the owner has a storefront; nothing was charged.",
       retryable: response.status >= 500,
+    });
+  }
+  if (body === undefined) {
+    // A 2xx whose body is not air's JSON object confirms nothing: it is a lost
+    // reply, not a staged decision with no id.
+    throw lostReplyError({
+      attempts,
+      error: new Error(`unreadable ${response.status} body${text ? ` (${text.slice(0, 80)})` : ""}`),
+      idempotent,
+      name,
+      timedOut: false,
     });
   }
   return body;
