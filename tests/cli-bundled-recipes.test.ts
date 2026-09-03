@@ -76,6 +76,18 @@ describe("bundled commerce recipes", () => {
     }
   }, 60_000);
 
+  it("ignores a same-named directory in the working folder and still resolves the bundled recipe", () => {
+    const cwd = mkdtempSync(path.join(tmpdir(), "zap-shadow-"));
+    try {
+      mkdirSync(path.join(cwd, "merch-drop"));
+      const result = runCli(["inspect", "merch-drop", "--json"], cwd);
+      expect(result.status, result.stderr || result.stdout).toBe(0);
+      expect(JSON.parse(result.stdout).zap).toBe("merch-drop");
+    } finally {
+      rmSync(cwd, { force: true, recursive: true });
+    }
+  }, 60_000);
+
   it("prefers a project-local recipe over the bundled one", () => {
     const cwd = mkdtempSync(path.join(tmpdir(), "zap-local-"));
     try {

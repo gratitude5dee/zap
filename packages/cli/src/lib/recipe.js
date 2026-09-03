@@ -1,5 +1,5 @@
 // @ts-check
-import { existsSync } from "node:fs";
+import { existsSync, statSync } from "node:fs";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { describeStagedListing, orderCommerceSteps } from "@wzrdtech/core/planner";
@@ -34,7 +34,16 @@ export function resolveZapFile(entry) {
     path.join(process.cwd(), "agent", "skills", slug, "Zap.md"),
     ...bundledZapCandidates(entry, slug),
   ];
-  return candidates.find((candidate) => existsSync(candidate)) ?? direct;
+  return candidates.find((candidate) => isFile(candidate)) ?? direct;
+}
+
+/** @param {string} file */
+function isFile(file) {
+  try {
+    return statSync(file).isFile();
+  } catch {
+    return false;
+  }
 }
 
 /**
