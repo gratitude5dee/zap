@@ -129,3 +129,5 @@ step regardless of where the listing appears in the file.
 
 See [Commerce Agents](./commerce-agents.md) for the exact catalog entry air
 accepts, the field aliases, and what happens after the owner approves.
+[Commerce rollout](./commerce-rollout.md) is the order of operations for taking
+the recipes from plan-only to one creator's live storefront and beyond.

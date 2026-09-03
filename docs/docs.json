@@ -30,6 +30,7 @@
           "steps",
           "commerce",
           "commerce-agents",
+          "commerce-rollout",
           "providers",
           "sandboxes",
           "budget",
