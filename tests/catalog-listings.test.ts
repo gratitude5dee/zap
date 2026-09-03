@@ -139,6 +139,44 @@ describe("catalog-listings reasoning port", () => {
     expect(searchListings(loaded.listings, { quality: true }).map((row) => row.key)).toEqual(["merch-drop-neon-wolf"]);
   });
 
+  it("entries air would drop on protected/blocked fields are skipped, not edited; an unknown kind stays repairable", async () => {
+    const { environment, requests } = await startAir();
+    const invalid = [
+      { ...clean, key: "Bad Key!" },
+      { ...clean, key: "free", priceCents: 0 },
+      { ...clean, key: "fraction", priceCents: 12.5 },
+      { ...clean, key: "too-rich", priceCents: 100_000_01 },
+      { ...clean, key: "neg-stock", inventory: -1 },
+      { ...clean, key: "text-stock", inventory: "12" },
+    ];
+    writeFileSync(catalogPath, JSON.stringify({ items: [...invalid, { ...clean, key: "odd-kind", kind: "ticket" }] }));
+    const loaded = await loadStagedListings({ catalogPath });
+    expect(loaded.listings.map((listing) => listing.key)).toEqual(["odd-kind"]);
+    expect(loaded.skipped.map((entry) => [entry.key, entry.reason])).toEqual([
+      ["Bad Key!", expect.stringMatching(/`key` is not a catalog slug/)],
+      ["free", expect.stringMatching(/`priceCents` must be an integer from 1 to 10000000/)],
+      ["fraction", expect.stringMatching(/`priceCents` must be an integer/)],
+      ["too-rich", expect.stringMatching(/`priceCents` must be an integer/)],
+      ["neg-stock", expect.stringMatching(/`inventory` must be a non-negative integer or null/)],
+      ["text-stock", expect.stringMatching(/`inventory` must be a non-negative integer or null/)],
+    ]);
+
+    const before = readFileSync(catalogPath, "utf8");
+    for (const key of ["free", "neg-stock"]) {
+      await expect(stageListingUpdate({
+        environment,
+        items: [{ after: "Renamed", field: "name", target: key }],
+        note: "title",
+      })).rejects.toMatchObject({ code: "LISTING_UPDATE_GUARDRAIL", message: expect.stringMatching(/not in the staged catalog/) });
+    }
+    expect(requests).toEqual([]);
+    expect(readFileSync(catalogPath, "utf8")).toBe(before);
+
+    await stageListingUpdate({ environment, items: [{ after: "event_ticket", field: "kind", target: "odd-kind" }], note: "copy says ticket" });
+    expect(requests).toHaveLength(1);
+    expect(readCatalog().items.find((item) => item.key === "odd-kind")?.kind).toBe("event_ticket");
+  });
+
   it("get_listing returns the record with findings and fails on unknown keys", () => {
     expect(getListing([tee, show], "SHOW-NIGHT").listing.key).toBe("show-night");
     expect(() => getListing([tee], "nope")).toThrow(/No catalog listing/);
@@ -224,7 +262,11 @@ describe("stageListingUpdate", () => {
       note: "copy says ticket; tee title carries the buyer's words",
     });
     expect(result).toMatchObject({ applied: 3, charges: false, decisionId: "dec_9", decisionReused: false, status: "staged" });
-    expect(requests).toEqual([{ authorization: "Bearer gw_token", body: { action: "publish_catalog" }, url: "/api/miniapps/commerce" }]);
+    expect(requests).toEqual([{
+      authorization: "Bearer gw_token",
+      body: { action: "publish_catalog", note: "copy says ticket; tee title carries the buyer's words" },
+      url: "/api/miniapps/commerce",
+    }]);
 
     const catalog = readCatalog();
     const updatedShow = catalog.items.find((item) => item.key === "show-night");
@@ -239,7 +281,7 @@ describe("stageListingUpdate", () => {
     expect(existsSync(`${catalogPath}.lock`)).toBe(false);
   });
 
-  it("rolls the edits back when air refuses publish_catalog, leaving a concurrent writer's newer value alone", async () => {
+  it("rolls the edits back when air refuses publish_catalog, only while the file is still the one it wrote", async () => {
     const { environment, requests } = await startAir({ status: 503 });
     const before = readCatalog();
     await expect(stageListingUpdate({
@@ -251,28 +293,54 @@ describe("stageListingUpdate", () => {
       note: "copy says ticket",
     })).rejects.toMatchObject({ code: "COMMERCE_STAGE_FAILED", message: expect.stringMatching(/gateway down.*2 edit\(s\) were rolled back/) });
     expect(requests).toHaveLength(1);
-    expect(readCatalog()).toEqual(before);
+    expect(readCatalog().items).toEqual(before.items);
     expect(existsSync(`${catalogPath}.lock`)).toBe(false);
 
-    const { environment: racing } = await startAir({ status: 500 });
+    // A concurrent update that wrote the SAME value and whose publish succeeded
+    // must keep its edit: the loser's rollback sees a different revision.
+    const { environment: winner, requests: winnerRequests } = await startAir();
+    const { environment: loser } = await startAir({ status: 500 });
     const originalFetch = globalThis.fetch;
     globalThis.fetch = async (...args) => {
+      globalThis.fetch = originalFetch;
+      await stageListingUpdate({
+        environment: winner,
+        items: [{ after: "event_ticket", field: "kind", target: "show-night" }],
+        note: "copy says ticket",
+      });
+      return originalFetch(...args);
+    };
+    try {
+      await expect(stageListingUpdate({
+        environment: loser,
+        items: [{ after: "event_ticket", field: "kind", target: "show-night" }],
+        note: "copy says ticket",
+      })).rejects.toMatchObject({ message: expect.stringMatching(/written again by another update.*1 edit\(s\) landed, so they were left in place.*shop_publish decision covers the catalog/) });
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+    expect(winnerRequests).toHaveLength(1);
+    expect(readCatalog().items.find((entry) => entry.key === "show-night")?.kind).toBe("event_ticket");
+
+    // A hand edit that keeps the revision stamp is still "someone else wrote".
+    const { environment: racing } = await startAir({ status: 500 });
+    globalThis.fetch = async (...args) => {
       const catalog = readCatalog();
-      const item = catalog.items.find((entry) => entry.key === "show-night");
-      if (item) item.kind = "digital";
-      writeFileSync(catalogPath, JSON.stringify(catalog));
+      const item = catalog.items.find((entry) => entry.key === "merch-drop-neon-wolf");
+      if (item) item.name = "Hand-edited tee";
+      writeFileSync(catalogPath, JSON.stringify(catalog, null, 2) + "\n");
       return originalFetch(...args);
     };
     try {
       await expect(stageListingUpdate({
         environment: racing,
-        items: [{ after: "event_ticket", field: "kind", target: "show-night" }],
-        note: "copy says ticket",
-      })).rejects.toMatchObject({ message: expect.stringMatching(/0 edit\(s\) were rolled back/) });
+        items: [{ after: "Neon Wolf tee", field: "name", target: "merch-drop-neon-wolf" }],
+        note: "title",
+      })).rejects.toMatchObject({ message: expect.stringMatching(/left in place/) });
     } finally {
       globalThis.fetch = originalFetch;
     }
-    expect(readCatalog().items.find((entry) => entry.key === "show-night")?.kind).toBe("digital");
+    expect(readCatalog().items.find((entry) => entry.key === "merch-drop-neon-wolf")?.name).toBe("Hand-edited tee");
   });
 
   it("reports when the rollback itself fails instead of pretending the catalog is clean", async () => {
@@ -379,6 +447,14 @@ describe("Eve catalog tools", () => {
     await expect(stage.execute({
       dryRun: false,
       items: [{ after: "event_ticket", field: "kind", target: "show-night" }],
+      note: "copy says ticket",
+    } as never, {} as never)).rejects.toMatchObject({ code: "LISTING_UPDATE_GUARDRAIL", message: expect.stringMatching(/changed since it was read/) });
+    expect(readCatalog().items.find((entry) => entry.key === "show-night")?.kind).toBe("digital");
+
+    // A caller-supplied `before` that matches the disk cannot stand in for the read.
+    await expect(stage.execute({
+      dryRun: false,
+      items: [{ after: "event_ticket", before: "digital", field: "kind", target: "show-night" }],
       note: "copy says ticket",
     } as never, {} as never)).rejects.toMatchObject({ code: "LISTING_UPDATE_GUARDRAIL", message: expect.stringMatching(/changed since it was read/) });
     expect(readCatalog().items.find((entry) => entry.key === "show-night")?.kind).toBe("digital");

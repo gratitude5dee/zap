@@ -6,7 +6,6 @@ import { catalogReads, type ListingSnapshot, recordCatalogRead } from "../lib/ca
 
 const changeItem = z.object({
   after: z.union([z.string(), z.enum(["physical", "digital", "service", "event_ticket"])]),
-  before: z.string().optional().describe("Value as get_listing returned it; defaults to that snapshot, so a listing edited since the read is refused."),
   field: z.enum(["name", "description", "kind"]),
   target: z.string().min(1),
 });
@@ -34,10 +33,7 @@ export default defineTool({
         retryable: true,
       });
     }
-    const items = input.items.map((item) => ({
-      ...item,
-      before: item.before ?? snapshots[item.target.toLowerCase()][item.field],
-    }));
+    const items = input.items.map((item) => ({ ...item, before: snapshots[item.target.toLowerCase()][item.field] }));
     const result = await stageListingUpdate({ ...input, items });
     if (!result.dryRun) {
       const refreshed: Record<string, ListingSnapshot> = {};

@@ -13,6 +13,8 @@ import path from "node:path";
 import { ZapCliError } from "./errors.js";
 import {
   assertCommerceEnvironment,
+  CATALOG_KEY_RE,
+  MAX_PRICE_CENTS,
   postCommerceAction,
   readCatalogDocument,
   resolveCommerceEnvironment,
@@ -42,8 +44,11 @@ export const LISTING_GUARDRAILS = /** @type {const} */ ({
  */
 
 /**
- * Why a catalog entry is not a listing the read/audit paths can work on, or
- * null when it is. Hand-edited catalogs are the usual source.
+ * Why a catalog entry is not a listing this skill can work on, or null when
+ * it is. Content defects a content edit can repair (an unknown kind, thin
+ * copy) pass; fields the skill may not touch must already satisfy air's
+ * sanitizeCatalogItem, otherwise a content edit would republish an entry air
+ * drops. Hand-edited catalogs are the usual source.
  * @param {unknown} item
  * @returns {string | null}
  */
@@ -51,10 +56,16 @@ export function describeMalformedListing(item) {
   if (typeof item !== "object" || item === null || Array.isArray(item)) return "entry is not an object";
   const record = /** @type {Record<string, unknown>} */ (item);
   if (typeof record.key !== "string" || record.key.trim() === "") return "missing string `key`";
+  if (!CATALOG_KEY_RE.test(record.key.toLowerCase())) return "`key` is not a catalog slug (a-z, 0-9, `-`, `_`; max 64)";
   if (typeof record.name !== "string") return "missing string `name`";
   if (typeof record.kind !== "string") return "missing string `kind`";
   if (record.description !== undefined && record.description !== null && typeof record.description !== "string") return "`description` is not a string";
-  if (typeof record.priceCents !== "number" || !Number.isFinite(record.priceCents)) return "missing numeric `priceCents`";
+  if (typeof record.priceCents !== "number" || !Number.isInteger(record.priceCents) || record.priceCents < 1 || record.priceCents > MAX_PRICE_CENTS) {
+    return `\`priceCents\` must be an integer from 1 to ${MAX_PRICE_CENTS}; re-run the Zap with a valid PRICE_CENTS`;
+  }
+  if (record.inventory !== undefined && record.inventory !== null && (typeof record.inventory !== "number" || !Number.isInteger(record.inventory) || record.inventory < 0)) {
+    return "`inventory` must be a non-negative integer or null; re-run the Zap with a valid INVENTORY";
+  }
   return null;
 }
 
@@ -341,9 +352,10 @@ export async function stageListingUpdate({ environment = resolveCommerceEnvironm
   assertCommerceEnvironment(environment);
 
   await fs.mkdir(path.dirname(environment.catalogPath), { recursive: true });
-  /** @type {Array<{ key: string, field: string, had: boolean, before: unknown, after: unknown }>} */
+  /** @type {CatalogWrite} */
   const written = await withCatalogLock(environment.catalogPath, async () => {
     const catalog = await readCatalogDocument(environment.catalogPath);
+    const preimage = JSON.stringify(catalog);
     const current = partitionCatalogItems(catalog.items).listings;
     const lockedViolations = checkListingUpdateGuardrails(items, current);
     if (lockedViolations.length) {
@@ -354,28 +366,25 @@ export async function stageListingUpdate({ environment = resolveCommerceEnvironm
         retryable: true,
       });
     }
-    /** @type {Array<{ key: string, field: string, had: boolean, before: unknown, after: unknown }>} */
-    const applied = [];
+    let applied = 0;
     for (const item of items) {
       const listing = current.find((candidate) => candidate.key.toLowerCase() === item.target.toLowerCase());
       if (!listing) continue;
-      const record = /** @type {Record<string, unknown>} */ (listing);
-      const after = item.field === "name" && typeof item.after === "string" ? item.after.trim() : item.after;
-      applied.push({ after, before: record[item.field], field: item.field, had: item.field in record, key: listing.key });
-      record[item.field] = after;
+      /** @type {Record<string, unknown>} */ (listing)[item.field] = item.field === "name" && typeof item.after === "string" ? item.after.trim() : item.after;
+      applied += 1;
     }
-    await writeCatalogDocument(environment.catalogPath, catalog);
-    return applied;
+    const { raw, revision } = await writeCatalogDocument(environment.catalogPath, catalog);
+    return { applied, preimage, raw, revision };
   });
 
   let decision;
   try {
-    decision = await postCommerceAction(environment, { action: "publish_catalog" });
+    decision = await postCommerceAction(environment, { action: "publish_catalog", note });
   } catch (error) {
     throw await rollbackListingUpdate(environment.catalogPath, written, error);
   }
   return {
-    applied: written.length,
+    applied: written.applied,
     catalogPath: environment.catalogPath,
     charges: false,
     decisionId: typeof decision.decisionId === "string" ? decision.decisionId : undefined,
@@ -389,12 +398,21 @@ export async function stageListingUpdate({ environment = resolveCommerceEnvironm
 }
 
 /**
+ * @typedef {{ applied: number, preimage: string, raw: string, revision: string }} CatalogWrite
+ * `preimage` is the document before this update's edits; `raw`/`revision`
+ * identify the exact document the update left on disk.
+ */
+
+/**
  * air refused the publish_catalog request after the edits were written, so
  * a later unrelated publish would otherwise carry them. Under the lock, put
- * back every field that still holds the value this update wrote (a concurrent
- * writer's newer value is left alone) and fold the outcome into the error.
+ * the pre-edit document back only if the file is still byte-for-byte the one
+ * this update wrote (same revision stamp). Any later writer — even one that
+ * wrote the same values — leaves a different revision, and its own publish
+ * covers the catalog as it now stands, so the file is left alone and the
+ * outcome is folded into the error either way.
  * @param {string} catalogPath
- * @param {Array<{ key: string, field: string, had: boolean, before: unknown, after: unknown }>} written
+ * @param {CatalogWrite} written
  * @param {unknown} cause
  * @returns {Promise<ZapCliError>}
  */
@@ -406,21 +424,15 @@ async function rollbackListingUpdate(catalogPath, written, cause) {
   let outcome;
   try {
     const restored = await withCatalogLock(catalogPath, async () => {
+      const raw = await fs.readFile(catalogPath, "utf8");
       const catalog = await readCatalogDocument(catalogPath);
-      let count = 0;
-      for (const change of written) {
-        const listing = catalog.items.find((candidate) => isCatalogListing(candidate) && candidate.key === change.key);
-        if (!listing) continue;
-        const record = /** @type {Record<string, unknown>} */ (listing);
-        if (record[change.field] !== change.after) continue;
-        if (change.had) record[change.field] = change.before;
-        else delete record[change.field];
-        count += 1;
-      }
-      if (count) await writeCatalogDocument(catalogPath, catalog);
-      return count;
+      if (raw !== written.raw || catalog.revision !== written.revision) return false;
+      await writeCatalogDocument(catalogPath, JSON.parse(written.preimage));
+      return true;
     });
-    outcome = `The ${restored} edit(s) were rolled back from the catalog; nothing is pending approval from this update.`;
+    outcome = restored
+      ? `The ${written.applied} edit(s) were rolled back from the catalog; nothing is pending approval from this update.`
+      : `The catalog was written again by another update after these ${written.applied} edit(s) landed, so they were left in place; that update's shop_publish decision covers the catalog as it now stands.`;
   } catch (error) {
     outcome = `Rolling the edits back also failed (${error instanceof Error ? error.message : String(error)}); the catalog at ${catalogPath} still holds them and the next publish_catalog would include them.`;
   }

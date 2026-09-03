@@ -12,6 +12,7 @@
  * Neither path charges a card or moves money: projection to the storefront and
  * any Stripe checkout happen only after the owner approves the decision.
  */
+import { randomUUID } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { promises as fs } from "node:fs";
 import os from "node:os";
@@ -20,7 +21,9 @@ import { describeStagedListing } from "@wzrdtech/core/planner";
 import { ZapCliError } from "./errors.js";
 
 const AIR_GATEWAY_SUFFIX = "/api/gateway/v1";
-const MAX_PRICE_CENTS = 100_000_00;
+/** air's sanitizeCatalogItem limits: price 1c..$100k, key slug. */
+export const MAX_PRICE_CENTS = 100_000_00;
+export const CATALOG_KEY_RE = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 const LOCK_STALE_MS = 30_000;
 const LOCK_WAIT_MS = 10_000;
 const IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".webp", ".gif"]);
@@ -156,13 +159,20 @@ export async function upsertCatalogEntry(catalogPath, entry) {
 
 /**
  * Atomic (tmp + rename) catalog write. Callers hold `withCatalogLock`.
+ * Every write stamps a fresh `revision` so a writer can later tell whether
+ * the document it left is still the one on disk. air reads `items` only.
  * @param {string} catalogPath
  * @param {{ items: unknown[] } & Record<string, unknown>} catalog
+ * @returns {Promise<{ raw: string, revision: string }>}
  */
 export async function writeCatalogDocument(catalogPath, catalog) {
+  const revision = randomUUID();
+  catalog.revision = revision;
+  const raw = JSON.stringify(catalog, null, 2) + "\n";
   const tmp = `${catalogPath}.${process.pid}.tmp`;
-  await fs.writeFile(tmp, JSON.stringify(catalog, null, 2) + "\n");
+  await fs.writeFile(tmp, raw);
   await fs.rename(tmp, catalogPath);
+  return { raw, revision };
 }
 
 /**
