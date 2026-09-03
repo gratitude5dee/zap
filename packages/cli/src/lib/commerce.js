@@ -21,6 +21,9 @@ import { ZapCliError } from "./errors.js";
 
 const AIR_GATEWAY_SUFFIX = "/api/gateway/v1";
 const MAX_PRICE_CENTS = 100_000_00;
+const LOCK_STALE_MS = 30_000;
+const LOCK_WAIT_MS = 10_000;
+const IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".webp", ".gif"]);
 
 export const COMMERCE_REMEDIATION = [
   "Run this Zap inside your air box (it reads ~/.hermes/.env automatically), or",
@@ -35,7 +38,9 @@ export const COMMERCE_REMEDIATION = [
  * Resolve where the box catalog lives and how to reach air. Explicit
  * ZAP_AIR_* variables win; otherwise the box convention (~/.hermes/.env with
  * OPENAI_BASE_URL pointing at the air gateway and OPENAI_API_KEY holding the
- * gateway token) is used. A plain OpenAI key is never reused as a token.
+ * gateway token) is used. The OPENAI_API_KEY fallback is only ever sent to the
+ * host it was issued for: a ZAP_AIR_API_BASE that differs from the gateway
+ * host must bring its own ZAP_AIR_GATEWAY_TOKEN.
  * @param {Record<string, string | undefined>} [env]
  * @param {string} [home]
  * @returns {CommerceEnvironment}
@@ -44,20 +49,47 @@ export function resolveCommerceEnvironment(env = process.env, home = os.homedir(
   const hermes = { ...readHermesEnv(home), ...env };
   const catalogPath = expandHome(hermes.ZAP_AIR_CATALOG_PATH || path.join(home, ".hermes", "miniapps", "shop", "catalog.json"), home);
   const gatewayBase = (hermes.OPENAI_BASE_URL ?? "").trim().replace(/\/+$/, "");
-  const onAirGateway = gatewayBase.endsWith(AIR_GATEWAY_SUFFIX);
-  const apiBase = (hermes.ZAP_AIR_API_BASE || (onAirGateway ? gatewayBase.slice(0, -AIR_GATEWAY_SUFFIX.length) : "")).trim().replace(/\/+$/, "");
-  const token = (hermes.ZAP_AIR_GATEWAY_TOKEN || (onAirGateway ? hermes.OPENAI_API_KEY : "") || "").trim();
+  const gatewayApiBase = gatewayBase.endsWith(AIR_GATEWAY_SUFFIX) ? gatewayBase.slice(0, -AIR_GATEWAY_SUFFIX.length) : "";
+  const apiBase = ((hermes.ZAP_AIR_API_BASE ?? "").trim() || gatewayApiBase).replace(/\/+$/, "");
+  const explicitToken = (hermes.ZAP_AIR_GATEWAY_TOKEN ?? "").trim();
+  const gatewayToken = apiBase && apiBase === gatewayApiBase ? (hermes.OPENAI_API_KEY ?? "").trim() : "";
+  const token = explicitToken || gatewayToken;
   return { apiBase: apiBase || undefined, catalogPath, token: token || undefined };
+}
+
+/**
+ * Bearer tokens only travel over TLS, except to loopback (local air dev).
+ * @param {string} apiBase
+ */
+export function isSecureApiBase(apiBase) {
+  let url;
+  try {
+    url = new URL(apiBase);
+  } catch {
+    return false;
+  }
+  if (url.protocol === "https:") return true;
+  if (url.protocol !== "http:") return false;
+  const host = url.hostname.replace(/^\[|\]$/g, "");
+  return host === "localhost" || host === "::1" || /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host);
 }
 
 /** @param {CommerceEnvironment} environment */
 export function assertCommerceEnvironment(environment) {
-  if (environment.apiBase && environment.token) return;
-  throw new ZapCliError({
-    code: "COMMERCE_UNCONFIGURED",
-    message: "Commerce staging needs an air box gateway (API base + gateway token) to file the owner decision.",
-    remediation: COMMERCE_REMEDIATION,
-  });
+  if (!environment.apiBase || !environment.token) {
+    throw new ZapCliError({
+      code: "COMMERCE_UNCONFIGURED",
+      message: "Commerce staging needs an air box gateway (API base + gateway token) to file the owner decision.",
+      remediation: COMMERCE_REMEDIATION,
+    });
+  }
+  if (!isSecureApiBase(environment.apiBase)) {
+    throw new ZapCliError({
+      code: "COMMERCE_INSECURE_API_BASE",
+      message: `Refusing to send the air gateway token to ${environment.apiBase}: the API base must be https:// (plain http is allowed only for localhost).`,
+      remediation: "Set ZAP_AIR_API_BASE to an https:// URL such as https://app.wzrd.tech.",
+    });
+  }
 }
 
 /**
@@ -100,48 +132,180 @@ export function buildCatalogEntry(step, inputs, { imageUrl, runId, zap }) {
 }
 
 /**
- * Read → merge (by key) → write the box catalog document.
+ * Read → merge (by key) → write the box catalog document. The whole
+ * read-modify-write runs under a lock file so concurrent `zap run --live`
+ * processes cannot overwrite each other's listings; the write itself is an
+ * atomic rename.
  * @param {string} catalogPath
  * @param {ReturnType<typeof buildCatalogEntry>} entry
  */
 export async function upsertCatalogEntry(catalogPath, entry) {
-  const catalog = await readCatalogDocument(catalogPath);
-  const index = catalog.items.findIndex(
-    (/** @type {unknown} */ item) => typeof item === "object" && item !== null && "key" in item && item.key === entry.key,
-  );
-  const replaced = index >= 0;
-  if (replaced) catalog.items[index] = entry;
-  else catalog.items.push(entry);
   await fs.mkdir(path.dirname(catalogPath), { recursive: true });
-  const tmp = `${catalogPath}.${process.pid}.tmp`;
-  await fs.writeFile(tmp, JSON.stringify(catalog, null, 2) + "\n");
-  await fs.rename(tmp, catalogPath);
-  return { catalog, replaced };
+  return withCatalogLock(catalogPath, async () => {
+    const catalog = await readCatalogDocument(catalogPath);
+    const index = catalog.items.findIndex(
+      (/** @type {unknown} */ item) => typeof item === "object" && item !== null && "key" in item && item.key === entry.key,
+    );
+    const replaced = index >= 0;
+    if (replaced) catalog.items[index] = entry;
+    else catalog.items.push(entry);
+    const tmp = `${catalogPath}.${process.pid}.tmp`;
+    await fs.writeFile(tmp, JSON.stringify(catalog, null, 2) + "\n");
+    await fs.rename(tmp, catalogPath);
+    return { catalog, replaced };
+  });
 }
 
-/** @param {string} catalogPath */
+/**
+ * A missing catalog is an empty one; anything else (unparseable JSON, a
+ * permission error, a non-object document) aborts so the next write cannot
+ * erase listings we could not read.
+ * @param {string} catalogPath
+ * @returns {Promise<{ items: unknown[] } & Record<string, unknown>>}
+ */
 export async function readCatalogDocument(catalogPath) {
+  let raw;
   try {
-    const parsed = JSON.parse(await fs.readFile(catalogPath, "utf8"));
-    const items = parsed && typeof parsed === "object" && Array.isArray(parsed.items) ? parsed.items : [];
-    return { ...(parsed && typeof parsed === "object" ? parsed : {}), items };
-  } catch {
-    return { items: /** @type {unknown[]} */ ([]) };
+    raw = await fs.readFile(catalogPath, "utf8");
+  } catch (error) {
+    if (isErrno(error, "ENOENT")) return { items: [] };
+    throw catalogUnreadable(catalogPath, error instanceof Error ? error.message : String(error));
   }
+  /** @type {unknown} */
+  let parsed;
+  try {
+    parsed = raw.trim() === "" ? { items: [] } : JSON.parse(raw);
+  } catch (error) {
+    throw catalogUnreadable(catalogPath, `invalid JSON: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw catalogUnreadable(catalogPath, "document is not a JSON object");
+  }
+  const document = /** @type {Record<string, unknown>} */ (parsed);
+  if (document.items !== undefined && !Array.isArray(document.items)) {
+    throw catalogUnreadable(catalogPath, "`items` is not an array");
+  }
+  return { ...document, items: Array.isArray(document.items) ? document.items : [] };
+}
+
+/**
+ * @param {string} catalogPath
+ * @param {string} reason
+ */
+function catalogUnreadable(catalogPath, reason) {
+  return new ZapCliError({
+    code: "COMMERCE_CATALOG_UNREADABLE",
+    message: `Refusing to stage: could not read the box catalog at ${catalogPath} (${reason}). Nothing was written.`,
+    remediation: "Fix or move the existing catalog.json (or set ZAP_AIR_CATALOG_PATH), then rerun.",
+  });
+}
+
+/**
+ * Exclusive inter-process lock via O_EXCL on `<catalog>.lock`. Locks older
+ * than LOCK_STALE_MS are treated as abandoned by a crashed process.
+ * @template T
+ * @param {string} catalogPath
+ * @param {() => Promise<T>} fn
+ */
+export async function withCatalogLock(catalogPath, fn) {
+  const lockPath = `${catalogPath}.lock`;
+  const deadline = Date.now() + LOCK_WAIT_MS;
+  for (;;) {
+    try {
+      const handle = await fs.open(lockPath, "wx");
+      try {
+        await handle.writeFile(`${process.pid}\n`);
+      } finally {
+        await handle.close();
+      }
+      break;
+    } catch (error) {
+      if (!isErrno(error, "EEXIST")) throw error;
+      const stat = await fs.stat(lockPath).catch(() => null);
+      if (stat && Date.now() - stat.mtimeMs > LOCK_STALE_MS) {
+        await fs.unlink(lockPath).catch(() => {});
+        continue;
+      }
+      if (Date.now() > deadline) {
+        throw new ZapCliError({
+          code: "COMMERCE_CATALOG_LOCKED",
+          message: `Another process holds the catalog lock at ${lockPath}.`,
+          remediation: "Wait for the other `zap run --live` to finish, or delete the stale .lock file if no run is active.",
+          retryable: true,
+        });
+      }
+      await new Promise((resolve) => setTimeout(resolve, 20 + Math.floor(Math.random() * 30)));
+    }
+  }
+  try {
+    return await fn();
+  } finally {
+    await fs.unlink(lockPath).catch(() => {});
+  }
+}
+
+/**
+ * @param {unknown} error
+ * @param {string} code
+ */
+function isErrno(error, code) {
+  return typeof error === "object" && error !== null && "code" in error && error.code === code;
+}
+
+/**
+ * Roots a live run may publish image files from: the run's own asset
+ * directory, the project directory the CLI was invoked in, and the box inbox
+ * where chat attachments land. Anything else on the box stays private.
+ * @param {{ cwd?: string, home?: string, runDir?: string }} [options]
+ */
+export function defaultImageRoots({ cwd = process.cwd(), home = os.homedir(), runDir } = {}) {
+  /** @type {string[]} */
+  const roots = [cwd, path.join(home, ".hermes", "inbox")];
+  if (runDir) roots.unshift(runDir);
+  return roots;
+}
+
+/**
+ * Resolve a local image path and check it is an image file inside one of the
+ * allowed roots. Symlinks are followed before the root check.
+ * @param {string} asset
+ * @param {string[]} allowedRoots
+ * @returns {Promise<{ path: string } | { reason: string }>}
+ */
+export async function resolvePublishableImage(asset, allowedRoots) {
+  const absolute = path.resolve(asset);
+  if (!IMAGE_EXTENSIONS.has(path.extname(absolute).toLowerCase())) {
+    return { reason: `image ${asset} is not a supported image file (${[...IMAGE_EXTENSIONS].join(", ")})` };
+  }
+  let real;
+  try {
+    real = await fs.realpath(absolute);
+  } catch {
+    return { reason: `image ${asset} not found on disk` };
+  }
+  const roots = await Promise.all(allowedRoots.map((root) => fs.realpath(root).catch(() => null)));
+  const inside = roots.some((root) => root !== null && (real === root || real.startsWith(root + path.sep)));
+  if (!inside) {
+    return { reason: `image ${asset} is outside the publishable roots (run assets, project directory, ~/.hermes/inbox); copy it into the project first` };
+  }
+  return { path: real };
 }
 
 /**
  * Hand a box-local image file to air's media lane so the listing gets a
  * public R2 URL (air drops any other host). Returns null when the asset is
- * not a local file or the upload is refused — the listing still stages.
+ * not a publishable local file or the upload is refused — the listing still
+ * stages, without an image.
  * @param {CommerceEnvironment} environment
  * @param {string | undefined} asset
+ * @param {string[]} [allowedRoots]
  */
-export async function publishListingImage(environment, asset) {
+export async function publishListingImage(environment, asset, allowedRoots = defaultImageRoots()) {
   if (!asset) return { imageUrl: null, note: "listing has no image input" };
   if (/^https?:\/\//.test(asset)) return { imageUrl: asset, note: "remote image passed through; air keeps only R2-hosted URLs" };
-  const absolute = path.resolve(asset);
-  if (!existsSync(absolute)) return { imageUrl: null, note: `image ${asset} not found on disk` };
+  const resolved = await resolvePublishableImage(asset, allowedRoots);
+  if ("reason" in resolved) return { imageUrl: null, note: resolved.reason };
+  const absolute = resolved.path;
   const response = await fetch(`${environment.apiBase}/api/media/publish`, {
     body: JSON.stringify({ path: absolute, filename: path.basename(absolute) }),
     headers: { authorization: `Bearer ${environment.token}`, "content-type": "application/json" },
@@ -180,11 +344,11 @@ export async function postCommerceAction(environment, action) {
 }
 
 /**
- * @param {{ environment?: CommerceEnvironment, imageAsset?: string, inputs: Record<string, unknown>, runId: string, spec: any, step: any }} options
+ * @param {{ environment?: CommerceEnvironment, imageAsset?: string, imageRoots?: string[], inputs: Record<string, unknown>, runId: string, spec: any, step: any }} options
  */
-export async function stageListing({ environment = resolveCommerceEnvironment(), imageAsset, inputs, runId, spec, step }) {
+export async function stageListing({ environment = resolveCommerceEnvironment(), imageAsset, imageRoots, inputs, runId, spec, step }) {
   assertCommerceEnvironment(environment);
-  const image = await publishListingImage(environment, imageAsset);
+  const image = await publishListingImage(environment, imageAsset, imageRoots);
   const entry = buildCatalogEntry(step, inputs, { imageUrl: image.imageUrl, runId, zap: spec.zap });
   const { replaced } = await upsertCatalogEntry(environment.catalogPath, entry);
   const decision = await postCommerceAction(environment, { action: "publish_catalog" });

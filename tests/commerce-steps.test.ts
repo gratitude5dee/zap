@@ -1,5 +1,5 @@
-import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { execFile, execFileSync } from "node:child_process";
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -14,8 +14,12 @@ import {
 } from "../packages/core/src/planner.ts";
 import { isCommerceStep, parseZapMarkdown, zapSpecSchema } from "../packages/core/src/schema.ts";
 import {
+  assertCommerceEnvironment,
   buildCatalogEntry,
+  publishListingImage,
+  readCatalogDocument,
   resolveCommerceEnvironment,
+  resolvePublishableImage,
   stageListing,
   upsertCatalogEntry,
 } from "../packages/cli/src/lib/commerce.js";
@@ -104,6 +108,15 @@ describe("commerce.stage_listing schema + planner", () => {
     kind: commerce.stage_listing
     listing: { kind: digital, name: X, priceCents: 100, image: user.image }
 `))).not.toThrow();
+  });
+
+  it("only accepts image-typed user inputs as listing.image", () => {
+    for (const [input, type] of [["NAME", "string"], ["PRICE_CENTS", "number"], ["clip", "video"]] as const) {
+      expect(() => parseZapMarkdown(recipe(`  - id: listing
+    kind: commerce.stage_listing
+    listing: { kind: digital, name: X, priceCents: 100, image: user.${input} }
+`, "  clip: { type: video, required: false }\n"))).toThrow(new RegExp(`user\\.${input}, which is a ${type} input`));
+    }
   });
 
   it("quotes $0 and never adds provider spend to the estimate", () => {
@@ -197,6 +210,34 @@ describe("commerce live executor", () => {
     }, home)).toEqual({ apiBase: "http://localhost:3000", catalogPath: path.join(home, "shop.json"), token: "t" });
   });
 
+  it("never sends the box gateway token to an overridden API base", () => {
+    const home = mkdtempSync(path.join(tmpdir(), "zap-home-"));
+    cleanups.push(() => rmSync(home, { force: true, recursive: true }));
+    const box = { OPENAI_API_KEY: "gw_token", OPENAI_BASE_URL: "https://app.wzrd.tech/api/gateway/v1" };
+    expect(resolveCommerceEnvironment({ ...box, ZAP_AIR_API_BASE: "https://evil.example" }, home)).toMatchObject({
+      apiBase: "https://evil.example",
+      token: undefined,
+    });
+    expect(resolveCommerceEnvironment({ ...box, ZAP_AIR_API_BASE: "https://app.wzrd.tech/" }, home)).toMatchObject({
+      apiBase: "https://app.wzrd.tech",
+      token: "gw_token",
+    });
+    expect(resolveCommerceEnvironment({ ...box, ZAP_AIR_API_BASE: "https://staging.wzrd.tech", ZAP_AIR_GATEWAY_TOKEN: "other" }, home))
+      .toMatchObject({ apiBase: "https://staging.wzrd.tech", token: "other" });
+  });
+
+  it("refuses plain-http API bases except loopback", () => {
+    const catalogPath = path.join(tmpdir(), "never.json");
+    for (const apiBase of ["http://air.example", "http://10.0.0.5:3000", "ftp://app.wzrd.tech", "not a url"]) {
+      expect(() => assertCommerceEnvironment({ apiBase, catalogPath, token: "t" })).toThrow(
+        expect.objectContaining({ code: "COMMERCE_INSECURE_API_BASE" }),
+      );
+    }
+    for (const apiBase of ["https://app.wzrd.tech", "http://localhost:3000", "http://127.0.0.1:3000", "http://[::1]:3000"]) {
+      expect(() => assertCommerceEnvironment({ apiBase, catalogPath, token: "t" })).not.toThrow();
+    }
+  });
+
   it("builds a sanitizer-compatible catalog entry and rejects unresolved prices", () => {
     const spec = parseZapMarkdown(recipe(merchSteps));
     const step = spec.steps[1]!;
@@ -263,6 +304,91 @@ describe("commerce live executor", () => {
     const again = await upsertCatalogEntry(catalogPath, { ...catalog.items[1], priceCents: 4000 });
     expect(again.replaced).toBe(true);
     expect(again.catalog.items).toHaveLength(2);
+  });
+
+  it("treats a missing catalog as empty but refuses to overwrite one it cannot read", async () => {
+    const home = mkdtempSync(path.join(tmpdir(), "zap-home-"));
+    cleanups.push(() => rmSync(home, { force: true, recursive: true }));
+    await expect(readCatalogDocument(path.join(home, "missing", "catalog.json"))).resolves.toEqual({ items: [] });
+
+    const entry = { key: "tee", kind: "physical", name: "Tee", priceCents: 100 } as Parameters<typeof upsertCatalogEntry>[1];
+    const malformed = path.join(home, "malformed.json");
+    writeFileSync(malformed, '{"items": [{"key": "zine"');
+    await expect(upsertCatalogEntry(malformed, entry)).rejects.toMatchObject({ code: "COMMERCE_CATALOG_UNREADABLE" });
+    expect(readFileSync(malformed, "utf8")).toBe('{"items": [{"key": "zine"');
+
+    const notObject = path.join(home, "array.json");
+    writeFileSync(notObject, "[]");
+    await expect(upsertCatalogEntry(notObject, entry)).rejects.toMatchObject({ code: "COMMERCE_CATALOG_UNREADABLE" });
+
+    if (process.getuid?.() !== 0) {
+      const unreadable = path.join(home, "unreadable.json");
+      writeFileSync(unreadable, JSON.stringify({ items: [{ key: "zine" }] }));
+      chmodSync(unreadable, 0o000);
+      cleanups.push(() => chmodSync(unreadable, 0o600));
+      await expect(upsertCatalogEntry(unreadable, entry)).rejects.toMatchObject({ code: "COMMERCE_CATALOG_UNREADABLE" });
+      chmodSync(unreadable, 0o600);
+      expect(JSON.parse(readFileSync(unreadable, "utf8")).items).toEqual([{ key: "zine" }]);
+    }
+  });
+
+  it("keeps every listing when concurrent processes stage into the same catalog", async () => {
+    const home = mkdtempSync(path.join(tmpdir(), "zap-home-"));
+    cleanups.push(() => rmSync(home, { force: true, recursive: true }));
+    const catalogPath = path.join(home, "catalog.json");
+    const script = `
+      import { upsertCatalogEntry } from ${JSON.stringify(path.resolve(repoRoot, "packages/cli/src/lib/commerce.js"))};
+      const key = process.env.ZAP_TEST_KEY;
+      await upsertCatalogEntry(process.env.ZAP_TEST_CATALOG, { key, kind: "digital", name: key, priceCents: 100 });
+    `;
+    const keys = Array.from({ length: 6 }, (_, index) => `item-${index}`);
+    const children = keys.map((key) => new Promise<void>((resolve, reject) => {
+      execFile(process.execPath, ["--input-type=module", "-e", script], {
+        cwd: repoRoot,
+        env: { ...process.env, ZAP_TEST_CATALOG: catalogPath, ZAP_TEST_KEY: key },
+      }, (error, _stdout, stderr) => {
+        if (error) reject(new Error(`${error.message}\n${stderr}`));
+        else resolve();
+      });
+    }));
+    await Promise.all(children);
+    const catalog = JSON.parse(readFileSync(catalogPath, "utf8"));
+    expect(catalog.items.map((item: { key: string }) => item.key).sort()).toEqual(keys);
+  });
+
+  it("publishes images only from the run, project, and inbox roots", async () => {
+    const home = mkdtempSync(path.join(tmpdir(), "zap-home-"));
+    cleanups.push(() => rmSync(home, { force: true, recursive: true }));
+    const runDir = path.join(home, "project", ".zap", "runs", "run_1");
+    const inbox = path.join(home, ".hermes", "inbox");
+    mkdirSync(path.join(runDir, "assets"), { recursive: true });
+    mkdirSync(inbox, { recursive: true });
+    writeFileSync(path.join(runDir, "assets", "art.png"), "png");
+    writeFileSync(path.join(inbox, "selfie.jpg"), "jpg");
+    writeFileSync(path.join(home, ".hermes", ".env"), "OPENAI_API_KEY=secret");
+    writeFileSync(path.join(home, "private.png"), "png");
+    const roots = [runDir, path.join(home, "project"), inbox];
+
+    await expect(resolvePublishableImage(path.join(runDir, "assets", "art.png"), roots)).resolves.toEqual({ path: path.join(runDir, "assets", "art.png") });
+    await expect(resolvePublishableImage(path.join(inbox, "selfie.jpg"), roots)).resolves.toEqual({ path: path.join(inbox, "selfie.jpg") });
+    await expect(resolvePublishableImage(path.join(home, ".hermes", ".env"), roots)).resolves.toMatchObject({ reason: /not a supported image file/ });
+    await expect(resolvePublishableImage(path.join(home, "private.png"), roots)).resolves.toMatchObject({ reason: /outside the publishable roots/ });
+    await expect(resolvePublishableImage(path.join(runDir, "..", "..", "..", "..", "private.png"), roots)).resolves.toMatchObject({ reason: /outside the publishable roots/ });
+
+    const calls: string[] = [];
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async (url: string | URL | Request) => {
+      calls.push(String(url));
+      return new Response(JSON.stringify({ url: "https://media.wzrd.tech/u/casey/media/x.png" }), { status: 200 });
+    }) as typeof fetch;
+    cleanups.push(() => { globalThis.fetch = originalFetch; });
+    const environment = { apiBase: "https://app.wzrd.tech", catalogPath: path.join(home, "c.json"), token: "t" };
+    await expect(publishListingImage(environment, path.join(home, "private.png"), roots)).resolves.toMatchObject({ imageUrl: null });
+    expect(calls).toEqual([]);
+    await expect(publishListingImage(environment, path.join(runDir, "assets", "art.png"), roots)).resolves.toMatchObject({
+      imageUrl: "https://media.wzrd.tech/u/casey/media/x.png",
+    });
+    expect(calls).toEqual(["https://app.wzrd.tech/api/media/publish"]);
   });
 
   it("refuses to stage when no air gateway is configured", async () => {

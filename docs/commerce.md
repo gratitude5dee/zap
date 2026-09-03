@@ -35,6 +35,11 @@ stage:
 npx @wzrdtech/zap run merch-drop --json
 ```
 
+`zap run <slug>` resolves recipes from the current project's `agent/skills/`, so run this
+from a checkout of this repo or copy `agent/skills/zap-merch-drop/` (and
+`zap-event-ticket/`) into your own project first. The published CLI does not bundle these
+recipes yet.
+
 ```json
 {
   "kind": "commerce.stage_listing",
@@ -63,15 +68,25 @@ a box, set `ZAP_AIR_API_BASE`, `ZAP_AIR_GATEWAY_TOKEN`, and optionally
 `ZAP_AIR_CATALOG_PATH` explicitly. With none of these configured the step fails closed
 with `COMMERCE_UNCONFIGURED` before touching the catalog.
 
-The hosted runner (`zap.wzrd.tech`) refuses commerce steps for the same reason: staging
-belongs to the box that owns the catalog.
+The gateway token only ever travels to the host that issued it: setting `ZAP_AIR_API_BASE`
+to anything other than the gateway host requires an explicit `ZAP_AIR_GATEWAY_TOKEN`, and
+the API base must be `https://` (plain `http://` is accepted only for `localhost` /
+`127.0.0.1` / `::1`; anything else fails with `COMMERCE_INSECURE_API_BASE`).
+
+The hosted runner (`zap.wzrd.tech`) refuses a live run that contains any commerce step at
+submission time — before credentials are resolved or any media step is sent to a
+provider — because staging belongs to the box that owns the catalog. Dry runs still plan.
 
 Each live run:
 
 1. Publishes the generated image through `POST /api/media/publish` when possible so the
-   listing gets an R2 public URL (air drops any other image host to `null`).
+   listing gets an R2 public URL (air drops any other image host to `null`). Only image
+   files (`.png .jpg .jpeg .webp .gif`) under the run's assets directory, the project
+   directory, or `~/.hermes/inbox` are eligible; anything else stages without an image.
 2. Upserts one catalog entry by `key` — re-running the same Zap updates the listing rather
-   than duplicating it.
+   than duplicating it. The read-modify-write holds `catalog.json.lock` so concurrent runs
+   cannot drop each other's listings, and a catalog that exists but cannot be read or parsed
+   aborts the run (`COMMERCE_CATALOG_UNREADABLE`) instead of being overwritten.
 3. Files `publish_catalog`. air deduplicates an already-pending `shop_publish` decision, so
    repeated runs reuse it (`decisionReused: true`).
 

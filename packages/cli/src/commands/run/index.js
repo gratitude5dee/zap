@@ -3,7 +3,13 @@ import { createHash } from "node:crypto";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { defaultModelFor, getProviderAdapter } from "@wzrdtech/providers";
-import { assertCommerceEnvironment, resolveCommerceEnvironment, stageListing, stagePaymentRequest } from "../../lib/commerce.js";
+import {
+  assertCommerceEnvironment,
+  defaultImageRoots,
+  resolveCommerceEnvironment,
+  stageListing,
+  stagePaymentRequest,
+} from "../../lib/commerce.js";
 import { printJson } from "../../lib/output.js";
 import { requirePayer } from "../../lib/payer.js";
 import {
@@ -80,7 +86,15 @@ async function runLiveZap({ file, inputs, runId, spec, steps }) {
   for (const step of steps) {
     if (step.kind === "commerce.stage_listing") {
       const imageAsset = resolveListingImage(step, inputs, assetUrls);
-      const staged = await stageListing({ environment: commerceEnvironment, imageAsset, inputs, runId, spec, step });
+      const staged = await stageListing({
+        environment: commerceEnvironment,
+        imageAsset,
+        imageRoots: defaultImageRoots({ runDir }),
+        inputs,
+        runId,
+        spec,
+        step,
+      });
       results.push({ ...plannedStep(spec, step, inputs), ...staged, status: "staged" });
       continue;
     }

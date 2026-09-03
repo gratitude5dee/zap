@@ -207,6 +207,12 @@ function validateCommerceSteps(spec: ZapSpec) {
       if (imageRef !== undefined) {
         if (imageRef.startsWith("user.")) {
           validateRef({ declaredInputs, priorSteps: mediaSteps, ref: imageRef, stepId: step.id });
+          const inputType = spec.inputs[imageRef.slice("user.".length)]?.type;
+          if (inputType !== "image") {
+            throw new ZapSchemaError(
+              `Commerce step ${step.id} listing.image references ${imageRef}, which is a ${inputType} input; it must be declared with type: image.`,
+            );
+          }
         } else if (!mediaSteps.has(imageRef)) {
           throw new ZapSchemaError(
             `Commerce step ${step.id} listing.image must reference an earlier image step or user input, got ${imageRef}.`,

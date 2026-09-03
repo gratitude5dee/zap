@@ -144,6 +144,8 @@ export async function createZapRunTicket({
     };
   }
 
+  assertNoHostedCommerce(planned);
+
   const executionInputs = await normalizeInputAssets(runId, inputs);
   const llm = resolveLlmRoute();
   const credentialSelections = await resolveExecutionCredentials({
@@ -212,6 +214,22 @@ export async function createZapRunTicket({
       steps,
     },
   };
+}
+
+/**
+ * Commerce steps stage into the creator's air box catalog, which the hosted
+ * runner cannot reach. Refuse the whole live run up front so no preceding
+ * media step is submitted (and paid for) before the commerce step would fail.
+ */
+function assertNoHostedCommerce(planned: ZapStep[]) {
+  const commerce = planned.find(isCommerceStep);
+  if (!commerce) return;
+  throw new ZapRunError({
+    code: "LOCAL_STEP_FAILED",
+    message: `Commerce step ${commerce.id} (${commerce.kind}) cannot run from the hosted runner: it stages into the creator's air box catalog. No provider work was submitted.`,
+    remediation: "Run this Zap with the CLI inside your air box: `zap run <slug> --live`. Plan-only runs still describe what would be staged.",
+    retryable: false,
+  });
 }
 
 export function startZapRunExecution(ticket: ZapExecutionTicket) {
