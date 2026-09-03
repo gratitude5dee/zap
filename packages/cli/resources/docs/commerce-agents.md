@@ -137,6 +137,43 @@ Agents report the `decisionId`. They never report a purchase URL, and never
 describe the listing as live; `agent/instructions.md` spells this out for the
 Zap agent.
 
+## Improve staged listings (catalog-listings skill)
+
+`agent/skills/catalog-listings/SKILL.md` is a prompt/logic port of
+commerce-agents `merchant-agent/skills/catalog-listings`: read the staged
+record, write the weak or missing copy out in full, stage it, and let the owner
+approve. It reasons over the same box `catalog.json` the Zaps write to, so it
+works on whatever `merch-drop` / `event-ticket` staged.
+
+Three Eve tools back it, and `zap listings` exposes the same logic in the box:
+
+| Tool | CLI | Writes | Credentials |
+| --- | --- | --- | --- |
+| `search_listings` | `zap listings search [query] [--quality]`, `zap listings audit` | none | none |
+| `get_listing` | `zap listings get <key>` | none | none |
+| `stage_listing_update` | `zap listings update <key> --set field=value --note "..." [--live]` | catalog merge + `publish_catalog` | box gateway |
+
+Guardrails (ported from `MerchantAgentConfig` / `check_guardrails`, sized to
+air's `sanitizeCatalogItem`):
+
+- Content fields only: `name` (≤ 200), `description` (≤ 2000), `kind`
+  (`physical | digital | service | event_ticket`).
+- `priceCents` and `inventory` are refused — re-run the Zap with new
+  `PRICE_CENTS` / `INVENTORY` inputs. `key`, `imageUrl`, `active`, `source` are
+  protected.
+- ≤ 25 lines per change, one line per (listing, field), a staging note is
+  required, and `stage_listing_update` refuses a target the agent has not read
+  with `get_listing` this session.
+- Guardrails are re-checked under the catalog lock before the write; a
+  violation stages nothing and calls air nothing.
+
+`zap listings update` plans by default (prints the diff and the guardrail
+result, exit 1 if blocked). `--live` merges the edit and POSTs
+`{"action":"publish_catalog"}`, which files or refreshes the owner's
+`shop_publish` decision; the storefront changes only after approval. Off-box,
+both the CLI and the Eve tool fail closed with `COMMERCE_UNCONFIGURED` before
+touching anything. Nothing in this flow charges.
+
 ## Write your own commerce agent
 
 Follow `skills/zap-authoring/SKILL.md`, then end the recipe with a listing

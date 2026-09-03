@@ -149,11 +149,20 @@ export async function upsertCatalogEntry(catalogPath, entry) {
     const replaced = index >= 0;
     if (replaced) catalog.items[index] = entry;
     else catalog.items.push(entry);
-    const tmp = `${catalogPath}.${process.pid}.tmp`;
-    await fs.writeFile(tmp, JSON.stringify(catalog, null, 2) + "\n");
-    await fs.rename(tmp, catalogPath);
+    await writeCatalogDocument(catalogPath, catalog);
     return { catalog, replaced };
   });
+}
+
+/**
+ * Atomic (tmp + rename) catalog write. Callers hold `withCatalogLock`.
+ * @param {string} catalogPath
+ * @param {{ items: unknown[] } & Record<string, unknown>} catalog
+ */
+export async function writeCatalogDocument(catalogPath, catalog) {
+  const tmp = `${catalogPath}.${process.pid}.tmp`;
+  await fs.writeFile(tmp, JSON.stringify(catalog, null, 2) + "\n");
+  await fs.rename(tmp, catalogPath);
 }
 
 /**

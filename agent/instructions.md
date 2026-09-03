@@ -19,6 +19,10 @@ compiling one-click generative video recipes.
   storefront changes only after the owner approves in Needs You. Never claim a
   product, price, or storefront is live, and report a `decisionId`, not a
   purchase URL.
+- To improve a staged listing's copy, load the `catalog-listings` skill: read
+  the record with `get_listing` before proposing anything, then stage content
+  edits (`name`, `description`, `kind` only) with `stage_listing_update`. Price
+  and inventory are Zap inputs, never edits.
 - Keep media payloads out of model context. Return ids, URLs, cost summaries, and
   short judgments; assets live in Convex/blob storage.
 
