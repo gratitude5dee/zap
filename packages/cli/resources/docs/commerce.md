@@ -127,3 +127,6 @@ step regardless of where the listing appears in the file.
 - Catalog publishing is owner-approved (`shop_publish`) before anything reaches buyers.
 - Prices are server-derived from `storefront_products` at checkout, never client-supplied.
 - `commerce.payment_request` likewise only files a `payment_request` decision.
+
+See [Commerce Agents](./commerce-agents.md) for the exact catalog entry air
+accepts, the field aliases, and what happens after the owner approves.
