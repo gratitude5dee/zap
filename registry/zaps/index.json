@@ -69,6 +69,99 @@
     },
     {
       "budget": {
+        "cap_usd": 1,
+        "estimate_usd": 0.05
+      },
+      "description": "Generate an event poster and stage an event_ticket listing in the creator's air storefront for owner approval. Use when the user wants to sell tickets to a show, meetup, or stream from a Zap.",
+      "inputs": {
+        "EVENT_NAME": {
+          "type": "string",
+          "required": true,
+          "label": "Event name"
+        },
+        "EVENT_DATE": {
+          "type": "string",
+          "required": true,
+          "label": "Date and time"
+        },
+        "VENUE": {
+          "type": "string",
+          "required": true,
+          "label": "Venue or \"online\""
+        },
+        "POSTER_PROMPT": {
+          "type": "textarea",
+          "required": true,
+          "label": "Poster art direction",
+          "hint": "mood, palette, key visual"
+        },
+        "PRICE_CENTS": {
+          "type": "number",
+          "required": true,
+          "label": "Ticket price in cents (2500 = $25.00)"
+        },
+        "CAPACITY": {
+          "type": "number",
+          "required": false,
+          "label": "Tickets available (leave empty for unlimited)"
+        }
+      },
+      "providers": [
+        "fal"
+      ],
+      "slug": "event-ticket",
+      "tags": [
+        "event",
+        "ticket"
+      ],
+      "title": "Event Ticket"
+    },
+    {
+      "budget": {
+        "cap_usd": 1,
+        "estimate_usd": 0.05
+      },
+      "description": "Turn a selfie or product photo into product art and stage a physical merch listing in the creator's air storefront for owner approval. Use when the user wants to sell a shirt, print, or other physical item from a Zap.",
+      "inputs": {
+        "image": {
+          "type": "image",
+          "required": true,
+          "hint": "selfie or clean product photo"
+        },
+        "PRODUCT_NAME": {
+          "type": "string",
+          "required": true,
+          "label": "Product name"
+        },
+        "PRICE_CENTS": {
+          "type": "number",
+          "required": true,
+          "label": "Price in cents (3500 = $35.00)"
+        },
+        "INVENTORY": {
+          "type": "number",
+          "required": false,
+          "label": "Units available (leave empty for unlimited)"
+        },
+        "STYLE": {
+          "type": "string",
+          "required": false,
+          "label": "Art direction (optional)",
+          "hint": "e.g. bold streetwear graphic, screen-print look"
+        }
+      },
+      "providers": [
+        "fal"
+      ],
+      "slug": "merch-drop",
+      "tags": [
+        "drop",
+        "merch"
+      ],
+      "title": "Merch Drop"
+    },
+    {
+      "budget": {
         "cap_usd": 15,
         "estimate_usd": 7.5
       },

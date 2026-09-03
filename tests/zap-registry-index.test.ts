@@ -28,7 +28,7 @@ describe("canonical Zap registry index", () => {
 
     const index = JSON.parse(readFileSync(indexPath, "utf8")) as { version: number; zaps: RegistryEntry[] };
     expect(index.version).toBe(1);
-    expect(index.zaps.map((zap) => zap.slug)).toEqual(["caught-by-the-cam", "world-cup-entrance"]);
+    expect(index.zaps.map((zap) => zap.slug)).toEqual(["caught-by-the-cam", "event-ticket", "merch-drop", "world-cup-entrance"]);
 
     const cup = index.zaps.find((zap) => zap.slug === "world-cup-entrance");
     expect(cup?.providers).toEqual(["fal", "gmi"]);

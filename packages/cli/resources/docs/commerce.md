@@ -35,10 +35,9 @@ stage:
 npx @wzrdtech/zap run merch-drop --json
 ```
 
-`zap run <slug>` resolves recipes from the current project's `agent/skills/`, so run this
-from a checkout of this repo or copy `agent/skills/zap-merch-drop/` (and
-`zap-event-ticket/`) into your own project first. The published CLI does not bundle these
-recipes yet.
+Both recipes ship with the CLI, so this works from any directory. `zap run <slug>` looks
+in the current project's `agent/skills/` first and falls back to the bundled registry;
+`zap add zap-merch-drop` copies the recipe into your project when you want to edit it.
 
 ```json
 {

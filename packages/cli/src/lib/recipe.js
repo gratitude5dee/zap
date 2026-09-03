@@ -1,11 +1,11 @@
 // @ts-check
-import { existsSync } from "node:fs";
+import { existsSync, statSync } from "node:fs";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { describeStagedListing, orderCommerceSteps } from "@wzrdtech/core/planner";
 import { isCommerceStep, parseZapMarkdown, validateZapPromptTemplates } from "@wzrdtech/core/schema";
 import { defaultModelFor, getProviderAdapter, listProviderAdapters } from "@wzrdtech/providers";
-import { extensionFromUrl, sleep, slugify } from "./project.js";
+import { extensionFromUrl, findResourceRoot, sleep, slugify } from "./project.js";
 
 /** @param {string[]} args */
 export async function resolveZapFiles(args) {
@@ -19,7 +19,11 @@ export async function resolveZapFiles(args) {
     .filter((file) => existsSync(file));
 }
 
-/** @param {string} entry */
+/**
+ * Resolve a Zap.md path, an agent/skills slug in the current project, or a
+ * registry template bundled with the CLI (project-local recipes win).
+ * @param {string} entry
+ */
 export function resolveZapFile(entry) {
   const direct = path.resolve(process.cwd(), entry);
   const slug = slugify(entry.replace(/\.md$/i, ""));
@@ -28,8 +32,31 @@ export function resolveZapFile(entry) {
     path.join(process.cwd(), "agent", "skills", entry, "Zap.md"),
     path.join(process.cwd(), "agent", "skills", `zap-${slug}`, "Zap.md"),
     path.join(process.cwd(), "agent", "skills", slug, "Zap.md"),
+    ...bundledZapCandidates(entry, slug),
   ];
-  return candidates.find((candidate) => existsSync(candidate)) ?? direct;
+  return candidates.find((candidate) => isFile(candidate)) ?? direct;
+}
+
+/** @param {string} file */
+function isFile(file) {
+  try {
+    return statSync(file).isFile();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * @param {string} entry
+ * @param {string} slug
+ */
+function bundledZapCandidates(entry, slug) {
+  if (entry.includes("/") || entry.includes(path.sep) || /\.md$/i.test(entry)) return [];
+  const registryDir = path.join(findResourceRoot(), "registry", "zaps");
+  return [
+    path.join(registryDir, entry, "Zap.md"),
+    path.join(registryDir, `zap-${slug}`, "Zap.md"),
+  ];
 }
 
 /** @param {string} file */
