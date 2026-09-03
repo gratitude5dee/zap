@@ -72,6 +72,9 @@ for unit in exo-agentd exo-host; do
   systemctl enable "${unit}.service"
 done
 
+# Air reads the baked exo ref from the state dir (mirrors ~/.hermes/.template-hermes-ref).
+printf '%s\n' "${EXO_SHA}" > "${EXO_ROOT}/.template-exo-ref"
+
 EXO_REF="${EXO_REF}" EXO_SHA="${EXO_SHA}" node -e '
   const fs = require("node:fs");
   const path = require("node:path");
