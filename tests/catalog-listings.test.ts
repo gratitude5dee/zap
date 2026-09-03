@@ -10,14 +10,18 @@ import {
   getListing,
   LISTING_GUARDRAILS,
   loadStagedListings,
+  missingEventDetails,
   searchListings,
   stageListingUpdate,
 } from "../packages/cli/src/lib/listings.js";
 
-const readKeys: string[] = [];
+type Snapshot = { description: string; kind: string; name: string };
+const snapshots: Record<string, Snapshot> = {};
 vi.mock("../agent/lib/catalog-reads.js", () => ({
-  catalogReads: { get: () => ({ keys: readKeys }) },
-  recordCatalogRead: (key: string) => { if (!readKeys.includes(key)) readKeys.push(key); },
+  catalogReads: { get: () => ({ snapshots }) },
+  recordCatalogRead: (listing: { description?: string | null; key: string; kind: string; name: string }) => {
+    snapshots[listing.key.toLowerCase()] = { description: listing.description ?? "", kind: listing.kind, name: listing.name };
+  },
 }));
 
 const repoRoot = process.cwd();
@@ -64,22 +68,23 @@ beforeEach(() => {
   catalogPath = path.join(dir, "catalog.json");
   writeFileSync(catalogPath, JSON.stringify({ items: [tee, show, clean] }, null, 2));
   cleanups.push(() => rmSync(dir, { force: true, recursive: true }));
-  readKeys.length = 0;
+  for (const key of Object.keys(snapshots)) delete snapshots[key];
 });
 
 afterEach(() => {
   while (cleanups.length) cleanups.pop()?.();
 });
 
-async function startAir() {
+async function startAir({ status = 200 } = {}) {
   const requests: Array<{ authorization?: string; body: unknown; url?: string }> = [];
   const server = createServer((request, response) => {
     let raw = "";
     request.on("data", (chunk) => { raw += chunk; });
     request.on("end", () => {
       requests.push({ authorization: request.headers.authorization, body: JSON.parse(raw), url: request.url });
+      response.statusCode = status;
       response.setHeader("content-type", "application/json");
-      response.end(JSON.stringify({ decisionId: "dec_9", ok: true, staged: true }));
+      response.end(status === 200 ? JSON.stringify({ decisionId: "dec_9", ok: true, staged: true }) : JSON.stringify({ error: "gateway down" }));
     });
   });
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
@@ -109,6 +114,29 @@ describe("catalog-listings reasoning port", () => {
     expect(rows[0]).not.toHaveProperty("description");
     expect(searchListings([tee, show, clean], { query: "venue" }).map((row) => row.key)).toEqual(["show-night"]);
     expect(searchListings([tee, show, clean], { kind: "service" }).map((row) => row.key)).toEqual(["mix-session"]);
+  });
+
+  it("event copy must carry date, time, and venue/stream; names the missing categories", () => {
+    expect(missingEventDetails("Doors open 8pm at The Venue, 2026-10-01.")).toEqual([]);
+    expect(missingEventDetails("Warehouse show, 12 Oct, doors 8pm, 140 Front St")).toEqual([]);
+    expect(missingEventDetails("Livestream Friday 7:30pm https://x.example/live")).toEqual([]);
+    expect(missingEventDetails("At The Venue. Admits one.")).toEqual(["date", "time"]);
+    expect(missingEventDetails("Doors 8pm. Admits one.")).toEqual(["date", "venue or stream link"]);
+    const partial = auditListing({ ...show, description: "General admission at The Venue, main room. Ticket admits one.", kind: "event_ticket" });
+    expect(partial.map((finding) => finding.code)).toEqual(["missing_event_details"]);
+    expect(partial[0].message).toBe("Event ticket copy carries no date, time.");
+  });
+
+  it("skips malformed catalog entries with a reason instead of aborting the audit", async () => {
+    writeFileSync(catalogPath, JSON.stringify({ items: [tee, { key: "broken" }, "junk", { key: "nokind", name: "X", priceCents: 1 }, clean] }));
+    const loaded = await loadStagedListings({ catalogPath });
+    expect(loaded.listings.map((listing) => listing.key)).toEqual(["merch-drop-neon-wolf", "mix-session"]);
+    expect(loaded.skipped).toEqual([
+      { index: 1, key: "broken", reason: "missing string `name`" },
+      { index: 2, reason: "entry is not an object" },
+      { index: 3, key: "nokind", reason: "missing string `kind`" },
+    ]);
+    expect(searchListings(loaded.listings, { quality: true }).map((row) => row.key)).toEqual(["merch-drop-neon-wolf"]);
   });
 
   it("get_listing returns the record with findings and fails on unknown keys", () => {
@@ -211,6 +239,69 @@ describe("stageListingUpdate", () => {
     expect(existsSync(`${catalogPath}.lock`)).toBe(false);
   });
 
+  it("rolls the edits back when air refuses publish_catalog, leaving a concurrent writer's newer value alone", async () => {
+    const { environment, requests } = await startAir({ status: 503 });
+    const before = readCatalog();
+    await expect(stageListingUpdate({
+      environment,
+      items: [
+        { after: "event_ticket", field: "kind", target: "show-night" },
+        { after: "Screen-printed Neon Wolf art.", field: "description", target: "merch-drop-neon-wolf" },
+      ],
+      note: "copy says ticket",
+    })).rejects.toMatchObject({ code: "COMMERCE_STAGE_FAILED", message: expect.stringMatching(/gateway down.*2 edit\(s\) were rolled back/) });
+    expect(requests).toHaveLength(1);
+    expect(readCatalog()).toEqual(before);
+    expect(existsSync(`${catalogPath}.lock`)).toBe(false);
+
+    const { environment: racing } = await startAir({ status: 500 });
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async (...args) => {
+      const catalog = readCatalog();
+      const item = catalog.items.find((entry) => entry.key === "show-night");
+      if (item) item.kind = "digital";
+      writeFileSync(catalogPath, JSON.stringify(catalog));
+      return originalFetch(...args);
+    };
+    try {
+      await expect(stageListingUpdate({
+        environment: racing,
+        items: [{ after: "event_ticket", field: "kind", target: "show-night" }],
+        note: "copy says ticket",
+      })).rejects.toMatchObject({ message: expect.stringMatching(/0 edit\(s\) were rolled back/) });
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+    expect(readCatalog().items.find((entry) => entry.key === "show-night")?.kind).toBe("digital");
+  });
+
+  it("reports when the rollback itself fails instead of pretending the catalog is clean", async () => {
+    const { environment } = await startAir({ status: 503 });
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async (...args) => {
+      writeFileSync(catalogPath, "{ not json");
+      return originalFetch(...args);
+    };
+    try {
+      await expect(stageListingUpdate({
+        environment,
+        items: [{ after: "event_ticket", field: "kind", target: "show-night" }],
+        note: "copy says ticket",
+      })).rejects.toMatchObject({ code: "COMMERCE_STAGE_FAILED", message: expect.stringMatching(/Rolling the edits back also failed \(.*invalid JSON.*\); the catalog at .* still holds them/) });
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+    expect(existsSync(`${catalogPath}.lock`)).toBe(false);
+  });
+
+  it("mixed-case --set fields edit the real property", async () => {
+    const { environment } = await startAir();
+    await stageListingUpdate({ environment, items: [{ after: "Neon Wolf Tee", field: "Name", target: "merch-drop-neon-wolf" }], note: "title" });
+    const updated = readCatalog().items.find((entry) => entry.key === "merch-drop-neon-wolf");
+    expect(updated).toMatchObject({ name: "Neon Wolf Tee" });
+    expect(updated).not.toHaveProperty("Name");
+  });
+
   it("a missing catalog reads as empty; a corrupt one fails closed", async () => {
     rmSync(catalogPath);
     expect((await loadStagedListings({ catalogPath })).listings).toEqual([]);
@@ -268,9 +359,41 @@ describe("Eve catalog tools", () => {
     expect(get.approval).toBeUndefined();
     const rows = await search.execute({ query: "", quality: true } as never, {} as never);
     expect(rows.listings.map((row) => row.key)).toEqual(["merch-drop-neon-wolf", "show-night"]);
-    expect(readKeys).toEqual([]);
+    expect(snapshots).toEqual({});
     await get.execute({ key: "show-night" }, {} as never);
-    expect(readKeys).toEqual(["show-night"]);
+    expect(snapshots).toEqual({ "show-night": { description: show.description, kind: "physical", name: show.name } });
+  });
+
+  it("stage_listing_update refuses an edit whose target changed after get_listing, and refreshes the snapshot after staging", async () => {
+    const stage = (await import("../agent/tools/stage_listing_update")).default;
+    const { environment } = await startAir();
+    process.env.ZAP_AIR_API_BASE = environment.apiBase;
+    process.env.ZAP_AIR_GATEWAY_TOKEN = environment.token;
+    cleanups.push(() => { delete process.env.ZAP_AIR_API_BASE; delete process.env.ZAP_AIR_GATEWAY_TOKEN; });
+    snapshots["show-night"] = { description: show.description, kind: "physical", name: show.name };
+
+    const catalog = readCatalog();
+    const item = catalog.items.find((entry) => entry.key === "show-night");
+    if (item) item.kind = "digital";
+    writeFileSync(catalogPath, JSON.stringify(catalog));
+    await expect(stage.execute({
+      dryRun: false,
+      items: [{ after: "event_ticket", field: "kind", target: "show-night" }],
+      note: "copy says ticket",
+    } as never, {} as never)).rejects.toMatchObject({ code: "LISTING_UPDATE_GUARDRAIL", message: expect.stringMatching(/changed since it was read/) });
+    expect(readCatalog().items.find((entry) => entry.key === "show-night")?.kind).toBe("digital");
+
+    snapshots["show-night"].kind = "digital";
+    const staged = await stage.execute({
+      dryRun: false,
+      items: [
+        { after: "event_ticket", field: "kind", target: "show-night" },
+        { after: " Show night ticket ", field: "name", target: "show-night" },
+      ],
+      note: "copy says ticket",
+    } as never, {} as never);
+    expect(staged).toMatchObject({ applied: 2, status: "staged" });
+    expect(snapshots["show-night"]).toEqual({ description: show.description, kind: "event_ticket", name: "Show night ticket" });
   });
 
   it("stage_listing_update needs approval, a prior get_listing, and writes nothing on refusal", async () => {
@@ -284,7 +407,7 @@ describe("Eve catalog tools", () => {
       note: "copy says ticket",
     } as never, {} as never)).rejects.toThrow(/Read show-night with get_listing/);
 
-    readKeys.push("show-night");
+    snapshots["show-night"] = { description: show.description, kind: "physical", name: show.name };
     const planned = await stage.execute({
       dryRun: true,
       items: [{ after: "event_ticket", field: "kind", target: "show-night" }],

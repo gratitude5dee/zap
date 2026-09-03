@@ -42,11 +42,38 @@ export const LISTING_GUARDRAILS = /** @type {const} */ ({
  */
 
 /**
+ * Why a catalog entry is not a listing the read/audit paths can work on, or
+ * null when it is. Hand-edited catalogs are the usual source.
+ * @param {unknown} item
+ * @returns {string | null}
+ */
+export function describeMalformedListing(item) {
+  if (typeof item !== "object" || item === null || Array.isArray(item)) return "entry is not an object";
+  const record = /** @type {Record<string, unknown>} */ (item);
+  if (typeof record.key !== "string" || record.key.trim() === "") return "missing string `key`";
+  if (typeof record.name !== "string") return "missing string `name`";
+  if (typeof record.kind !== "string") return "missing string `kind`";
+  if (record.description !== undefined && record.description !== null && typeof record.description !== "string") return "`description` is not a string";
+  if (typeof record.priceCents !== "number" || !Number.isFinite(record.priceCents)) return "missing numeric `priceCents`";
+  return null;
+}
+
+/**
  * @param {unknown} item
  * @returns {item is CatalogListing}
  */
 export function isCatalogListing(item) {
-  return typeof item === "object" && item !== null && typeof (/** @type {any} */ (item).key) === "string";
+  return describeMalformedListing(item) === null;
+}
+
+/**
+ * Lower-cases `field` so guardrails, preview, and the write all address the
+ * same property (`--set Name=` must edit `name`, not add `Name`).
+ * @param {ChangeItem[]} items
+ * @returns {ChangeItem[]}
+ */
+export function normalizeChangeItems(items) {
+  return items.map((item) => ({ ...item, field: item.field.trim().toLowerCase(), target: item.target.trim() }));
 }
 
 /**
@@ -128,13 +155,33 @@ export function auditListing(listing) {
   if (listing.kind === "physical" && (listing.inventory === undefined || listing.inventory === null)) {
     findings.push({ code: "missing_inventory", fix: "Re-run the Zap with INVENTORY set; stock is not a content edit.", impact: 1, message: "Physical listing has no inventory." });
   }
-  if (listing.kind === "event_ticket" && !/\b(20\d\d|\d{1,2}[:.]\d\d|doors|pm|am|venue|stream|live at)\b/i.test(`${name} ${description}`)) {
-    findings.push({ code: "missing_event_details", fix: "Add the date, time, and venue or stream link to the description.", impact: 2, message: "Event ticket copy carries no date, time, or venue." });
+  if (listing.kind === "event_ticket") {
+    const missing = missingEventDetails(`${name} ${description}`);
+    if (missing.length) {
+      findings.push({ code: "missing_event_details", fix: `Add the ${missing.join(", ")} to the description.`, impact: 2, message: `Event ticket copy carries no ${missing.join(", ")}.` });
+    }
   }
   if (name.length < 4) {
     findings.push({ code: "short_name", fix: "Bring forward the words a buyer would type (item, size, material, section).", impact: 1, message: `Name "${name}" is too short to search on.` });
   }
   return findings;
+}
+
+const MONTHS = "jan|feb|mar|apr|may|jun|jul|aug|sept?|oct|nov|dec";
+const EVENT_DETAIL_PATTERNS = /** @type {const} */ ([
+  ["date", new RegExp(`\\b(20\\d\\d|\\d{1,2}[/.-]\\d{1,2}(?:[/.-]\\d{2,4})?|(?:${MONTHS})[a-z]*\\.?\\s+\\d{1,2}|\\d{1,2}(?:st|nd|rd|th)?\\s+(?:${MONTHS})[a-z]*|(?:mon|tues?|wed(?:nes)?|thu(?:rs)?|fri|sat(?:ur)?|sun)(?:day)?|today|tonight|tomorrow)\\b`, "i")],
+  ["time", /\b(\d{1,2}[:.]\d\d|\d{1,2}\s?(?:am|pm)|doors|noon|midnight)\b/i],
+  ["venue or stream link", /\b(venue|stream(?:ing)?|livestream|online|zoom|discord|live at|at the|hall|club|theat(?:re|er)|arena|stadium|studio|street|st|ave(?:nue)?|road|rd|blvd)\b|https?:\/\//i],
+]);
+
+/**
+ * Event copy must carry all three of date, time, and venue/stream; returns the
+ * categories the copy lacks.
+ * @param {string} copy
+ * @returns {string[]}
+ */
+export function missingEventDetails(copy) {
+  return EVENT_DETAIL_PATTERNS.filter(([, pattern]) => !pattern.test(copy)).map(([label]) => label);
 }
 
 /**
@@ -212,7 +259,7 @@ export function checkListingUpdateGuardrails(items, listings) {
  * @param {CatalogListing[]} listings
  */
 export function previewListingUpdate(items, listings) {
-  return items.map((item) => {
+  return normalizeChangeItems(items).map((item) => {
     const listing = listings.find((candidate) => candidate.key.toLowerCase() === item.target.toLowerCase());
     const before = listing ? /** @type {Record<string, unknown>} */ (listing)[item.field] ?? "" : undefined;
     return { after: item.after, before, field: item.field, target: item.target };
@@ -220,13 +267,38 @@ export function previewListingUpdate(items, listings) {
 }
 
 /**
+ * Splits a catalog into the listings the skill can work on and the entries it
+ * skips, so one hand-edited item never aborts a whole audit.
+ * @param {unknown[]} items
+ * @returns {{ listings: CatalogListing[], skipped: Array<{ index: number, key?: string, reason: string }> }}
+ */
+export function partitionCatalogItems(items) {
+  /** @type {CatalogListing[]} */
+  const listings = [];
+  /** @type {Array<{ index: number, key?: string, reason: string }>} */
+  const skipped = [];
+  items.forEach((item, index) => {
+    const reason = describeMalformedListing(item);
+    if (reason === null) {
+      listings.push(/** @type {CatalogListing} */ (item));
+      return;
+    }
+    const key = item && typeof item === "object" && typeof (/** @type {Record<string, unknown>} */ (item).key) === "string"
+      ? String(/** @type {Record<string, unknown>} */ (item).key)
+      : undefined;
+    skipped.push(key === undefined ? { index, reason } : { index, key, reason });
+  });
+  return { listings, skipped };
+}
+
+/**
  * @param {{ catalogPath?: string, env?: Record<string, string | undefined> }} [options]
- * @returns {Promise<{ catalogPath: string, listings: CatalogListing[] }>}
+ * @returns {Promise<{ catalogPath: string, listings: CatalogListing[], skipped: Array<{ index: number, key?: string, reason: string }> }>}
  */
 export async function loadStagedListings({ catalogPath, env } = {}) {
   const resolvedPath = catalogPath ?? resolveCommerceEnvironment(env).catalogPath;
   const catalog = await readCatalogDocument(resolvedPath);
-  return { catalogPath: resolvedPath, listings: catalog.items.filter(isCatalogListing) };
+  return { catalogPath: resolvedPath, ...partitionCatalogItems(catalog.items) };
 }
 
 /**
@@ -235,7 +307,8 @@ export async function loadStagedListings({ catalogPath, env } = {}) {
  * The storefront changes only after the owner approves in air.
  * @param {{ environment?: import("./commerce.js").CommerceEnvironment, items: ChangeItem[], note: string, dryRun?: boolean }} options
  */
-export async function stageListingUpdate({ environment = resolveCommerceEnvironment(), items, note, dryRun = false }) {
+export async function stageListingUpdate({ environment = resolveCommerceEnvironment(), items: rawItems, note, dryRun = false }) {
+  const items = normalizeChangeItems(rawItems);
   if (!note || !note.trim()) {
     throw new ZapCliError({
       code: "LISTING_UPDATE_INVALID",
@@ -268,9 +341,10 @@ export async function stageListingUpdate({ environment = resolveCommerceEnvironm
   assertCommerceEnvironment(environment);
 
   await fs.mkdir(path.dirname(environment.catalogPath), { recursive: true });
-  const applied = await withCatalogLock(environment.catalogPath, async () => {
+  /** @type {Array<{ key: string, field: string, had: boolean, before: unknown, after: unknown }>} */
+  const written = await withCatalogLock(environment.catalogPath, async () => {
     const catalog = await readCatalogDocument(environment.catalogPath);
-    const current = catalog.items.filter(isCatalogListing);
+    const current = partitionCatalogItems(catalog.items).listings;
     const lockedViolations = checkListingUpdateGuardrails(items, current);
     if (lockedViolations.length) {
       throw new ZapCliError({
@@ -280,19 +354,28 @@ export async function stageListingUpdate({ environment = resolveCommerceEnvironm
         retryable: true,
       });
     }
+    /** @type {Array<{ key: string, field: string, had: boolean, before: unknown, after: unknown }>} */
+    const applied = [];
     for (const item of items) {
-      const listing = catalog.items.find((candidate) => isCatalogListing(candidate) && candidate.key.toLowerCase() === item.target.toLowerCase());
-      if (!listing || !isCatalogListing(listing)) continue;
-      /** @type {Record<string, unknown>} */ (listing)[item.field] = item.field === "name" && typeof item.after === "string"
-        ? item.after.trim()
-        : item.after;
+      const listing = current.find((candidate) => candidate.key.toLowerCase() === item.target.toLowerCase());
+      if (!listing) continue;
+      const record = /** @type {Record<string, unknown>} */ (listing);
+      const after = item.field === "name" && typeof item.after === "string" ? item.after.trim() : item.after;
+      applied.push({ after, before: record[item.field], field: item.field, had: item.field in record, key: listing.key });
+      record[item.field] = after;
     }
     await writeCatalogDocument(environment.catalogPath, catalog);
-    return items.length;
+    return applied;
   });
-  const decision = await postCommerceAction(environment, { action: "publish_catalog" });
+
+  let decision;
+  try {
+    decision = await postCommerceAction(environment, { action: "publish_catalog" });
+  } catch (error) {
+    throw await rollbackListingUpdate(environment.catalogPath, written, error);
+  }
   return {
-    applied,
+    applied: written.length,
     catalogPath: environment.catalogPath,
     charges: false,
     decisionId: typeof decision.decisionId === "string" ? decision.decisionId : undefined,
@@ -303,4 +386,48 @@ export async function stageListingUpdate({ environment = resolveCommerceEnvironm
     preview,
     status: "staged",
   };
+}
+
+/**
+ * air refused the publish_catalog request after the edits were written, so
+ * a later unrelated publish would otherwise carry them. Under the lock, put
+ * back every field that still holds the value this update wrote (a concurrent
+ * writer's newer value is left alone) and fold the outcome into the error.
+ * @param {string} catalogPath
+ * @param {Array<{ key: string, field: string, had: boolean, before: unknown, after: unknown }>} written
+ * @param {unknown} cause
+ * @returns {Promise<ZapCliError>}
+ */
+async function rollbackListingUpdate(catalogPath, written, cause) {
+  const base = cause instanceof ZapCliError
+    ? cause
+    : new ZapCliError({ code: "COMMERCE_STAGE_FAILED", message: cause instanceof Error ? cause.message : String(cause), retryable: true });
+  /** @type {string} */
+  let outcome;
+  try {
+    const restored = await withCatalogLock(catalogPath, async () => {
+      const catalog = await readCatalogDocument(catalogPath);
+      let count = 0;
+      for (const change of written) {
+        const listing = catalog.items.find((candidate) => isCatalogListing(candidate) && candidate.key === change.key);
+        if (!listing) continue;
+        const record = /** @type {Record<string, unknown>} */ (listing);
+        if (record[change.field] !== change.after) continue;
+        if (change.had) record[change.field] = change.before;
+        else delete record[change.field];
+        count += 1;
+      }
+      if (count) await writeCatalogDocument(catalogPath, catalog);
+      return count;
+    });
+    outcome = `The ${restored} edit(s) were rolled back from the catalog; nothing is pending approval from this update.`;
+  } catch (error) {
+    outcome = `Rolling the edits back also failed (${error instanceof Error ? error.message : String(error)}); the catalog at ${catalogPath} still holds them and the next publish_catalog would include them.`;
+  }
+  return new ZapCliError({
+    code: base.code,
+    message: `${base.message} ${outcome}`,
+    remediation: base.remediation ?? "Fix the box gateway and stage the update again.",
+    retryable: base.retryable,
+  });
 }

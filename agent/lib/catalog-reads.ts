@@ -1,12 +1,23 @@
 import { defineState } from "eve/context";
 
-/** Keys whose full record `get_listing` returned this session; `stage_listing_update` requires one per target. */
+export type ListingSnapshot = { description: string; kind: string; name: string };
+
+/**
+ * Content fields as `get_listing` last returned them, by lower-cased key.
+ * `stage_listing_update` requires a snapshot per target and uses it as the
+ * `before` value so an edit proposed against stale copy is refused.
+ */
 export const catalogReads = defineState("zap.catalogReads", () => ({
-  keys: [] as string[],
+  snapshots: {} as Record<string, ListingSnapshot>,
 }));
 
-export function recordCatalogRead(key: string) {
+export function recordCatalogRead(listing: { description?: string | null; key: string; kind: string; name: string }) {
+  const snapshot: ListingSnapshot = {
+    description: listing.description ?? "",
+    kind: listing.kind,
+    name: listing.name,
+  };
   catalogReads.update((current) => ({
-    keys: current.keys.includes(key) ? current.keys : [...current.keys, key],
+    snapshots: { ...current.snapshots, [listing.key.toLowerCase()]: snapshot },
   }));
 }

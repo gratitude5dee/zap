@@ -24,7 +24,10 @@ export const command = {
   usage: "zap listings <search [query] [--kind k] [--quality]|get <key>|audit|update <key> --set field=value --note \"why\" [--live]> [--json]",
   async run({ args, flags }) {
     const subcommand = args[0] ?? "search";
-    const { catalogPath, listings } = await loadStagedListings();
+    const { catalogPath, listings, skipped } = await loadStagedListings();
+    const warnSkipped = () => {
+      if (!flags.json) skipped.forEach((entry) => console.error(`skipped malformed catalog entry #${entry.index}${entry.key ? ` (${entry.key})` : ""}: ${entry.reason}`));
+    };
 
     if (subcommand === "search") {
       const rows = searchListings(listings, {
@@ -32,7 +35,8 @@ export const command = {
         quality: Boolean(flags.quality),
         query: args.slice(1).join(" "),
       });
-      const result = { catalogPath, count: rows.length, listings: rows };
+      const result = { catalogPath, count: rows.length, listings: rows, skipped };
+      warnSkipped();
       if (flags.json) printJson(result);
       else if (rows.length === 0) console.log(`No staged listings in ${catalogPath}.`);
       else rows.forEach((row) => console.log(`${row.key}\t${row.kind}\t$${(row.priceCents / 100).toFixed(2)}\t${row.name}${row.findings ? `\t(${row.findings} finding${row.findings === 1 ? "" : "s"})` : ""}`));
@@ -54,7 +58,8 @@ export const command = {
     if (subcommand === "audit") {
       const rows = searchListings(listings, { quality: true });
       const findings = rows.map((row) => ({ ...row, ...getListing(listings, row.key) }));
-      const result = { catalogPath, audited: listings.length, flagged: findings.length, listings: findings.map(({ listing, ...rest }) => rest) };
+      const result = { catalogPath, audited: listings.length, flagged: findings.length, listings: findings.map(({ listing, ...rest }) => rest), skipped };
+      warnSkipped();
       if (flags.json) printJson(result);
       else if (findings.length === 0) console.log(`Audited ${listings.length} listing(s); nothing to fix.`);
       else {

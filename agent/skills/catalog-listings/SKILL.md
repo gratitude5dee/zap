@@ -17,7 +17,11 @@ decision in air's Needs You. Nothing in this skill charges or moves money.
 ## Tools
 
 - `search_listings` — summary rows. Empty query + `quality: true` starts an audit.
-- `get_listing` — the full record plus findings. Required before any edit on that key.
+- `get_listing` — the full record plus findings. Required before any edit on that
+  key; the values it returns are what `stage_listing_update` checks against, so
+  if the listing changed since your read the stage is refused and you read again.
+- Entries the catalog holds that are not well-formed listings are skipped and
+  listed at the end of `search_listings` output; they cannot be edited here.
 - `stage_listing_update` — content edits (`name`, `description`, `kind`) with a
   staging note. `dryRun: true` previews the diff and guardrail result without
   writing. A live stage needs the user's approval in chat and only works where

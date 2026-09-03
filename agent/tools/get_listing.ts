@@ -10,7 +10,7 @@ export default defineTool({
   async execute({ key }) {
     const { catalogPath, listings } = await loadStagedListings();
     const result = getListing(listings, key);
-    recordCatalogRead(result.listing.key);
+    recordCatalogRead(result.listing);
     return { catalogPath, ...result };
   },
   toModelOutput(output) {
