@@ -27,6 +27,9 @@ command -v pnpm >/dev/null 2>&1 || npm install -g pnpm
 # ── 2. Source at the pinned ref; record the resolved sha as the C30 pin. ───
 if [ ! -d "${EXO_SRC}/.git" ]; then
   git clone --depth 1 --branch "${EXO_REF}" "${EXO_REPO}" "${EXO_SRC}"
+else
+  git -C "${EXO_SRC}" fetch --depth 1 origin "${EXO_REF}"
+  git -C "${EXO_SRC}" checkout --detach FETCH_HEAD
 fi
 EXO_SHA="$(git -C "${EXO_SRC}" rev-parse HEAD)"
 

@@ -8,7 +8,9 @@ Wants=exo-agentd.service
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/bin/host 8642 --private
+# agentd is a plain Type=simple unit, so After= only orders on spawn; wait
+# for 8642 to listen before registering the route.
+ExecStart=/bin/bash -c 'for i in $(seq 1 30); do /usr/local/bin/host 8642 --private && exit 0; sleep 2; done; exit 1'
 RemainAfterExit=yes
 
 [Install]
