@@ -29,7 +29,7 @@ if [ ! -d "${EXO_SRC}/.git" ]; then
   git clone --depth 1 --branch "${EXO_REF}" "${EXO_REPO}" "${EXO_SRC}"
 else
   git -C "${EXO_SRC}" fetch --depth 1 origin "${EXO_REF}"
-  git -C "${EXO_SRC}" checkout --detach FETCH_HEAD
+  git -C "${EXO_SRC}" checkout --detach --force FETCH_HEAD
 fi
 EXO_SHA="$(git -C "${EXO_SRC}" rev-parse HEAD)"
 
