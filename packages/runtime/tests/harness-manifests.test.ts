@@ -5,11 +5,12 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import type { HarnessManifest } from "../src/harness/zap.ts";
-import { allHarnessManifests, heavyHarnessIds, managedGatewayUrl } from "../src/harness/manifests.ts";
+import { allHarnessManifests, heavyHarnessIds, managedBoxEnv, managedGatewayUrl } from "../src/harness/manifests.ts";
 
 const RUN_TABLE: Record<HarnessManifest["id"], HarnessManifest["run"]> = {
   zap: "http-runs",
   hermes: "http-runs",
+  exo: "http-runs",
   opencode: "http-runs",
   kimi: "http-runs",
   agno: "http-runs",
@@ -102,11 +103,29 @@ describe("harness manifests (§5.6 table)", () => {
       { port: 8642, role: "api", hostPrivate: true },
       { port: 9119, role: "dashboard", hostPrivate: true },
     ]);
+    expect(byId.get("exo")?.ports).toEqual([{ port: 8642, role: "api", hostPrivate: true }]);
     expect(byId.get("openclaw")?.ports).toEqual([{ port: 18789, role: "api", hostPrivate: true }]);
     expect(byId.get("opencode")?.ports).toEqual([{ port: 4096, role: "api", hostPrivate: true }]);
     expect(byId.get("omg")?.ports).toEqual([{ port: 8766, role: "api", hostPrivate: true }]);
     expect(byId.get("kimi")?.ports).toEqual([{ port: 58627, role: "api", hostPrivate: true }]);
     expect(byId.get("agno")?.ports).toEqual([{ port: 7777, role: "api", hostPrivate: true }]);
+  });
+
+  it("exo mirrors the hermes control-plane posture (http-runs, one private api port, managed openai gateway)", () => {
+    const exo = manifests.find((m) => m.id === "exo");
+    expect(exo).toBeDefined();
+    expect(exo?.run).toBe("http-runs");
+    expect(exo?.ports).toEqual([{ port: 8642, role: "api", hostPrivate: true }]);
+    expect(exo?.stateDirs).toEqual(["~/.exo"]);
+    expect(exo?.skillsDirs).toContain("/zap/skills");
+    expect(exo?.disabledInbound.length).toBeGreaterThan(0);
+    expect(exo?.managedGateway).toEqual({ file: "~/.exo/.env", key: "EXO_MODEL_BASE_URL", flavor: "openai" });
+    expect(exo?.pins.EXO_REF).toBeTruthy();
+    expect(managedBoxEnv("exo", { apiUrl: "https://api.zap.example", runtimeId: "rt_1" })).toEqual({
+      ZAP_PAYER_MODE: "managed",
+      ZAP_MANAGED_GATEWAY_URL: "https://api.zap.example/v1/runtimes/rt_1/gateway",
+      EXO_MODEL_BASE_URL: "https://api.zap.example/v1/runtimes/rt_1/gateway/llm/v1",
+    });
   });
 
   it("deepseek exposes only the supported presets and never the fourth (C3)", () => {
