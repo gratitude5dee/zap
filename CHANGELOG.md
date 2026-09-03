@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- `exo` harness (`packages/runtime/src/harness/exo.ts`, `http-runs` against `exo agentd`'s api_server-compatible `/v1/runs` + SSE surface, one private api port 8642, `~/.exo` state, managed gateway via `EXO_MODEL_BASE_URL`) and the `zap-heavy-exo` named snapshot (`bake.sh` builds exo at `EXO_REF`, `exo-agentd.service` + `exo-host.service`, `exo-render-env` per-box key/model binding, Zap skills store + `recipe:<slug>` tool module mounted for the exo agent). Docs: `docs/harnesses/exo.md`, `docs/templates/zap-heavy-exo.md`.
+
 ## 5.0.1 — 2026-08-26
 
 ### Changed

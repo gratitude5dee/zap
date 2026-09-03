@@ -13,7 +13,7 @@ import { printJson } from "../../lib/output.js";
 
 const USAGE = "zap harness <ls|bake <template>|doctor <id|template>|run <template> --prompt <p>> [--live] [--json]";
 
-const NAMED_SNAPSHOTS = new Set(["zap-heavy", "zap-heavy-hermes", "zap-heavy-openclaw", "zap-heavy-opencode"]);
+const NAMED_SNAPSHOTS = new Set(["zap-heavy", "zap-heavy-hermes", "zap-heavy-exo", "zap-heavy-openclaw", "zap-heavy-opencode"]);
 
 /** @type {import("../../lib/registry.js").CliCommand} */
 export const command = {

@@ -6,6 +6,7 @@ import { zapHarnessManifest } from "./zap.ts";
 import { interpreterHarnessManifest } from "./interpreter.ts";
 import { fxHarnessManifest } from "./fx.ts";
 import { hermesHarnessManifest } from "./hermes.ts";
+import { exoHarnessManifest } from "./exo.ts";
 import { openclawHarnessManifest } from "./openclaw.ts";
 import { opencodeHarnessManifest } from "./opencode.ts";
 import { deepseekHarnessManifest } from "./deepseek.ts";
@@ -23,6 +24,7 @@ import { foGuangHarnessManifest } from "./fo-guang.ts";
 
 export { createHarnessDriver, type HarnessTransport } from "./adapters.ts";
 export { createHermesHarnessService, hermesHarnessManifest } from "./hermes.ts";
+export { createExoHarnessService, exoHarnessManifest } from "./exo.ts";
 export { createOpenclawHarnessService, openclawHarnessManifest } from "./openclaw.ts";
 export { createOpencodeHarnessService, opencodeHarnessManifest } from "./opencode.ts";
 export { createDeepseekHarnessService, deepseekHarnessManifest, DEEPSEEK_PRESETS } from "./deepseek.ts";
@@ -41,7 +43,7 @@ export { foGuangHarnessManifest } from "./fo-guang.ts";
 // Heavy LLM harnesses (managed-mode gateway wiring applies to these).
 // fo-guang is a heavy robotics profile with no model surface, so it is not one.
 const HEAVY_IDS: ReadonlyArray<HarnessManifest["id"]> = [
-  "hermes", "openclaw", "opencode", "deepseek", "grok", "omg",
+  "hermes", "exo", "openclaw", "opencode", "deepseek", "grok", "omg",
   "pi", "cursor", "devin", "kimi", "agno", "prime", "headlong", "frontier",
 ];
 
@@ -50,6 +52,7 @@ const FACTORIES: ReadonlyArray<() => HarnessManifest> = [
   interpreterHarnessManifest,
   fxHarnessManifest,
   hermesHarnessManifest,
+  exoHarnessManifest,
   openclawHarnessManifest,
   opencodeHarnessManifest,
   deepseekHarnessManifest,

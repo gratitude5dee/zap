@@ -1,0 +1,15 @@
+[Unit]
+Description=exo host: re-register the --private route for 8642
+# Open ports are not captured by snapshots; hosted URLs and tokens are sticky
+# but the route binds the machine's current address, so re-run host on every
+# boot and resume.
+After=exo-agentd.service
+Wants=exo-agentd.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/host 8642 --private
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

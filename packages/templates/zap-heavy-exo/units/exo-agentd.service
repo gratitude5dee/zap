@@ -1,0 +1,16 @@
+[Unit]
+Description=exo agentd (api_server-compatible /v1/runs + SSE on 0.0.0.0:8642, per-box key)
+After=network-online.target zap-openviking.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStartPre=/usr/local/bin/exo-render-env
+EnvironmentFile=%h/.exo/.env
+WorkingDirectory=/opt/exo
+ExecStart=/usr/local/bin/exo --root %h/.exo --harness exo agentd --agent ${EXO_AGENT} -v
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

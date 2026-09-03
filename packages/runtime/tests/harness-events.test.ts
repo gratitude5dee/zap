@@ -11,6 +11,7 @@ import type { SandboxHandle } from "@wzrdtech/zap-sandbox";
 import type { HarnessService, RunInput } from "../src/harness/zap.ts";
 import {
   createHermesHarnessService,
+  createExoHarnessService,
   createOpenclawHarnessService,
   createOpencodeHarnessService,
   createDeepseekHarnessService,
@@ -139,6 +140,7 @@ function omgTransport(): HarnessTransport {
 describe("harness events normalize to one RunEvent shape", () => {
   const services: Array<{ name: string; service: HarnessService }> = [
     { name: "hermes", service: createHermesHarnessService(httpRunsTransport()) },
+    { name: "exo", service: createExoHarnessService(httpRunsTransport()) },
     { name: "openclaw", service: createOpenclawHarnessService(openclawTransport()) },
     { name: "opencode", service: createOpencodeHarnessService(httpRunsTransport()) },
     { name: "deepseek", service: createDeepseekHarnessService(deepseekTransport([])) },
@@ -157,10 +159,11 @@ describe("harness events normalize to one RunEvent shape", () => {
     ]);
   });
 
-  it("all five adapters produce the identical type sequence", async () => {
+  it("all six adapters produce the identical type sequence", async () => {
     const sequences = await Promise.all(
       [
         createHermesHarnessService(httpRunsTransport()),
+        createExoHarnessService(httpRunsTransport()),
         createOpenclawHarnessService(openclawTransport()),
         createOpencodeHarnessService(httpRunsTransport()),
         createDeepseekHarnessService(deepseekTransport([])),
