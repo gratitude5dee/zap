@@ -52,6 +52,7 @@ The list below is generated from the discovered command set by
 - `zap inspect <slug|Zap.md> [--json]` — Show provider/model plan details.
 - `zap keys [add|list|test|remove|sync] [--json]` — Manage encrypted BYOK provider keys.
 - `zap lint [Zap.md ...] [--json]` — Run recipe policy checks.
+- `zap listings <search [query] [--kind k] [--quality]|get <key>|audit|update <key> --set field=value --note "why" [--live]> [--json]` — Search, audit, and stage content edits to the staged storefront catalog.
 - `zap login --token <token> [--api-url ...] | zap login --provider <id> [--json]` — Store a Zap API token, or device-auth via --provider.
 - `zap logout [--json]` — Remove the stored Zap API token.
 - `zap mcp [--http [--host 127.0.0.1] [--port 3910]] [--json]` — Start the Zap MCP server (stdio by default, --http for HTTP).

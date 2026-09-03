@@ -12,6 +12,7 @@
  * Neither path charges a card or moves money: projection to the storefront and
  * any Stripe checkout happen only after the owner approves the decision.
  */
+import { randomUUID } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { promises as fs } from "node:fs";
 import os from "node:os";
@@ -20,9 +21,13 @@ import { describeStagedListing } from "@wzrdtech/core/planner";
 import { ZapCliError } from "./errors.js";
 
 const AIR_GATEWAY_SUFFIX = "/api/gateway/v1";
-const MAX_PRICE_CENTS = 100_000_00;
+/** air's sanitizeCatalogItem limits: price 1c..$100k, key slug. */
+export const MAX_PRICE_CENTS = 100_000_00;
+export const CATALOG_KEY_RE = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 const LOCK_STALE_MS = 30_000;
-const LOCK_WAIT_MS = 10_000;
+const LOCK_WAIT_MS = 20_000;
+/** Bounded so a publish held under the catalog lock cannot outlive LOCK_STALE_MS. */
+const COMMERCE_REQUEST_MS = 15_000;
 const IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".webp", ".gif"]);
 
 export const COMMERCE_REMEDIATION = [
@@ -149,11 +154,27 @@ export async function upsertCatalogEntry(catalogPath, entry) {
     const replaced = index >= 0;
     if (replaced) catalog.items[index] = entry;
     else catalog.items.push(entry);
-    const tmp = `${catalogPath}.${process.pid}.tmp`;
-    await fs.writeFile(tmp, JSON.stringify(catalog, null, 2) + "\n");
-    await fs.rename(tmp, catalogPath);
+    await writeCatalogDocument(catalogPath, catalog);
     return { catalog, replaced };
   });
+}
+
+/**
+ * Atomic (tmp + rename) catalog write. Callers hold `withCatalogLock`.
+ * Every write stamps a fresh `revision` so a writer can later tell whether
+ * the document it left is still the one on disk. air reads `items` only.
+ * @param {string} catalogPath
+ * @param {{ items: unknown[] } & Record<string, unknown>} catalog
+ * @returns {Promise<{ raw: string, revision: string }>}
+ */
+export async function writeCatalogDocument(catalogPath, catalog) {
+  const revision = randomUUID();
+  catalog.revision = revision;
+  const raw = JSON.stringify(catalog, null, 2) + "\n";
+  const tmp = `${catalogPath}.${process.pid}.tmp`;
+  await fs.writeFile(tmp, raw);
+  await fs.rename(tmp, catalogPath);
+  return { raw, revision };
 }
 
 /**
@@ -326,11 +347,23 @@ export async function publishListingImage(environment, asset, allowedRoots = def
  */
 export async function postCommerceAction(environment, action) {
   assertCommerceEnvironment(environment);
-  const response = await fetch(`${environment.apiBase}/api/miniapps/commerce`, {
-    body: JSON.stringify(action),
-    headers: { authorization: `Bearer ${environment.token}`, "content-type": "application/json" },
-    method: "POST",
-  });
+  /** @type {Response} */
+  let response;
+  try {
+    response = await fetch(`${environment.apiBase}/api/miniapps/commerce`, {
+      body: JSON.stringify(action),
+      headers: { authorization: `Bearer ${environment.token}`, "content-type": "application/json" },
+      method: "POST",
+      signal: AbortSignal.timeout(COMMERCE_REQUEST_MS),
+    });
+  } catch (error) {
+    throw new ZapCliError({
+      code: "COMMERCE_STAGE_FAILED",
+      message: `air did not answer ${String(action.action)}: ${error instanceof Error ? error.message : String(error)}`,
+      remediation: "Check that the box gateway is reachable; nothing was charged.",
+      retryable: true,
+    });
+  }
   const body = /** @type {Record<string, unknown>} */ (await response.json().catch(() => ({})));
   if (!response.ok) {
     throw new ZapCliError({
