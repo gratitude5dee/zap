@@ -6,6 +6,46 @@ import { BlobNotFoundError, del, put } from "@vercel/blob";
 const DEFAULT_AIR_VIDEO_MAX_BYTES = 25 * 1024 * 1024;
 const AIR_VIDEO_FETCH_TIMEOUT_MS = 30_000;
 
+/**
+ * Storage backend selection. `r2` is used on the Cloudflare Workers deploy
+ * where `ZAP_MEDIA` is bound to the `zap-media` bucket and objects are served
+ * publicly through the bucket's custom domain (`ZAP_MEDIA_PUBLIC_BASE`).
+ * Vercel Blob stays the default everywhere else.
+ */
+function mediaStoreBackend(): "r2" | "blob" {
+  return process.env.ZAP_MEDIA_STORE === "r2" ? "r2" : "blob";
+}
+
+function mediaPublicBase(): string {
+  const base = process.env.ZAP_MEDIA_PUBLIC_BASE ?? "https://media.zap.wzrd.tech";
+  return base.replace(/\/+$/, "");
+}
+
+type R2BucketHandle = {
+  put(key: string, value: Blob | Uint8Array | ArrayBuffer, opts?: { httpMetadata?: { contentType?: string } }): Promise<unknown>;
+  delete(keys: string | string[]): Promise<void>;
+};
+
+async function r2Bucket(): Promise<R2BucketHandle> {
+  // Lazy dynamic import so plain `next build` never resolves the OpenNext
+  // adapter — it only exists in the worker bundle.
+  const { getCloudflareContext } = await import("@opennextjs/cloudflare");
+  const env = getCloudflareContext().env as { ZAP_MEDIA?: R2BucketHandle };
+  if (!env.ZAP_MEDIA) throw new Error("ZAP_MEDIA R2 binding is not configured");
+  return env.ZAP_MEDIA;
+}
+
+async function r2Put(key: string, body: Blob | Uint8Array, contentType?: string) {
+  await (await r2Bucket()).put(key, body, contentType ? { httpMetadata: { contentType } } : undefined);
+  return { pathname: key, url: `${mediaPublicBase()}/${key}` };
+}
+
+async function r2Delete(key: string) {
+  // R2 delete is idempotent — retrying a missing key converges like the
+  // BlobNotFoundError swallow in the Vercel path.
+  await (await r2Bucket()).delete(key);
+}
+
 /** Deterministic validation failures may safely terminalize a provider run. */
 export class AirVideoOutputError extends Error {
   public constructor(message: string, readonly deterministic: boolean) {
@@ -41,6 +81,7 @@ function resolveAirBlobAuth(): AirBlobAuth | undefined {
 
 /** Used by Air's production preflight without exposing either credential. */
 export function hasAirBlobCredentials() {
+  if (mediaStoreBackend() === "r2") return true;
   return resolveAirBlobAuth() !== undefined;
 }
 
@@ -52,7 +93,7 @@ function airBlobCommandOptions(auth: AirBlobAuth) {
 
 export async function persistRemoteAsset(url: string, key: string) {
   assertAllowedRemoteAssetUrl(url);
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+  if (mediaStoreBackend() !== "r2" && !process.env.BLOB_READ_WRITE_TOKEN) {
     return { storageKey: key, url };
   }
   const response = await fetch(url);
@@ -60,6 +101,10 @@ export async function persistRemoteAsset(url: string, key: string) {
     throw new Error(`Failed to fetch provider asset: ${response.status}`);
   }
   const blob = await response.blob();
+  if (mediaStoreBackend() === "r2") {
+    const stored = await r2Put(key, blob, blob.type || undefined);
+    return { storageKey: stored.pathname, url: stored.url };
+  }
   const stored = await put(key, blob, {
     access: "public",
     token: process.env.BLOB_READ_WRITE_TOKEN,
@@ -82,7 +127,7 @@ export async function persistAirVideoOutput(url: string, key: string, options: A
     );
   }
   const auth = resolveAirBlobAuth();
-  if (!auth) {
+  if (!auth && mediaStoreBackend() !== "r2") {
     throw new AirVideoOutputError(
       "BLOB_READ_WRITE_TOKEN or BLOB_STORE_ID is required for Air video output.",
       false,
@@ -128,21 +173,29 @@ export async function persistAirVideoOutput(url: string, key: string, options: A
   // The caller's durable cleanup record is a precondition for creating a
   // temporary Air artifact. If it cannot be written, no Blob is created.
   await options.beforeBlobWrite(storageKey);
+  if (mediaStoreBackend() === "r2") {
+    const stored = await r2Put(storageKey, new Blob([body], { type: "video/mp4" }), "video/mp4");
+    return { storageKey, url: stored.url };
+  }
   const stored = await put(storageKey, new Blob([body], { type: "video/mp4" }), {
     access: "public",
     addRandomSuffix: false,
     allowOverwrite: true,
     contentType: "video/mp4",
-    ...airBlobCommandOptions(auth),
+    ...airBlobCommandOptions(auth!),
   });
   return { storageKey, url: stored.url };
 }
 
 export async function deletePersistedAsset(storageKey: string) {
   const auth = resolveAirBlobAuth();
-  if (!auth) throw new Error("BLOB_READ_WRITE_TOKEN or BLOB_STORE_ID is required for Air video cleanup.");
+  if (!auth && mediaStoreBackend() !== "r2") throw new Error("BLOB_READ_WRITE_TOKEN or BLOB_STORE_ID is required for Air video cleanup.");
+  if (mediaStoreBackend() === "r2") {
+    await r2Delete(storageKey);
+    return;
+  }
   try {
-    await del(storageKey, airBlobCommandOptions(auth));
+    await del(storageKey, airBlobCommandOptions(auth!));
   } catch (error) {
     // A worker can die after Blob accepted the delete but before it durably
     // acknowledges the cleanup schedule. Retrying that entry must converge,
@@ -153,7 +206,8 @@ export async function deletePersistedAsset(storageKey: string) {
 }
 
 export async function persistDataUrlAsset(dataUrl: string, key: string) {
-  if (!process.env.BLOB_READ_WRITE_TOKEN || !dataUrl.startsWith("data:")) {
+  const persisted = mediaStoreBackend() === "r2" || Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+  if (!persisted || !dataUrl.startsWith("data:")) {
     return { storageKey: key, url: dataUrl };
   }
 
@@ -163,6 +217,10 @@ export async function persistDataUrlAsset(dataUrl: string, key: string) {
   const [, mime, encoded] = match;
   const extension = mime.split("/").at(1)?.split("+").at(0) ?? "bin";
   const body = new Blob([Buffer.from(encoded, "base64")], { type: mime });
+  if (mediaStoreBackend() === "r2") {
+    const stored = await r2Put(`${key}.${extension}`, body, mime);
+    return { storageKey: stored.pathname, url: stored.url };
+  }
   const stored = await put(`${key}.${extension}`, body, {
     access: "public",
     token: process.env.BLOB_READ_WRITE_TOKEN,
@@ -171,8 +229,12 @@ export async function persistDataUrlAsset(dataUrl: string, key: string) {
 }
 
 export async function persistLocalFileAsset(filePath: string, key: string, mime: string) {
-  if (process.env.BLOB_READ_WRITE_TOKEN) {
+  if (process.env.BLOB_READ_WRITE_TOKEN || mediaStoreBackend() === "r2") {
     const body = new Blob([await readFile(filePath)], { type: mime });
+    if (mediaStoreBackend() === "r2") {
+      const stored = await r2Put(`${key}.${extensionForMime(mime)}`, body, mime);
+      return { storageKey: stored.pathname, url: stored.url };
+    }
     const stored = await put(`${key}.${extensionForMime(mime)}`, body, {
       access: "public",
       token: process.env.BLOB_READ_WRITE_TOKEN,

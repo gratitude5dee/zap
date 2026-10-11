@@ -1,11 +1,8 @@
-import { readFileSync } from "node:fs";
-import path from "node:path";
+import manifest from "../packages/cli/package.json";
 
-type PackageManifest = { readonly version: string };
-
-/** Single source of truth for the published @wzrdtech/zap version shown on every surface. */
-export const ZAP_VERSION: string = (
-  JSON.parse(
-    readFileSync(path.join(process.cwd(), "packages", "cli", "package.json"), "utf8"),
-  ) as PackageManifest
-).version;
+/**
+ * Single source of truth for the published @wzrdtech/zap version shown on
+ * every surface. Imported as a JSON module so the bundler inlines it — no
+ * filesystem read at runtime (Workers have none).
+ */
+export const ZAP_VERSION: string = (manifest as { version: string }).version;

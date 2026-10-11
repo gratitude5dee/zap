@@ -1,0 +1,22 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "zap-web",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "r2_buckets": [
+    {
+      "binding": "ZAP_MEDIA",
+      "bucket_name": "zap-media"
+    }
+  ],
+  "vars": {
+    "ZAP_MEDIA_STORE": "r2",
+    "ZAP_MEDIA_PUBLIC_BASE": "https://media.zap.wzrd.tech",
+    "ZAP_PUBLIC_ORIGIN": "https://zap.wzrd.tech"
+  }
+}

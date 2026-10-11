@@ -9,6 +9,8 @@ supabase/.temp
 .next
 .output
 .nitro
+.open-next
+.wrangler
 dist
 .DS_Store
 *.tsbuildinfo
