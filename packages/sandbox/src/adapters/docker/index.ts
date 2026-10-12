@@ -88,8 +88,10 @@ export const DOCKER_DEFAULT_IMAGE = "node:24-bookworm-slim";
 async function loadDocker(config?: DockerAdapterConfig): Promise<DockerodeLike> {
   if (config?.client) return config.client;
   // optional dependency — resolved at runtime only, so a non-literal specifier
-  const specifier = "dockerode";
-  const mod = (await import(specifier)) as { default: new () => DockerodeLike };
+  // (a const string is still statically resolvable by bundlers; concatenation
+  // keeps dockerode's native .node deps out of edge/serverless bundles)
+  const specifier = ["docker", "ode"].join("");
+  const mod = (await import(/* @vite-ignore */ specifier)) as { default: new () => DockerodeLike };
   return new mod.default();
 }
 

@@ -1,4 +1,3 @@
-import { randomBytes } from "node:crypto";
 import { createMemoryState } from "@chat-adapter/state-memory";
 import { createRedisState } from "@chat-adapter/state-redis";
 import { createSlackAdapter } from "@chat-adapter/slack";
@@ -14,7 +13,9 @@ import {
 } from "../../lib/channel-runtime";
 import { isSpriteChannelEnabled } from "../../lib/sprite-runtime";
 
-const disabledCredential = randomBytes(32).toString("hex");
+// Workers forbid random generation in module global scope; this sentinel only
+// disables adapters whose real secrets are unset (prod always provides them).
+const disabledCredential = "zap-chat-disabled-no-secret-configured";
 const state = process.env.REDIS_URL
   ? createRedisState({ keyPrefix: "zap:chat", url: process.env.REDIS_URL })
   : createMemoryState();
